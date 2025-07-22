@@ -182,22 +182,6 @@ snapcrafts:
         command: iptw
         plugs: [network, network-bind]
 
-# Docker images (optional)
-dockers:
-  - image_templates:
-      - "ghcr.io/techt3/iptw:{{ .Tag }}"
-      - "ghcr.io/techt3/iptw:v{{ .Major }}"
-      - "ghcr.io/techt3/iptw:v{{ .Major }}.{{ .Minor }}"
-      - "ghcr.io/techt3/iptw:latest"
-    dockerfile: Dockerfile
-    build_flag_templates:
-      - "--pull"
-      - "--label=org.opencontainers.image.created={{.Date}}"
-      - "--label=org.opencontainers.image.title={{.ProjectName}}"
-      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-      - "--label=org.opencontainers.image.version={{.Version}}"
-      - "--platform=linux/amd64"
-
 # Announce (optional)
 announce:
   skip: '{{gt .Patch 0}}'  # Skip patch releases
