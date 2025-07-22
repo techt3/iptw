@@ -103,6 +103,10 @@ jobs:
         if [ "${{ matrix.goos }}" = "windows" ]; then
           sudo apt-get install -y gcc-mingw-w64
         fi
+        # Install osslsigncode for Windows signing
+        if [ "${{ matrix.goos }}" = "windows" ]; then
+          sudo apt-get install -y osslsigncode
+        fi
         
     - name: Get version
       id: version
@@ -145,7 +149,41 @@ jobs:
         cp SERVICE.md "$OUTPUT_DIR/" 2>/dev/null || true
         cp -r config "$OUTPUT_DIR/" 2>/dev/null || true
         
-        # Create archive
+        # Copy platform-specific helper scripts
+        mkdir -p "$OUTPUT_DIR/scripts"
+        if [ "$GOOS" = "darwin" ]; then
+          cp scripts/macos-unquarantine.sh "$OUTPUT_DIR/scripts/" 2>/dev/null || true
+          chmod +x "$OUTPUT_DIR/scripts/macos-unquarantine.sh" 2>/dev/null || true
+        elif [ "$GOOS" = "windows" ]; then
+          cp scripts/windows-unblock.ps1 "$OUTPUT_DIR/scripts/" 2>/dev/null || true
+        fi
+        
+    - name: Sign macOS binary (ad-hoc)
+      if: matrix.goos == 'darwin'
+      run: |
+        OUTPUT_DIR="build/iptw-${{ steps.version.outputs.version }}-${{ matrix.goos }}-${{ matrix.goarch }}"
+        BINARY_PATH="$OUTPUT_DIR/iptw"
+        
+        # Install rcodesign (pure Rust implementation that works in CI)
+        curl -L https://github.com/indygreg/apple-platform-rs/releases/download/apple-codesign%2F0.27.0/apple-codesign-0.27.0-x86_64-unknown-linux-musl.tar.gz | tar xz
+        
+        # Ad-hoc sign the binary (removes quarantine requirement)
+        ./apple-codesign-0.27.0-x86_64-unknown-linux-musl/rcodesign sign --code-signature-flags runtime "$BINARY_PATH"
+        
+        echo "✅ macOS binary signed successfully"
+        
+    - name: Create archive
+      env:
+        GOOS: ${{ matrix.goos }}
+        GOARCH: ${{ matrix.goarch }}
+        VERSION: ${{ steps.version.outputs.version }}
+      run: |
+    - name: Create archive
+      env:
+        GOOS: ${{ matrix.goos }}
+        GOARCH: ${{ matrix.goarch }}
+        VERSION: ${{ steps.version.outputs.version }}
+      run: |
         cd build
         if [ "$GOOS" = "windows" ]; then
           zip -r "iptw-$VERSION-$GOOS-$GOARCH.zip" "iptw-$VERSION-$GOOS-$GOARCH/"

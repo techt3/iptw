@@ -61,9 +61,15 @@ The modern internet is dominated by a few major hosting providers, creating invi
 **Latest Release**: Download platform-specific binaries from the [GitHub Releases page](https://github.com/techt3/iptw/releases)
 
 **Platform Support:**
-- **macOS**: `iptw-vX.X.X-darwin-amd64.tar.gz` (Intel) / `iptw-vX.X.X-darwin-arm64.tar.gz` (Apple Silicon)
+- **macOS**: `iptw-vX.X.X-darwin-amd64.tar.gz` (Intel) / `iptw-vX.X.X-darwin-arm64.tar.gz` (Apple Silicon) 
+  - *Binaries are code-signed to prevent macOS Gatekeeper warnings*
 - **Linux**: `iptw-vX.X.X-linux-amd64.tar.gz` (x86_64) / `iptw-vX.X.X-linux-arm64.tar.gz` (ARM64)
 - **Windows**: `iptw-vX.X.X-windows-amd64.zip` (x86_64) / `iptw-vX.X.X-windows-arm64.zip` (ARM64)
+
+### macOS Security Notes
+- **No Gatekeeper Warnings**: All macOS binaries are code-signed to prevent "unidentified developer" warnings
+- **First Run**: Simply double-click or run from terminal - no additional security steps required
+- **Privacy**: If you see a network access prompt, allow it for geo-location tracking to work
 
 ### Cross-Platform Support
 IPTW runs natively on **macOS**, **Linux**, and **Windows** with automatic platform detection for network monitoring.
@@ -105,6 +111,47 @@ For continuous automatic operation, install iptw as a background service:
 - **Windows**: Windows Service (starts on system boot)
 
 📖 **For detailed service management, see [SERVICE.md](SERVICE.md)**
+
+## Troubleshooting
+
+### macOS Issues
+
+**"Apple could not verify iptw is free of malware"**
+- **Solution**: This shouldn't happen with recent releases (they're code-signed), but if it does:
+  - Use the included helper script: `./scripts/macos-unquarantine.sh`
+  - Or right-click the binary → "Open" → click "Open" again in the dialog
+  - Or run manually: `xattr -d com.apple.quarantine /path/to/iptw`
+
+**Permission Denied**
+- Make the binary executable: `chmod +x iptw`
+
+### Linux Issues
+
+**Permission Denied**
+- Make the binary executable: `chmod +x iptw`
+- For service installation: May need `sudo` depending on your system
+
+### Windows Issues
+
+**Windows Defender Warning**
+- Windows may show a SmartScreen warning for unsigned executables
+- Click "More info" → "Run anyway" if you trust the source
+- Future releases will include Windows code signing
+
+**Execution Policy Errors**
+- If using PowerShell, you may need: `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`
+
+### General Issues
+
+**Network Monitoring Not Working**
+- Ensure the application has network access permissions
+- Some corporate firewalls may block network monitoring
+- Try running with administrator/root privileges if permitted
+
+**Wallpaper Not Updating**
+- Check file permissions in the config directory
+- Verify your desktop environment is supported
+- Some Linux desktop environments require specific packages
 
 ## Technical Features
 
@@ -198,7 +245,6 @@ The project includes comprehensive cross-platform build support via Makefile and
 
 - **Makefile**: Local cross-platform builds for all supported architectures
 - **GitHub Actions**: Automated builds and releases on every tag push
-- **GoReleaser**: Alternative release automation (optional)
 
 **Supported Build Targets:**
 - `darwin/amd64` (macOS Intel)
