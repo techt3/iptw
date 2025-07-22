@@ -1,0 +1,275 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main, master ]
+
+env:
+  GO_VERSION: '1.24'
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ env.GO_VERSION }}
+        
+    - name: Cache Go modules
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+          
+    - name: Install dependencies
+      run: go mod tidy
+      
+    - name: Run tests
+      run: make test
+      
+    - name: Run linters
+      run: |
+        go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+        make lint
+
+  build:
+    name: Build
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    strategy:
+      matrix:
+        include:
+          # macOS builds
+          - goos: darwin
+            goarch: amd64
+            name: macos-intel
+          - goos: darwin
+            goarch: arm64
+            name: macos-apple-silicon
+            
+          # Linux builds  
+          - goos: linux
+            goarch: amd64
+            name: linux-amd64
+          - goos: linux
+            goarch: arm64
+            name: linux-arm64
+            
+          # Windows builds
+          - goos: windows
+            goarch: amd64
+            name: windows-amd64
+          - goos: windows
+            goarch: arm64
+            name: windows-arm64
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ env.GO_VERSION }}
+        
+    - name: Cache Go modules
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - name: Install build dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc-multilib
+        # Install cross-compilation tools for CGO
+        if [ "${{ matrix.goos }}" = "windows" ]; then
+          sudo apt-get install -y gcc-mingw-w64
+        fi
+        
+    - name: Get version
+      id: version
+      run: |
+        if [[ $GITHUB_REF == refs/tags/* ]]; then
+          VERSION=${GITHUB_REF#refs/tags/}
+        else
+          VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.1.0")
+          VERSION="${VERSION}-$(git rev-parse --short HEAD)"
+        fi
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Building version: $VERSION"
+        
+    - name: Build binary
+      env:
+        GOOS: ${{ matrix.goos }}
+        GOARCH: ${{ matrix.goarch }}
+        VERSION: ${{ steps.version.outputs.version }}
+      run: |
+        # Build using our Makefile for specific platform
+        BINARY_NAME="iptw"
+        if [ "$GOOS" = "windows" ]; then
+          BINARY_NAME="iptw.exe"
+        fi
+        
+        # Use our cross-platform build system
+        OUTPUT_DIR="build/iptw-$VERSION-$GOOS-$GOARCH"
+        mkdir -p "$OUTPUT_DIR"
+        
+        # Set build flags
+        LDFLAGS="-ldflags=-X=main.Version=$VERSION -X=main.BuildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ) -X=main.GitCommit=$(git rev-parse --short HEAD) -w -s"
+        
+        # Cross-compile with CGO fallback
+        echo "Building for $GOOS/$GOARCH..."
+        CGO_ENABLED=1 GOOS=$GOOS GOARCH=$GOARCH go build $LDFLAGS -trimpath -o "$OUTPUT_DIR/$BINARY_NAME" ./cmd/iptw || \
+        (echo "CGO build failed, trying without CGO..." && CGO_ENABLED=0 GOOS=$GOOS GOARCH=$GOARCH go build $LDFLAGS -trimpath -o "$OUTPUT_DIR/$BINARY_NAME" ./cmd/iptw)
+        
+        # Copy additional files
+        cp README.md "$OUTPUT_DIR/" 2>/dev/null || true
+        cp SERVICE.md "$OUTPUT_DIR/" 2>/dev/null || true
+        cp -r config "$OUTPUT_DIR/" 2>/dev/null || true
+        
+        # Create archive
+        cd build
+        if [ "$GOOS" = "windows" ]; then
+          zip -r "iptw-$VERSION-$GOOS-$GOARCH.zip" "iptw-$VERSION-$GOOS-$GOARCH/"
+          echo "archive=iptw-$VERSION-$GOOS-$GOARCH.zip" >> $GITHUB_OUTPUT
+        else
+          tar -czf "iptw-$VERSION-$GOOS-$GOARCH.tar.gz" "iptw-$VERSION-$GOOS-$GOARCH/"
+          echo "archive=iptw-$VERSION-$GOOS-$GOARCH.tar.gz" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: iptw-${{ matrix.name }}-${{ steps.version.outputs.version }}
+        path: build/iptw-*-${{ matrix.goos }}-${{ matrix.goarch }}.*
+        retention-days: 30
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
+      
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Get version
+      id: version
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/}
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        pattern: iptw-*-${{ steps.version.outputs.version }}
+        merge-multiple: true
+        path: release-assets/
+        
+    - name: Generate release notes
+      id: release_notes
+      run: |
+        # Get the tag message or generate release notes from commits
+        TAG_MESSAGE=$(git tag -l --format='%(contents)' ${{ steps.version.outputs.version }})
+        
+        if [ -z "$TAG_MESSAGE" ]; then
+          # Generate from commits since last tag
+          LAST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [ -n "$LAST_TAG" ]; then
+            echo "## Changes since $LAST_TAG" > release_notes.md
+            echo "" >> release_notes.md
+            git log --pretty=format:"- %s" $LAST_TAG..HEAD >> release_notes.md
+          else
+            echo "## IPTW ${{ steps.version.outputs.version }}" > release_notes.md
+            echo "" >> release_notes.md
+            echo "Initial release of IPTW - IP Travel Wallpaper application." >> release_notes.md
+          fi
+        else
+          echo "$TAG_MESSAGE" > release_notes.md
+        fi
+        
+        echo "" >> release_notes.md
+        echo "## Downloads" >> release_notes.md
+        echo "" >> release_notes.md
+        echo "Choose the appropriate binary for your platform:" >> release_notes.md
+        echo "" >> release_notes.md
+        echo "### macOS" >> release_notes.md
+        echo "- **Intel Macs**: \`iptw-${{ steps.version.outputs.version }}-darwin-amd64.tar.gz\`" >> release_notes.md
+        echo "- **Apple Silicon Macs**: \`iptw-${{ steps.version.outputs.version }}-darwin-arm64.tar.gz\`" >> release_notes.md
+        echo "" >> release_notes.md
+        echo "### Linux" >> release_notes.md  
+        echo "- **x86_64**: \`iptw-${{ steps.version.outputs.version }}-linux-amd64.tar.gz\`" >> release_notes.md
+        echo "- **ARM64**: \`iptw-${{ steps.version.outputs.version }}-linux-arm64.tar.gz\`" >> release_notes.md
+        echo "" >> release_notes.md
+        echo "### Windows" >> release_notes.md
+        echo "- **x86_64**: \`iptw-${{ steps.version.outputs.version }}-windows-amd64.zip\`" >> release_notes.md
+        echo "- **ARM64**: \`iptw-${{ steps.version.outputs.version }}-windows-arm64.zip\`" >> release_notes.md
+        echo "" >> release_notes.md
+        echo "## Installation" >> release_notes.md
+        echo "" >> release_notes.md
+        echo "1. Download the appropriate archive for your platform" >> release_notes.md
+        echo "2. Extract the archive" >> release_notes.md
+        echo "3. Run the \`iptw\` binary" >> release_notes.md
+        echo "4. For background service installation, see the included \`SERVICE.md\` file" >> release_notes.md
+        
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ steps.version.outputs.version }}
+        name: IPTW ${{ steps.version.outputs.version }}
+        body_path: release_notes.md
+        files: release-assets/*
+        draft: false
+        prerelease: ${{ contains(steps.version.outputs.version, 'beta') || contains(steps.version.outputs.version, 'alpha') || contains(steps.version.outputs.version, 'rc') }}
+        generate_release_notes: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  cleanup:
+    name: Cleanup
+    needs: [build, release]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+    - name: Delete temporary artifacts
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            run_id: context.runId,
+          });
+          
+          for (const artifact of artifacts.data.artifacts) {
+            if (artifact.name.includes('iptw-') && artifact.created_at < new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()) {
+              console.log(`Deleting artifact: ${artifact.name}`);
+              await github.rest.actions.deleteArtifact({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                artifact_id: artifact.id,
+              });
+            }
+          }

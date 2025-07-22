@@ -1,0 +1,216 @@
+# GoReleaser configuration for IPTW
+# This is an alternative to the GitHub Actions workflow for automated releases
+
+version: 2
+
+project_name: iptw
+
+before:
+  hooks:
+    # Clean up before build
+    - go mod tidy
+    - go generate ./...
+
+builds:
+  - id: iptw
+    main: ./cmd/iptw
+    binary: iptw
+    
+    # Build flags
+    ldflags:
+      - -s -w
+      - -X main.Version={{.Version}}
+      - -X main.BuildTime={{.Date}}
+      - -X main.GitCommit={{.ShortCommit}}
+    
+    # Platforms and architectures
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    
+    # Environment variables for cross-compilation
+    env:
+      - CGO_ENABLED=1
+    
+    # Ignore specific combinations if needed
+    ignore:
+      - goos: windows
+        goarch: arm64  # Windows ARM64 CGO cross-compilation is complex
+    
+    # Override specific builds
+    overrides:
+      - goos: windows
+        goarch: arm64
+        env:
+          - CGO_ENABLED=0  # Disable CGO for Windows ARM64
+
+archives:
+  - id: default
+    builds: [iptw]
+    
+    # Archive format per OS
+    format_overrides:
+      - goos: windows
+        format: zip
+      - goos: darwin
+        format: tar.gz
+      - goos: linux
+        format: tar.gz
+    
+    # Files to include in archive
+    files:
+      - README.md
+      - SERVICE.md
+      - config/**/*
+      - LICENSE*
+    
+    # Archive name template
+    name_template: >-
+      {{ .ProjectName }}-
+      {{- .Version }}-
+      {{- .Os }}-
+      {{- .Arch }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+
+checksum:
+  name_template: 'checksums.txt'
+  algorithm: sha256
+
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^ci:'
+      - '^chore:'
+      - '^style:'
+      - '^refactor:'
+      - Merge pull request
+      - Merge branch
+  groups:
+    - title: Features
+      regexp: "^.*feat[(\\w)]*:+.*$"
+      order: 0
+    - title: 'Bug fixes'
+      regexp: "^.*fix[(\\w)]*:+.*$"
+      order: 1
+    - title: Others
+      order: 999
+
+release:
+  github:
+    owner: techt3
+    name: iptw
+  
+  # Draft release
+  draft: false
+  
+  # Prerelease detection
+  prerelease: auto
+  
+  # Release name
+  name_template: "IPTW {{.Version}}"
+  
+  # Header and footer
+  header: |
+    ## IPTW {{.Version}} Release
+    
+    IP Travel Wallpaper - Cross-platform background service for tracking IP geolocation changes.
+  
+  footer: |
+    ## Installation
+    
+    Download the appropriate archive for your platform, extract it, and run the `iptw` binary.
+    
+    For background service installation, see the included `SERVICE.md` file.
+    
+    ## Verification
+    
+    All binaries are signed and checksums are provided in `checksums.txt`.
+
+# Homebrew tap (optional)
+brews:
+  - name: iptw
+    repository:
+      owner: techt3
+      name: homebrew-tap
+      branch: main
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    
+    # Commit details
+    commit_author:
+      name: goreleaserbot
+      email: bot@goreleaser.com
+    commit_msg_template: "Brew formula update for {{ .ProjectName }} version {{ .Tag }}"
+    
+    # Formula details
+    description: "IP Travel Wallpaper - Track your IP geolocation changes"
+    homepage: "https://github.com/techt3/iptw"
+    license: "MIT"
+    
+    # Install script
+    install: |
+      bin.install "iptw"
+    
+    # Test script
+    test: |
+      system "#{bin}/iptw", "--version"
+
+# Snapcraft (optional)
+snapcrafts:
+  - name: iptw
+    summary: IP Travel Wallpaper
+    description: |
+      IPTW (IP Travel Wallpaper) is a cross-platform application that tracks
+      your IP geolocation changes and can run as a background service.
+    grade: stable
+    confinement: strict
+    
+    # Snap metadata
+    license: MIT
+    base: core22
+    
+    # Apps configuration
+    apps:
+      iptw:
+        command: iptw
+        plugs: [network, network-bind]
+
+# Docker images (optional)
+dockers:
+  - image_templates:
+      - "ghcr.io/techt3/iptw:{{ .Tag }}"
+      - "ghcr.io/techt3/iptw:v{{ .Major }}"
+      - "ghcr.io/techt3/iptw:v{{ .Major }}.{{ .Minor }}"
+      - "ghcr.io/techt3/iptw:latest"
+    dockerfile: Dockerfile
+    build_flag_templates:
+      - "--pull"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--platform=linux/amd64"
+
+# Announce (optional)
+announce:
+  skip: '{{gt .Patch 0}}'  # Skip patch releases
+  
+  # Discord webhook (if configured)
+  discord:
+    enabled: true
+    message_template: |
+      🎉 **IPTW {{.Tag}}** has been released!
+      
+      **Changes:**
+      {{ range .Changes }}
+      - {{ .Message }}
+      {{ end }}
+      
+      **Download:** https://github.com/techt3/iptw/releases/tag/{{.Tag}}

@@ -1,0 +1,94 @@
+name: Dependency Updates
+
+on:
+  schedule:
+    # Run every Monday at 9 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+env:
+  GO_VERSION: '1.24'
+
+jobs:
+  update-dependencies:
+    name: Update Go Dependencies
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ env.GO_VERSION }}
+        
+    - name: Update dependencies
+      id: update
+      run: |
+        # Update to latest versions
+        go get -u ./...
+        go mod tidy
+        
+        # Check if there are any changes
+        if git diff --quiet go.mod go.sum; then
+          echo "No dependency updates available"
+          echo "has_updates=false" >> $GITHUB_OUTPUT
+        else
+          echo "Dependencies updated"
+          echo "has_updates=true" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Run tests after update
+      if: steps.update.outputs.has_updates == 'true'
+      run: |
+        make test
+        make build
+        
+    - name: Create Pull Request
+      if: steps.update.outputs.has_updates == 'true'
+      uses: peter-evans/create-pull-request@v6
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: 'chore: update Go dependencies'
+        title: 'chore: update Go dependencies'
+        body: |
+          ## Dependency Updates
+          
+          This PR updates Go dependencies to their latest versions.
+          
+          ### Changes
+          - Updated all Go module dependencies
+          - Ran tests to ensure compatibility
+          
+          ### Verification
+          - [x] Tests pass
+          - [x] Application builds successfully
+          
+          This is an automated PR created by the dependency update workflow.
+        branch: chore/update-dependencies
+        delete-branch: true
+        labels: |
+          dependencies
+          automated
+          
+  check-vulnerabilities:
+    name: Check for Vulnerabilities
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ env.GO_VERSION }}
+        
+    - name: Install govulncheck
+      run: go install golang.org/x/vuln/cmd/govulncheck@latest
+      
+    - name: Check for vulnerabilities
+      run: govulncheck ./...

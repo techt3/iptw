@@ -1,0 +1,111 @@
+name: Development Build
+
+on:
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+env:
+  GO_VERSION: '1.24'
+
+jobs:
+  test-and-build:
+    name: Test and Build (PR)
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        
+    steps:
+    - uses: actions/checkout@v4
+      
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ env.GO_VERSION }}
+        
+    - name: Cache Go modules
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+          
+    - name: Install dependencies
+      run: go mod tidy
+      
+    - name: Run tests
+      run: make test
+      
+    - name: Build for current platform
+      run: make build
+      
+    - name: Test service functionality (Unix)
+      if: runner.os != 'Windows'
+      run: |
+        ./build/iptw --help
+        echo "✅ Binary runs successfully on ${{ runner.os }}"
+        
+    - name: Test service functionality (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        .\build\iptw.exe --help
+        echo "✅ Binary runs successfully on Windows"
+        
+    - name: Upload build artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: iptw-dev-${{ runner.os }}-${{ github.sha }}
+        path: |
+          build/iptw*
+          README.md
+          SERVICE.md
+        retention-days: 7
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ env.GO_VERSION }}
+        
+    - name: Install golangci-lint
+      uses: golangci/golangci-lint-action@v6
+      with:
+        version: latest
+        args: --timeout=5m
+        
+    - name: Run additional checks
+      run: |
+        go vet ./...
+        go fmt ./...
+        git diff --exit-code || (echo "Code is not formatted. Please run 'go fmt ./...'" && exit 1)
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ env.GO_VERSION }}
+        
+    - name: Install and run Gosec Security Scanner
+      run: |
+        go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest
+        gosec -fmt sarif -out results.sarif ./... || true
+        
+    - name: Upload SARIF file
+      if: always()
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: results.sarif
