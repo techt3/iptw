@@ -22,8 +22,7 @@ func (l *Lock) isProcessRunning(pid int) bool {
 
 	// On Unix systems, we can use Signal(0) to check if process exists
 	err = process.Signal(syscall.Signal(0))
-	if err != nil {
-		return false
-	}
-	return true
+
+	return err == nil
+
 }

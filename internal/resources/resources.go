@@ -223,11 +223,11 @@ func DrawGameInfoRectangle(img *image.RGBA, fm *FontManager, x, y, width, height
 
 	// Use ONLY the freetype method for proper filled text rendering
 	// The golang.org/x/image/font method renders outlined text by default
-	return drawTextWithFreetype(img, ttfFont, x, y, width, height, lines, config)
+	return drawTextWithFreetype(img, ttfFont, x, y, height, lines, config)
 }
 
 // drawTextWithFreetype renders text using freetype with proper filled glyphs
-func drawTextWithFreetype(img *image.RGBA, ttfFont *truetype.Font, x, y, width, height int, lines []string, config GameInfoConfig) error {
+func drawTextWithFreetype(img *image.RGBA, ttfFont *truetype.Font, x, y, height int, lines []string, config GameInfoConfig) error {
 	// Create font context for filled font rendering
 	c := freetype.NewContext()
 	c.SetDPI(72)

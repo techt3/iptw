@@ -23,9 +23,9 @@ const (
 func (l *Lock) acquireFileLock(file *os.File) error {
 	// Use Windows LockFileEx API for proper file locking
 	handle := syscall.Handle(file.Fd())
-	
+
 	var overlapped syscall.Overlapped
-	
+
 	r1, _, err := lockFileEx.Call(
 		uintptr(handle),
 		uintptr(lockfileExclusiveLock|lockfileFailImmediately),
@@ -34,11 +34,11 @@ func (l *Lock) acquireFileLock(file *os.File) error {
 		uintptr(0),
 		uintptr(unsafe.Pointer(&overlapped)),
 	)
-	
+
 	if r1 == 0 {
 		return err
 	}
-	
+
 	return nil
 }
 
