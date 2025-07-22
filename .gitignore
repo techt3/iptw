@@ -3,7 +3,6 @@
 build/
 dist/
 *.tar.gz
-*.zip
 coverage.out
 coverage.html
 results.sarif
