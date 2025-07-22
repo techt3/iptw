@@ -133,12 +133,12 @@ jobs:
         mkdir -p "$OUTPUT_DIR"
         
         # Set build flags
-        LDFLAGS="-ldflags=-X=main.Version=$VERSION -X=main.BuildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ) -X=main.GitCommit=$(git rev-parse --short HEAD) -w -s"
+        LDFLAGS="-X main.Version=$VERSION -X main.BuildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ) -X main.GitCommit=$(git rev-parse --short HEAD) -w -s"
         
         # Cross-compile with CGO fallback
         echo "Building for $GOOS/$GOARCH..."
-        CGO_ENABLED=1 GOOS=$GOOS GOARCH=$GOARCH go build $LDFLAGS -trimpath -o "$OUTPUT_DIR/$BINARY_NAME" ./cmd/iptw || \
-        (echo "CGO build failed, trying without CGO..." && CGO_ENABLED=0 GOOS=$GOOS GOARCH=$GOARCH go build $LDFLAGS -trimpath -o "$OUTPUT_DIR/$BINARY_NAME" ./cmd/iptw)
+        CGO_ENABLED=1 GOOS=$GOOS GOARCH=$GOARCH go build -ldflags="$LDFLAGS" -trimpath -o "$OUTPUT_DIR/$BINARY_NAME" ./cmd/iptw || \
+        (echo "CGO build failed, trying without CGO..." && CGO_ENABLED=0 GOOS=$GOOS GOARCH=$GOARCH go build -ldflags="$LDFLAGS" -trimpath -o "$OUTPUT_DIR/$BINARY_NAME" ./cmd/iptw)
         
         # Copy additional files
         cp README.md "$OUTPUT_DIR/" 2>/dev/null || true
