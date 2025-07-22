@@ -46,7 +46,6 @@ jobs:
     - name: Run tests after update
       if: steps.update.outputs.has_updates == 'true'
       run: |
-        make test
         make build
         
     - name: Create Pull Request

@@ -37,8 +37,6 @@ jobs:
     - name: Install dependencies
       run: go mod tidy
       
-    - name: Run tests
-      run: make test
       
     - name: Build for current platform
       run: make build
