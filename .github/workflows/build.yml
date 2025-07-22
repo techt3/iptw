@@ -43,22 +43,14 @@ jobs:
     #     go install github.com/golangci/golangci-lint/cmd/golangci-lint@v2.1.6
     #     make lint
 
-  build:
-    name: Build
+  build-cross-platform:
+    name: Build (Linux/Windows)
     needs: test
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
     strategy:
       matrix:
         include:
-          # macOS builds
-          - goos: darwin
-            goarch: amd64
-            name: macos-intel
-          - goos: darwin
-            goarch: arm64
-            name: macos-apple-silicon
-            
           # Linux builds  
           - goos: linux
             goarch: amd64
@@ -95,17 +87,16 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-go-
 
-    - name: Install build dependencies
+    - name: Install cross-compilation dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y gcc-multilib
-        # Install cross-compilation tools for CGO
+        sudo apt-get install -y gcc-multilib gcc-aarch64-linux-gnu
+        
+        # Install Windows cross-compilation tools
         if [ "${{ matrix.goos }}" = "windows" ]; then
           sudo apt-get install -y gcc-mingw-w64
-        fi
-        # Install osslsigncode for Windows signing
-        if [ "${{ matrix.goos }}" = "windows" ]; then
-          sudo apt-get install -y osslsigncode
+          # Note: ARM64 Windows cross-compilation may have limited support
+          # Most projects fall back to CGO_ENABLED=0 for Windows ARM64
         fi
         
     - name: Get version
@@ -126,23 +117,35 @@ jobs:
         GOARCH: ${{ matrix.goarch }}
         VERSION: ${{ steps.version.outputs.version }}
       run: |
-        # Build using our Makefile for specific platform
+        # Set cross-compilation environment and CGO settings
+        if [ "$GOOS" = "linux" ] && [ "$GOARCH" = "arm64" ]; then
+          export CGO_ENABLED=1
+          export CC=aarch64-linux-gnu-gcc
+        elif [ "$GOOS" = "windows" ] && [ "$GOARCH" = "amd64" ]; then
+          export CGO_ENABLED=1
+          export CC=x86_64-w64-mingw32-gcc
+        elif [ "$GOOS" = "windows" ] && [ "$GOARCH" = "arm64" ]; then
+          # Windows ARM64 cross-compilation with CGO is complex, disable for now
+          export CGO_ENABLED=0
+          echo "⚠️  Windows ARM64: Building without CGO due to cross-compilation limitations"
+        else
+          export CGO_ENABLED=1
+        fi
+        
+        # Build binary
         BINARY_NAME="iptw"
         if [ "$GOOS" = "windows" ]; then
           BINARY_NAME="iptw.exe"
         fi
         
-        # Use our cross-platform build system
         OUTPUT_DIR="build/iptw-$VERSION-$GOOS-$GOARCH"
         mkdir -p "$OUTPUT_DIR"
         
         # Set build flags
         LDFLAGS="-X main.Version=$VERSION -X main.BuildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ) -X main.GitCommit=$(git rev-parse --short HEAD) -w -s"
         
-        # Cross-compile with CGO fallback
-        echo "Building for $GOOS/$GOARCH..."
-        CGO_ENABLED=1 GOOS=$GOOS GOARCH=$GOARCH go build -ldflags="$LDFLAGS" -trimpath -o "$OUTPUT_DIR/$BINARY_NAME" ./cmd/iptw || \
-        (echo "CGO build failed, trying without CGO..." && CGO_ENABLED=0 GOOS=$GOOS GOARCH=$GOARCH go build -ldflags="$LDFLAGS" -trimpath -o "$OUTPUT_DIR/$BINARY_NAME" ./cmd/iptw)
+        echo "Building for $GOOS/$GOARCH with CGO_ENABLED=$CGO_ENABLED..."
+        go build -ldflags="$LDFLAGS" -trimpath -o "$OUTPUT_DIR/$BINARY_NAME" ./cmd/iptw
         
         # Copy additional files
         cp README.md "$OUTPUT_DIR/" 2>/dev/null || true
@@ -151,33 +154,10 @@ jobs:
         
         # Copy platform-specific helper scripts
         mkdir -p "$OUTPUT_DIR/scripts"
-        if [ "$GOOS" = "darwin" ]; then
-          cp scripts/macos-unquarantine.sh "$OUTPUT_DIR/scripts/" 2>/dev/null || true
-          chmod +x "$OUTPUT_DIR/scripts/macos-unquarantine.sh" 2>/dev/null || true
-        elif [ "$GOOS" = "windows" ]; then
+        if [ "$GOOS" = "windows" ]; then
           cp scripts/windows-unblock.ps1 "$OUTPUT_DIR/scripts/" 2>/dev/null || true
         fi
         
-    - name: Sign macOS binary (ad-hoc)
-      if: matrix.goos == 'darwin'
-      run: |
-        OUTPUT_DIR="build/iptw-${{ steps.version.outputs.version }}-${{ matrix.goos }}-${{ matrix.goarch }}"
-        BINARY_PATH="$OUTPUT_DIR/iptw"
-        
-        # Install rcodesign (pure Rust implementation that works in CI)
-        curl -L https://github.com/indygreg/apple-platform-rs/releases/download/apple-codesign%2F0.27.0/apple-codesign-0.27.0-x86_64-unknown-linux-musl.tar.gz | tar xz
-        
-        # Ad-hoc sign the binary (removes quarantine requirement)
-        ./apple-codesign-0.27.0-x86_64-unknown-linux-musl/rcodesign sign --code-signature-flags runtime "$BINARY_PATH"
-        
-        echo "✅ macOS binary signed successfully"
-        
-    - name: Create archive
-      env:
-        GOOS: ${{ matrix.goos }}
-        GOARCH: ${{ matrix.goarch }}
-        VERSION: ${{ steps.version.outputs.version }}
-      run: |
     - name: Create archive
       env:
         GOOS: ${{ matrix.goos }}
@@ -200,9 +180,113 @@ jobs:
         path: build/iptw-*-${{ matrix.goos }}-${{ matrix.goarch }}.*
         retention-days: 30
 
+  build-macos:
+    name: Build (macOS)
+    needs: test
+    runs-on: macos-latest
+    if: github.event_name == 'push'
+    strategy:
+      matrix:
+        include:
+          # macOS builds
+          - goos: darwin
+            goarch: amd64
+            name: macos-intel
+          - goos: darwin
+            goarch: arm64
+            name: macos-apple-silicon
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ env.GO_VERSION }}
+        
+    - name: Cache Go modules
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+        
+    - name: Get version
+      id: version
+      run: |
+        if [[ $GITHUB_REF == refs/tags/* ]]; then
+          VERSION=${GITHUB_REF#refs/tags/}
+        else
+          VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.1.0")
+          VERSION="${VERSION}-$(git rev-parse --short HEAD)"
+        fi
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Building version: $VERSION"
+        
+    - name: Build binary
+      env:
+        CGO_ENABLED: 1
+        GOOS: ${{ matrix.goos }}
+        GOARCH: ${{ matrix.goarch }}
+        VERSION: ${{ steps.version.outputs.version }}
+      run: |
+        BINARY_NAME="iptw"
+        OUTPUT_DIR="build/iptw-$VERSION-$GOOS-$GOARCH"
+        mkdir -p "$OUTPUT_DIR"
+        
+        # Set build flags
+        LDFLAGS="-X main.Version=$VERSION -X main.BuildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ) -X main.GitCommit=$(git rev-parse --short HEAD) -w -s"
+        
+        echo "Building for $GOOS/$GOARCH with CGO enabled..."
+        go build -ldflags="$LDFLAGS" -trimpath -o "$OUTPUT_DIR/$BINARY_NAME" ./cmd/iptw
+        
+        # Copy additional files
+        cp README.md "$OUTPUT_DIR/" 2>/dev/null || true
+        cp SERVICE.md "$OUTPUT_DIR/" 2>/dev/null || true
+        cp -r config "$OUTPUT_DIR/" 2>/dev/null || true
+        
+        # Copy macOS-specific helper scripts
+        mkdir -p "$OUTPUT_DIR/scripts"
+        cp scripts/macos-unquarantine.sh "$OUTPUT_DIR/scripts/" 2>/dev/null || true
+        chmod +x "$OUTPUT_DIR/scripts/macos-unquarantine.sh" 2>/dev/null || true
+        
+    - name: Sign macOS binary
+      run: |
+        OUTPUT_DIR="build/iptw-${{ steps.version.outputs.version }}-${{ matrix.goos }}-${{ matrix.goarch }}"
+        BINARY_PATH="$OUTPUT_DIR/iptw"
+        
+        # Ad-hoc sign the binary (removes quarantine requirement)
+        codesign --force --sign - --options runtime "$BINARY_PATH"
+        
+        # Verify signing
+        codesign --verify --verbose "$BINARY_PATH"
+        echo "✅ macOS binary signed successfully"
+        
+    - name: Create archive
+      env:
+        GOOS: ${{ matrix.goos }}
+        GOARCH: ${{ matrix.goarch }}
+        VERSION: ${{ steps.version.outputs.version }}
+      run: |
+        cd build
+        tar -czf "iptw-$VERSION-$GOOS-$GOARCH.tar.gz" "iptw-$VERSION-$GOOS-$GOARCH/"
+        echo "archive=iptw-$VERSION-$GOOS-$GOARCH.tar.gz" >> $GITHUB_OUTPUT
+        
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: iptw-${{ matrix.name }}-${{ steps.version.outputs.version }}
+        path: build/iptw-*-${{ matrix.goos }}-${{ matrix.goarch }}.*
+        retention-days: 30
+
   release:
     name: Create Release
-    needs: build
+    needs: [build-cross-platform, build-macos]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     permissions:
@@ -287,7 +371,7 @@ jobs:
 
   cleanup:
     name: Cleanup
-    needs: [build, release]
+    needs: [build-cross-platform, build-macos, release]
     runs-on: ubuntu-latest
     if: always()
     steps:
