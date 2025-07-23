@@ -31,7 +31,7 @@ After=graphical-session.target
 
 [Service]
 Type=simple
-ExecStart=%s -force
+ExecStart=%s -force -server -port %s
 WorkingDirectory=%s
 Restart=always
 RestartSec=10
@@ -39,7 +39,7 @@ KillMode=process
 TimeoutStopSec=20
 
 [Install]
-WantedBy=default.target`, sm.Description, sm.ExecutablePath, sm.WorkingDir)
+WantedBy=default.target`, sm.Description, sm.ExecutablePath, sm.ServerPort, sm.WorkingDir)
 
 	// Write service file
 	if err := os.WriteFile(servicePath, []byte(serviceContent), 0644); err != nil {
@@ -61,6 +61,7 @@ WantedBy=default.target`, sm.Description, sm.ExecutablePath, sm.WorkingDir)
 	fmt.Printf("✅ Service installed successfully on Linux\n")
 	fmt.Printf("   Service file: %s\n", servicePath)
 	fmt.Printf("   Service will start automatically on login\n")
+	fmt.Printf("   HTTP statistics server will be available on port %s\n", sm.ServerPort)
 	fmt.Printf("   To enable lingering (start without login): sudo loginctl enable-linger %s\n", currentUser.Username)
 
 	return nil

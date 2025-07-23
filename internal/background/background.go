@@ -55,7 +55,7 @@ func SetDesktopBackground(imagePath string) error {
 
 // setMacOSBackground sets the background on macOS using osascript
 func setMacOSBackground(imagePath string) error {
-	log.Printf("🖼️  Setting desktop background: %s", imagePath)
+	slog.Debug("🖼️  Setting desktop background", "image", imagePath)
 
 	// Use AppleScript to set the desktop background with a small delay
 	script := fmt.Sprintf(`tell application "System Events"
@@ -111,20 +111,27 @@ func setLinuxBackground(imagePath string) error {
 
 // setWindowsBackground sets the background on Windows
 func setWindowsBackground(imagePath string) error {
-	log.Printf("🖼️  Setting Windows desktop background: %s", imagePath)
+	slog.Debug("🖼️  Setting Windows desktop background", "image", imagePath)
 
-	// Use PowerShell to set the background
-	script := fmt.Sprintf(`Add-Type -TypeDefinition "
-		using System;
-		using System.Runtime.InteropServices;
-		public class Wallpaper {
-			[DllImport(\"user32.dll\", CharSet = CharSet.Auto)]
-			public static extern int SystemParametersInfo(int uAction, int uParam, string lpvParam, int fuWinIni);
-			public static void SetWallpaper(string path) {
-				SystemParametersInfo(20, 0, path, 3);
-			}
-		}
-	"; [Wallpaper]::SetWallpaper("%s")`, imagePath)
+	// Use PowerShell to set the background with proper escaping
+	// Split into multiple parts to avoid complex escaping issues
+	typeDefinition := `Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+public class Wallpaper {
+	[DllImport("user32.dll", CharSet = CharSet.Auto)]
+	public static extern int SystemParametersInfo(int uAction, int uParam, string lpvParam, int fuWinIni);
+	public static void SetWallpaper(string path) {
+		SystemParametersInfo(20, 0, path, 3);
+	}
+}
+'@`
+
+	// Execute the wallpaper setting command
+	setWallpaperCmd := fmt.Sprintf(`[Wallpaper]::SetWallpaper('%s')`, imagePath)
+
+	// Combine both commands
+	script := typeDefinition + "; " + setWallpaperCmd
 
 	cmd := exec.Command("powershell", "-Command", script)
 	output, err := cmd.CombinedOutput()

@@ -1,6 +1,22 @@
 # Service Management Guide
 
-IP Travel Wallpaper (iptw) includes cross-platform background service management capabilities that allow the application to run automatically as a system service on macOS, Linux, and Windows.
+IP Travel Wallpaper (iptw) includes cross-### Windows (System Service)
+- **Service Name**: `iptw`
+- **Display Name**: `IP Travel Wallpaper Server`
+- **Command**: `iptw -force -server -port 32782`
+- **Auto-start**: Starts automatically on system boot
+- **Management**: Uses Windows Service Control Manager (`sc` commands)
+- **Permissions**: May require administrator privileges for installation
+- **User Context**: Runs as the installing user (required for desktop wallpaper access)
+- **Desktop Access**: Service requires user to be logged in for wallpaper changesm background service management capabilities that allow the application to run automatically as a system service with HTTP statistics server functionality on macOS, Linux, and Windows.
+
+## Service Features
+
+When installed as a service, iptw runs with the following configuration:
+- **Server Mode**: Enabled with HTTP statistics server
+- **Port**: 32782 (default, configurable)
+- **Force Start**: Bypasses singleton checks for service operation
+- **Background Operation**: Runs without UI interaction
 
 ## Service Commands
 
@@ -12,6 +28,8 @@ Installs iptw as a background service that starts automatically:
 - **macOS**: Creates a LaunchAgent in `~/Library/LaunchAgents/`
 - **Linux**: Creates a systemd user service in `~/.config/systemd/user/`
 - **Windows**: Creates a Windows service using the Service Control Manager
+
+The service runs with server functionality enabled on port 32782, providing HTTP access to statistics and achievements.
 
 ### Service Status
 ```bash
@@ -41,6 +59,7 @@ Completely remove the service from the system.
 
 ### macOS (LaunchAgent)
 - **Service File**: `~/Library/LaunchAgents/com.iptw.plist`
+- **Command**: `iptw -force -server -port 32782`
 - **Log Files**: 
   - Output: `~/Library/Logs/iptw.out.log`
   - Errors: `~/Library/Logs/iptw.err.log`
@@ -49,6 +68,7 @@ Completely remove the service from the system.
 
 ### Linux (systemd user service)
 - **Service File**: `~/.config/systemd/user/iptw.service`
+- **Command**: `iptw -force -server -port 32782`
 - **Auto-start**: Starts automatically on user login
 - **Management**: Uses `systemctl --user` commands
 - **Enable Lingering**: For service to start without login:
@@ -58,7 +78,8 @@ Completely remove the service from the system.
 
 ### Windows (System Service)
 - **Service Name**: `iptw`
-- **Display Name**: `IP Travel Wallpaper`
+- **Display Name**: `IP Travel Wallpaper Server`
+- **Command**: `iptw -force -server -port 32782`
 - **Auto-start**: Starts automatically on system boot
 - **Management**: Uses Windows Service Control Manager (`sc` commands)
 - **Permissions**: May require administrator privileges
@@ -67,10 +88,52 @@ Completely remove the service from the system.
 
 When running as a service, iptw:
 - Runs with the `-force` flag to bypass singleton checks
+- Runs with the `-server` flag to enable HTTP statistics server
+- Uses port `32782` for the HTTP server (configurable)
 - Continuously monitors network connections
 - Updates the desktop wallpaper based on discovered countries
+- Provides HTTP statistics server on port 32782
 - Automatically restarts on failure (platform-dependent)
 - Logs activity to platform-specific locations
+
+## HTTP Statistics Server
+
+When running as a service, iptw provides an HTTP server on port 32782 with the following endpoints:
+
+- **Health Check**: `GET /health` - Service health status
+- **Statistics**: `GET /stats` - Current network statistics and wallpaper info
+- **Achievements**: `GET /achievements` - Unlocked achievements
+- **Countries**: `GET /countries` - Discovered countries with details
+
+You can access these endpoints via:
+```bash
+# Check if service is healthy
+curl http://localhost:32782/health
+
+# Get current statistics
+curl http://localhost:32782/stats
+
+# View achievements
+curl http://localhost:32782/achievements
+
+# List countries
+curl http://localhost:32782/countries
+```
+
+Or use the client mode:
+```bash
+# View statistics
+iptw -client
+
+# Watch live updates
+iptw -client -watch
+
+# View achievements
+iptw -client -achievements
+
+# View countries
+iptw -client -countries
+```
 
 ## Troubleshooting
 
@@ -79,10 +142,11 @@ When running as a service, iptw:
 2. View logs (platform-specific locations above)
 3. Ensure executable has proper permissions
 4. Try manual start: `iptw -start-service`
+5. **Windows**: Ensure user is logged in (required for desktop wallpaper access)
 
 ### Permission Issues
 - **macOS/Linux**: Service runs under current user account
-- **Windows**: May require administrator privileges for installation
+- **Windows**: May require administrator privileges for installation; service runs as installing user and needs user to be logged in for desktop access
 
 ### Service Conflicts
 - Only one instance of iptw can run at a time

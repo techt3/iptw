@@ -89,6 +89,65 @@ func (gs *GameState) AddCountryHit(country string) {
 	}
 }
 
+// AddCountryHitWithTargetCheck adds a hit to a country and returns if it became boring and was the target
+func (gs *GameState) AddCountryHitWithTargetCheck(country string) (becameBoring bool, wasTarget bool) {
+	gs.mutex.Lock()
+	defer gs.mutex.Unlock()
+
+	if gs.countries[country] == nil {
+		gs.countries[country] = &CountryGameState{}
+	}
+
+	countryState := gs.countries[country]
+	if !countryState.Boring {
+		countryState.HitCount++
+		countryState.LastHit = time.Now()
+
+		// Mark as boring if hits >= 10
+		if countryState.HitCount >= 10 {
+			countryState.Boring = true
+			becameBoring = true
+			wasTarget = gs.targetCountry == country
+			
+			if wasTarget {
+				// Clear the target since it's now boring
+				gs.targetCountry = ""
+				gs.targetSetAt = time.Time{}
+			}
+		}
+	}
+	
+	return becameBoring, wasTarget
+}
+
+// MarkCountryAsBoring marks a country as boring and returns whether it was the target country
+func (gs *GameState) MarkCountryAsBoring(country string) (wasTarget bool, targetCountry string) {
+	gs.mutex.Lock()
+	defer gs.mutex.Unlock()
+
+	if gs.countries[country] == nil {
+		gs.countries[country] = &CountryGameState{}
+	}
+
+	countryState := gs.countries[country]
+	if !countryState.Boring {
+		countryState.Boring = true
+		countryState.LastHit = time.Now()
+		
+		// Check if this was the target country
+		wasTarget = gs.targetCountry == country
+		targetCountry = gs.targetCountry
+		
+		if wasTarget {
+			// Clear the target since it's now boring
+			gs.targetCountry = ""
+			gs.targetSetAt = time.Time{}
+		}
+	}
+	
+	return wasTarget, targetCountry
+}
+
 // GetCountryState returns the state of a country
 func (gs *GameState) GetCountryState(country string) *CountryGameState {
 	gs.mutex.RLock()
@@ -112,6 +171,32 @@ func (gs *GameState) HasCountry(country string) bool {
 
 	_, exists := gs.countries[country]
 	return exists
+}
+
+// GetCountries returns a copy of the countries map for server access
+func (gs *GameState) GetCountries() map[string]*CountryGameState {
+	gs.mutex.RLock()
+	defer gs.mutex.RUnlock()
+
+	countries := make(map[string]*CountryGameState)
+	for name, state := range gs.countries {
+		countries[name] = &CountryGameState{
+			HitCount: state.HitCount,
+			Boring:   state.Boring,
+			LastHit:  state.LastHit,
+		}
+	}
+	return countries
+}
+
+// RLock provides read access to the mutex for server operations
+func (gs *GameState) RLock() {
+	gs.mutex.RLock()
+}
+
+// RUnlock provides read unlock for the mutex
+func (gs *GameState) RUnlock() {
+	gs.mutex.RUnlock()
 }
 
 // GetCountryColor returns the color for a country based on its hit count
@@ -151,6 +236,7 @@ type App struct {
 	naturalEarth *resources.NaturalEarthData
 	achievements *achievements.AchievementManager
 	fontManager  *resources.FontManager
+	flagManager  *resources.FlagManager
 }
 
 // NewApp creates a new application instance
@@ -178,6 +264,15 @@ func NewApp(cfg *config.Config, geoipDB *geoip.Database, monitor *network.Monito
 		return nil, fmt.Errorf("failed to load fonts: %w", err)
 	}
 
+	// Load flag bitmaps (optional - if failed, flags won't be used for boring countries)
+	flagManager, err := resources.LoadFlags()
+	if err != nil {
+		slog.Warn("Failed to load flag bitmaps - flag backgrounds will not be available", "error", err)
+		flagManager = nil // Continue without flags
+	} else {
+		slog.Info("Flag bitmaps loaded successfully", "count", len(flagManager.ListFlags()))
+	}
+
 	return &App{
 		config:       cfg,
 		geoip:        geoipDB,
@@ -188,6 +283,7 @@ func NewApp(cfg *config.Config, geoipDB *geoip.Database, monitor *network.Monito
 		naturalEarth: naturalEarth,
 		achievements: achievements.NewAchievementManager(),
 		fontManager:  fontManager,
+		flagManager:  flagManager,
 	}, nil
 }
 
@@ -263,8 +359,9 @@ func (a *App) loadWorldMap() error {
 
 	// Create initial empty hit map for rendering
 	hitCountries := make(map[string]int)
+	boringCountries := a.getBoringCountries()
 
-	img, err := resources.RenderNaturalEarthMap(a.naturalEarth, width, height, a.config.Black, hitCountries, "")
+	img, err := resources.RenderNaturalEarthMap(a.naturalEarth, width, height, a.config.Black, hitCountries, "", a.flagManager, boringCountries)
 	if err != nil {
 		return fmt.Errorf("failed to render Natural Earth map: %w", err)
 	}
@@ -298,7 +395,7 @@ func (a *App) targetSelectionLoop() {
 	for a.running {
 		<-ticker.C
 		a.SelectRandomTargetCountry()
-		slog.Info("New target country selected", "country", a.gameState.targetCountry)
+		slog.Debug("New target country selected", "country", a.gameState.targetCountry)
 	}
 }
 
@@ -388,8 +485,33 @@ func (a *App) generateAndDisplayMap() error {
 			// Check if this is the first visit to this country
 			wasFirstVisit := !a.gameState.HasCountry(countryName)
 
-			a.gameState.AddCountryHit(countryName)
+			// Use the new method that checks for target status
+			becameBoring, wasTarget := a.gameState.AddCountryHitWithTargetCheck(countryName)
 			recentCountries[countryName] = true
+
+			// Handle fastest traveler achievement if country became boring and was target
+			if becameBoring && wasTarget {
+				achievementID := a.achievements.UnlockFastestTravelerAchievement(countryName)
+				
+				if achievementID != "" {
+					slog.Info("🚀 Fastest Traveler Achievement earned automatically!",
+						"country", countryName,
+						"achievement_id", achievementID,
+						"reason", "reached_10_hits_while_target",
+					)
+				}
+				
+				// Immediately select a new target country
+				a.SelectRandomTargetCountry()
+				
+				newTarget, _ := a.gameState.GetTargetCountry()
+				if newTarget != "" {
+					slog.Info("🎯 New target selected after automatic fastest traveler achievement",
+						"new_target", newTarget,
+						"previous_target", countryName,
+					)
+				}
+			}
 
 			// Update achievements if this was the first visit to this country
 			if wasFirstVisit {
@@ -418,8 +540,11 @@ func (a *App) generateAndDisplayMap() error {
 		targetCountry, _ := a.gameState.GetTargetCountry()
 		a.gameState.mutex.RUnlock()
 
+		// Get boring countries for flag backgrounds
+		boringCountries := a.getBoringCountries()
+
 		// Render map with Natural Earth data
-		outputImg, err = resources.RenderNaturalEarthMap(a.naturalEarth, width, height, a.config.Black, hitCountries, targetCountry)
+		outputImg, err = resources.RenderNaturalEarthMap(a.naturalEarth, width, height, a.config.Black, hitCountries, targetCountry, a.flagManager, boringCountries)
 		if err != nil {
 			logging.LogError("render Natural Earth map", err)
 			return err
@@ -573,18 +698,33 @@ func (a *App) drawGameStatusRectangle(img *image.RGBA, mapWidth, mapHeight int) 
 		rectHeight = padding*3 + len(lines)*lineHeight // Recalculate with new line height
 	}
 
-	// Position the rectangle at bottom-left corner with relative margins
-	leftMargin := int(float64(mapWidth) * 0.03)    // 3% of image width
-	bottomMargin := int(float64(mapHeight) * 0.15) // 15% of image height
-	rectX := leftMargin
-	rectY := mapHeight - rectHeight - bottomMargin
+	// Position the rectangle - use configured position if available, otherwise use auto positioning
+	var rectX, rectY int
 
-	// Ensure rectangle fits within image bounds
-	if rectY < 0 {
-		rectY = int(float64(mapHeight) * 0.05) // If too tall, position from top with 5% margin
-	}
-	if rectX+rectWidth > mapWidth {
-		rectX = mapWidth - rectWidth - int(float64(mapWidth)*0.02) // 2% margin from right edge
+	if a.config.StatsX >= 0 && a.config.StatsY >= 0 {
+		// Use manually configured position
+		rectX = a.config.StatsX
+		rectY = a.config.StatsY
+
+		// Ensure the rectangle fits within the image bounds when using manual positioning
+		if rectX+rectWidth > mapWidth {
+			rectX = mapWidth - rectWidth
+		}
+		if rectX < 0 {
+			rectX = 0
+		}
+		if rectY+rectHeight > mapHeight {
+			rectY = mapHeight - rectHeight
+		}
+		if rectY < 0 {
+			rectY = 0
+		}
+	} else {
+		// Use automatic positioning (original behavior) at bottom-left corner with relative margins
+		leftMargin := int(float64(mapWidth) * 0.15)    // 15% of image width
+		bottomMargin := int(float64(mapHeight) * 0.15) // 15% of image height
+		rectX = leftMargin
+		rectY = mapHeight - rectHeight - bottomMargin
 	}
 
 	// Use the simple game info rectangle function from resources package
@@ -769,13 +909,13 @@ func (a *App) logGameStats() {
 	targetSetAt := a.gameState.targetSetAt
 	a.gameState.mutex.RUnlock()
 
-	slog.Info("=== GAME STATISTICS ===")
+	slog.Debug("=== GAME STATISTICS ===")
 
 	// Log target country information
 	if targetCountry != "" {
 		timeRemaining := time.Duration(a.config.TargetInterval)*time.Minute - time.Since(targetSetAt)
 		if timeRemaining > 0 {
-			slog.Info("Current target",
+			slog.Debug("Current target",
 				"country", targetCountry,
 				"minutes_remaining", timeRemaining.Minutes(),
 			)
@@ -785,7 +925,7 @@ func (a *App) logGameStats() {
 			)
 		}
 	} else {
-		slog.Info("No active target - all countries hit")
+		slog.Debug("No active target - all countries hit")
 	}
 
 	a.gameState.mutex.RLock()
@@ -797,26 +937,15 @@ func (a *App) logGameStats() {
 
 		if state.Boring {
 			occupied++
-			slog.Info("Country boring",
+			slog.Debug("Country boring",
 				"country", country,
 				"hits", state.HitCount,
 				"last_hit", state.LastHit.Format("15:04:05"),
 			)
-		} else if state.HitCount > 0 {
-			status := "LOW"
-			switch {
-			case state.HitCount >= 7:
-				status = "CRITICAL"
-			case state.HitCount >= 4:
-				status = "HIGH"
-			case state.HitCount >= 2:
-				status = "ACTIVE"
-			}
-
-			slog.Info("Country status",
+		} else {
+			slog.Debug("Country interesting",
 				"country", country,
 				"hits", state.HitCount,
-				"status", status,
 				"last_hit", state.LastHit.Format("15:04:05"),
 			)
 		}
@@ -829,7 +958,7 @@ func (a *App) logGameStats() {
 		slog.Info("No countries visited yet - start browsing to begin your virtual travels!")
 	}
 
-	slog.Info("=== END STATISTICS ===")
+	slog.Debug("=== END STATISTICS ===")
 }
 
 // ResetGame resets the game state
@@ -941,5 +1070,59 @@ func (a *App) logHit(conn network.Connection, location *geoip.Location, mapWidth
 		logging.LogOvervisited(location.Country)
 	} else if currentHits+1 >= 7 {
 		logging.LogCritical(location.Country, currentHits+1)
+	}
+}
+
+// GetGameState returns a pointer to the game state for server access
+func (a *App) GetGameState() *GameState {
+	return a.gameState
+}
+
+// GetAchievementManager returns a pointer to the achievement manager for server access
+func (a *App) GetAchievementManager() *achievements.AchievementManager {
+	return a.achievements
+}
+
+// getBoringCountries returns a map of countries that are marked as boring
+func (a *App) getBoringCountries() map[string]bool {
+	a.gameState.mutex.RLock()
+	defer a.gameState.mutex.RUnlock()
+
+	boringCountries := make(map[string]bool)
+	for countryName, state := range a.gameState.countries {
+		if state.Boring {
+			boringCountries[countryName] = true
+		}
+	}
+	return boringCountries
+}
+
+// HandleFastestTravelerAchievement handles the logic for fastest traveler achievements
+// This should be called when a user marks a country as boring
+func (a *App) HandleFastestTravelerAchievement(countryName string) {
+	// Check if this country was the target and mark it as boring
+	wasTarget, _ := a.gameState.MarkCountryAsBoring(countryName)
+	
+	if wasTarget {
+		// Unlock the fastest traveler achievement for this country
+		achievementID := a.achievements.UnlockFastestTravelerAchievement(countryName)
+		
+		if achievementID != "" {
+			slog.Info("🚀 Fastest Traveler Achievement earned!",
+				"country", countryName,
+				"achievement_id", achievementID,
+			)
+		}
+		
+		// Immediately select a new target country
+		a.SelectRandomTargetCountry()
+		
+		newTarget, _ := a.gameState.GetTargetCountry()
+		if newTarget != "" {
+			slog.Info("🎯 New target selected after fastest traveler achievement",
+				"new_target", newTarget,
+				"previous_target", countryName,
+			)
+		}
 	}
 }

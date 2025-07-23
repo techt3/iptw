@@ -15,6 +15,7 @@ type ServiceManager struct {
 	Description    string
 	ExecutablePath string
 	WorkingDir     string
+	ServerPort     string
 }
 
 // NewServiceManager creates a new service manager instance
@@ -28,11 +29,22 @@ func NewServiceManager() (*ServiceManager, error) {
 
 	return &ServiceManager{
 		ServiceName:    "iptw",
-		DisplayName:    "IP Travel Wallpaper",
-		Description:    "IP Travel Wallpaper background service for dynamic desktop wallpapers based on network connections",
+		DisplayName:    "IP Travel Wallpaper Server",
+		Description:    "IP Travel Wallpaper background service with HTTP statistics server for dynamic desktop wallpapers based on network connections",
 		ExecutablePath: execPath,
 		WorkingDir:     workingDir,
+		ServerPort:     "32782", // Default server port
 	}, nil
+}
+
+// NewServiceManagerWithPort creates a new service manager instance with custom port
+func NewServiceManagerWithPort(port string) (*ServiceManager, error) {
+	sm, err := NewServiceManager()
+	if err != nil {
+		return nil, err
+	}
+	sm.ServerPort = port
+	return sm, nil
 }
 
 // Install installs the service on the current platform

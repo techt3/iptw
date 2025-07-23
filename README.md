@@ -25,6 +25,7 @@ The game rewards curiosity and geographic diversity over convenience, encouragin
 - **Exploration Incentives**: 
   - **Target Countries**: Red borders highlight unvisited countries, encouraging global exploration
   - **Achievement System**: Unlock achievements by visiting all countries in geographic regions
+  - **Fastest Traveler Achievements**: Special rewards for marking target countries as boring quickly
   - **Discovery Rewards**: Special recognition for finding rare hosting locations
 - **Real-time Visualization**: Watch your virtual travel map expand as you browse, with live connection points
 - **Wallpaper Generation**: Your journey becomes a personalized, ever-changing desktop background
@@ -74,6 +75,8 @@ The modern internet is dominated by a few major hosting providers, creating invi
 ### Cross-Platform Support
 IPTW runs natively on **macOS**, **Linux**, and **Windows** with automatic platform detection for network monitoring.
 
+
+
 ### Self-Contained Application
 - **No Setup Required**: Single executable contains all dependencies
 - **No External Downloads**: Everything is embedded in the binary
@@ -86,6 +89,7 @@ IPTW runs natively on **macOS**, **Linux**, and **Windows** with automatic platf
 3. Run `iptw` from terminal/command prompt
 4. Start browsing the internet to begin your virtual travels
 5. Watch your desktop wallpaper update with your global journey
+
 
 ### Background Service (Recommended)
 For continuous automatic operation, install iptw as a background service:
@@ -105,12 +109,130 @@ For continuous automatic operation, install iptw as a background service:
 ./iptw -uninstall-service
 ```
 
+## Fastest Traveler Achievement System 🚀
+
+### New Feature: Strategic Country Targeting
+IPTW now includes a dynamic achievement system that rewards strategic gameplay when dealing with target countries:
+
+#### How It Works
+- **Target Countries**: The game automatically selects random unvisited countries as targets (highlighted with red borders)
+- **Fastest Traveler Achievement**: When you mark a target country as "boring," you earn a unique achievement
+- **Immediate Target Rotation**: A new target is selected instantly after earning the achievement
+
+#### Two Ways to Earn
+1. **Automatic**: Visit a target country 10 times until it becomes boring automatically
+2. **Manual**: Use the web API to manually mark a target country as boring
+
+#### API Usage
+```bash
+# Mark the current target country as boring
+curl -X POST http://localhost:32782/countries/boring \
+  -H "Content-Type: application/json" \
+  -d '{"country": "United States"}'
+```
+
+#### Benefits
+- **Strategic Gameplay**: Encourages focused targeting of specific countries
+- **Unique Achievements**: Each country gets its own "Fastest Traveler to [Country]" achievement
+- **Dynamic Content**: Achievements are created on-the-fly as you play
+- **Competitive Element**: Race to mark targets before they naturally become boring
+
+#### Testing
+Use the included test files to try the new feature:
+```bash
+# Command line test
+./test_fastest_traveler.sh
+
+# Web interface test
+open test_fastest_traveler.html
+```
+
+## Configuration
+
+IPTW uses a configuration file to customize behavior and positioning. Configuration files are located at:
+- **macOS/Linux**: `~/.config/iptw/iptwrc`
+- **Windows**: `%USERPROFILE%\.config\iptw\iptwrc`
+
+The configuration file is automatically created with default values on first run. Common parameters include:
+
+### Display Settings
+- `map_width`: Width of the world map in pixels (default: 1000)
+- `auto_detect_screen`: Automatically detect screen size (default: true)
+- `black`: Use dark theme for map colors (default: false)
+
+### Game Statistics Positioning
+For users with smaller screens where game statistics may be drawn outside the visible area, you can manually position the stats rectangle:
+
+- `stats_x`: X position of the game statistics rectangle (default: -1 for auto-positioning)
+- `stats_y`: Y position of the game statistics rectangle (default: -1 for auto-positioning)
+
+**Auto-positioning behavior** (when `stats_x` and `stats_y` are set to -1):
+- Statistics are positioned in the bottom-left corner with automatic margins
+- Position is calculated as a percentage of screen size for responsiveness
+
+**Manual positioning** (when `stats_x` and `stats_y` are set to specific values):
+- Statistics are positioned exactly at the specified pixel coordinates
+- Values are constrained to keep the rectangle within screen bounds
+- Useful for smaller screens or specific layout preferences
+
+**Example configuration for manual positioning:**
+```
+stats_x 50    # Position stats 50 pixels from left edge
+stats_y 100   # Position stats 100 pixels from top edge
+```
+
+### Performance Settings
+- `update_interval`: Seconds between wallpaper updates (default: 1)
+- `target_interval`: Minutes between target country changes (default: 5)
+- `log_level`: Logging verbosity: debug, info, warn, error (default: info)
+
 **Cross-Platform Service Support:**
 - **macOS**: LaunchAgent (starts on user login)
 - **Linux**: systemd user service (starts on login)  
 - **Windows**: Windows Service (starts on system boot)
 
 📖 **For detailed service management, see [SERVICE.md](SERVICE.md)**
+
+## Server-Client Mode 
+
+IPTW now supports server-client functionality for remote monitoring and statistics sharing:
+
+### Server Mode 
+Run IPTW with a built-in HTTP statistics server:
+```bash
+# Start with statistics server on port 32782
+./iptw -server
+
+# Use custom port
+./iptw -server -port 9090
+```
+
+### Client Mode
+Connect to a remote IPTW server to view statistics:
+```bash
+# View stats from default server (localhost:32782)
+./iptw -client
+
+# Connect to remote server
+./iptw -client -server-url http://192.168.1.100:32782
+
+# Show achievements
+./iptw -client -achievements
+
+# Show country details
+./iptw -client -countries
+
+# Watch mode: continuously poll for updates
+./iptw -client -watch -interval 30
+```
+
+### Use Cases
+- **Remote Monitoring**: Monitor IPTW statistics from another machine
+- **Dashboard Integration**: JSON API for custom dashboards (`/stats/json`)
+- **Achievement Tracking**: Monitor progress across multiple instances
+- **Team Challenges**: Share statistics for group competitions
+
+📖 **For detailed server-client documentation, see [SERVER-CLIENT.md](SERVER-CLIENT.md)**
 
 ## Troubleshooting
 
@@ -203,6 +325,9 @@ IPTW incorporates several high-quality open resources. We gratefully acknowledge
 ### Additional Resources
 - **GeoJSON Maps**: Country boundary processing assisted by [geojson-maps.kyd.au](https://geojson-maps.kyd.au/)
 
+### Flags
+  - **Source**: [Flagpedia](https://flagpedia.net/)
+  - **License**: Flag images are in the public domain (exempt from copyright). They are completely free for non-commercial and even commercial use. (https://flagpedia.net/about)
 ## Contributing
 
 We welcome contributions to help make digital exploration more accessible and diverse! Areas where help is needed:

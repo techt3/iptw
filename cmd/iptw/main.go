@@ -5,12 +5,15 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"time"
 
+	"iptw/internal/client"
 	"iptw/internal/config"
 	"iptw/internal/geoip"
 	"iptw/internal/gui"
 	"iptw/internal/logging"
 	"iptw/internal/network"
+	"iptw/internal/server"
 	"iptw/internal/service"
 	"iptw/internal/singleton"
 )
@@ -32,6 +35,16 @@ func main() {
 	var statusService bool
 	var showVersion bool
 
+	// Server/Client mode flags
+	var serverMode bool
+	var serverPort string
+	var clientMode bool
+	var clientServer string
+	var clientWatch bool
+	var clientInterval int
+	var clientAchievements bool
+	var clientCountries bool
+
 	flag.StringVar(&configPath, "config", "", "Path to config file (default: ~/.config/iptw/iptwrc)")
 	flag.BoolVar(&forceStart, "force", false, "Force start even if another instance appears to be running")
 	flag.BoolVar(&installService, "install-service", false, "Install as background service (macOS/Linux/Windows)")
@@ -40,6 +53,16 @@ func main() {
 	flag.BoolVar(&stopService, "stop-service", false, "Stop the background service")
 	flag.BoolVar(&statusService, "service-status", false, "Check service status")
 	flag.BoolVar(&showVersion, "version", false, "Show version information")
+
+	// Server/Client mode flags
+	flag.BoolVar(&serverMode, "server", true, "Run in server mode (with HTTP statistics server)")
+	flag.StringVar(&serverPort, "port", "32782", "Server port for statistics HTTP server")
+	flag.BoolVar(&clientMode, "client", false, "Run in client mode (fetch stats from remote server)")
+	flag.StringVar(&clientServer, "server-url", "http://localhost:32782", "Server URL for client mode")
+	flag.BoolVar(&clientWatch, "watch", false, "Watch mode: continuously poll and display stats")
+	flag.IntVar(&clientInterval, "interval", 30, "Poll interval in seconds for watch mode")
+	flag.BoolVar(&clientAchievements, "achievements", false, "Show achievements in client mode")
+	flag.BoolVar(&clientCountries, "countries", false, "Show country details in client mode")
 	flag.Parse()
 
 	// Handle version request
@@ -105,6 +128,49 @@ func main() {
 		}
 	}
 
+	// Handle client mode
+	if clientMode {
+		c := client.NewClient(clientServer)
+
+		// First check if server is healthy
+		if err := c.CheckHealth(); err != nil {
+			fmt.Fprintf(os.Stderr, "Server health check failed: %v\n", err)
+			os.Exit(1)
+		}
+
+		switch {
+		case clientWatch:
+			interval := time.Duration(clientInterval) * time.Second
+			if err := c.WatchStats(interval); err != nil {
+				fmt.Fprintf(os.Stderr, "Watch mode failed: %v\n", err)
+				os.Exit(1)
+			}
+			return
+
+		case clientAchievements:
+			if err := c.PrintAchievements(); err != nil {
+				fmt.Fprintf(os.Stderr, "Failed to fetch achievements: %v\n", err)
+				os.Exit(1)
+			}
+			return
+
+		case clientCountries:
+			if err := c.PrintCountries(); err != nil {
+				fmt.Fprintf(os.Stderr, "Failed to fetch countries: %v\n", err)
+				os.Exit(1)
+			}
+			return
+
+		default:
+			// Default: show statistics
+			if err := c.PrintStats(); err != nil {
+				fmt.Fprintf(os.Stderr, "Failed to fetch stats: %v\n", err)
+				os.Exit(1)
+			}
+			return
+		}
+	}
+
 	// Create singleton lock to ensure only one instance runs
 	lock, err := singleton.NewLock("iptw")
 	if err != nil {
@@ -160,9 +226,29 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Println("Starting IP Travel Wallpaper (iptw)...")
-	if err := app.Run(); err != nil {
-		slog.Error("Application error", "error", err)
-		os.Exit(1)
+	// Start in server mode if requested
+	if serverMode {
+		fmt.Printf("Starting IP Travel Wallpaper (iptw) with statistics server on port %s...\n", serverPort)
+
+		// Start the statistics server in a goroutine
+		srv := server.NewServer(app, cfg, serverPort)
+		go func() {
+			if err := srv.Start(); err != nil {
+				slog.Error("Statistics server error", "error", err)
+			}
+		}()
+
+		// Run the main application
+		if err := app.Run(); err != nil {
+			slog.Error("Application error", "error", err)
+			os.Exit(1)
+		}
+	} else {
+		// Default mode: run the GUI application without server
+		fmt.Println("Starting IP Travel Wallpaper (iptw)...")
+		if err := app.Run(); err != nil {
+			slog.Error("Application error", "error", err)
+			os.Exit(1)
+		}
 	}
 }

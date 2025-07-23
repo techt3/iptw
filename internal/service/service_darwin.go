@@ -35,6 +35,9 @@ func (sm *ServiceManager) installMacOS() error {
     <array>
         <string>%s</string>
         <string>-force</string>
+        <string>-server</string>
+        <string>-port</string>
+        <string>%s</string>
     </array>
     <key>WorkingDirectory</key>
     <string>%s</string>
@@ -52,7 +55,7 @@ func (sm *ServiceManager) installMacOS() error {
     <key>ProcessType</key>
     <string>Background</string>
 </dict>
-</plist>`, sm.ServiceName, sm.ExecutablePath, sm.WorkingDir,
+</plist>`, sm.ServiceName, sm.ExecutablePath, sm.ServerPort, sm.WorkingDir,
 		currentUser.HomeDir, sm.ServiceName,
 		currentUser.HomeDir, sm.ServiceName)
 
@@ -70,6 +73,7 @@ func (sm *ServiceManager) installMacOS() error {
 	fmt.Printf("✅ Service installed successfully on macOS\n")
 	fmt.Printf("   Plist file: %s\n", plistPath)
 	fmt.Printf("   Service will start automatically on login\n")
+	fmt.Printf("   HTTP statistics server will be available on port %s\n", sm.ServerPort)
 
 	return nil
 }

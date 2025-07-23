@@ -1,5 +1,4 @@
-location_x 20
-location_y 500
+
 map_width 1000
 auto_detect_screen true
 set_as_background true
@@ -8,3 +7,5 @@ update_interval 1
 log_hits true
 log_coordinates true
 verbose_logging false
+stats_x -1
+stats_y -1

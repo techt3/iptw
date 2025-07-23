@@ -105,7 +105,7 @@ func LogCritical(country string, visits int) {
 
 // LogTarget logs target country selection
 func LogTarget(country string, remaining int) {
-	slog.Info("New target selected",
+	slog.Debug("New target selected",
 		"target_country", country,
 		"unhit_remaining", remaining,
 	)
@@ -113,7 +113,7 @@ func LogTarget(country string, remaining int) {
 
 // LogGameStats logs travel statistics
 func LogGameStats(totalCountries, overvisitedCountries, totalVisits int, overvisitedRate float64) {
-	slog.Info("Travel statistics",
+	slog.Debug("Travel statistics",
 		"countries_visited", totalCountries,
 		"countries_overvisited", overvisitedCountries,
 		"total_visits", totalVisits,
@@ -123,7 +123,7 @@ func LogGameStats(totalCountries, overvisitedCountries, totalVisits int, overvis
 
 // LogScreen logs screen detection information
 func LogScreen(width, height, displays int) {
-	slog.Info("Screen detected",
+	slog.Debug("Screen detected",
 		"width", width,
 		"height", height,
 		"displays", displays,
