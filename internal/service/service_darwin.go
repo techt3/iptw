@@ -35,7 +35,6 @@ func (sm *ServiceManager) installMacOS() error {
     <array>
         <string>%s</string>
         <string>-force</string>
-        <string>-server</string>
         <string>-port</string>
         <string>%s</string>
     </array>
