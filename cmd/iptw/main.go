@@ -44,6 +44,7 @@ func main() {
 	var clientInterval int
 	var clientAchievements bool
 	var clientCountries bool
+	var clientShutdown bool
 
 	flag.StringVar(&configPath, "config", "", "Path to config file (default: ~/.config/iptw/iptwrc)")
 	flag.BoolVar(&forceStart, "force", false, "Force start even if another instance appears to be running")
@@ -63,6 +64,7 @@ func main() {
 	flag.IntVar(&clientInterval, "interval", 30, "Poll interval in seconds for watch mode")
 	flag.BoolVar(&clientAchievements, "achievements", false, "Show achievements in client mode")
 	flag.BoolVar(&clientCountries, "countries", false, "Show country details in client mode")
+	flag.BoolVar(&clientShutdown, "shutdown", false, "Shutdown the remote server in client mode")
 	flag.Parse()
 
 	// Handle version request
@@ -159,6 +161,14 @@ func main() {
 				fmt.Fprintf(os.Stderr, "Failed to fetch countries: %v\n", err)
 				os.Exit(1)
 			}
+			return
+
+		case clientShutdown:
+			if err := c.Shutdown(); err != nil {
+				fmt.Fprintf(os.Stderr, "Failed to shutdown server: %v\n", err)
+				os.Exit(1)
+			}
+			fmt.Printf("Server shutdown request sent successfully to %s\n", clientServer)
 			return
 
 		default:

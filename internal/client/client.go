@@ -220,3 +220,33 @@ func (c *Client) WatchStats(interval time.Duration) error {
 
 	return nil
 }
+
+// Shutdown sends a shutdown request to the server
+func (c *Client) Shutdown() error {
+	url := c.serverURL + "/shutdown"
+
+	client := &http.Client{Timeout: c.timeout}
+	resp, err := client.Post(url, "application/json", nil)
+	if err != nil {
+		return fmt.Errorf("failed to send shutdown request to %s: %w", url, err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("shutdown request failed with status %d: %s", resp.StatusCode, resp.Status)
+	}
+
+	var response map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return fmt.Errorf("failed to parse shutdown response: %w", err)
+	}
+
+	if success, ok := response["success"].(bool); !ok || !success {
+		if errorMsg, exists := response["error"]; exists {
+			return fmt.Errorf("shutdown failed: %v", errorMsg)
+		}
+		return fmt.Errorf("shutdown failed: %v", response)
+	}
+
+	return nil
+}

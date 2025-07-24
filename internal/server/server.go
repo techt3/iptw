@@ -41,6 +41,7 @@ func (s *Server) Start() error {
 	http.HandleFunc("/countries", s.handleCountries)
 	http.HandleFunc("/countries/boring", s.handleMarkBoring)
 	http.HandleFunc("/wallpaper/restore", s.handleRestoreWallpaper)
+	http.HandleFunc("/shutdown", s.handleShutdown)
 	http.HandleFunc("/health", s.handleHealth)
 
 	addr := ":" + s.port
@@ -53,6 +54,7 @@ func (s *Server) Start() error {
 	slog.Info("  GET /countries  - Country visit details")
 	slog.Info("  POST /countries/boring - Mark a country as boring")
 	slog.Info("  POST /wallpaper/restore - Restore original wallpaper")
+	slog.Info("  POST /shutdown   - Shutdown the server")
 	slog.Info("  GET /health     - Health check")
 
 	return http.ListenAndServe(addr, nil)
@@ -69,6 +71,8 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "  GET /achievements - Achievement details\n")
 	fmt.Fprintf(w, "  GET /countries  - Country visit details\n")
 	fmt.Fprintf(w, "  POST /countries/boring - Mark a country as boring\n")
+	fmt.Fprintf(w, "  POST /wallpaper/restore - Restore original wallpaper\n")
+	fmt.Fprintf(w, "  POST /shutdown   - Shutdown the server\n")
 	fmt.Fprintf(w, "  GET /health     - Health check\n")
 	fmt.Fprintf(w, "\nServer time: %s\n", time.Now().Format("2006-01-02 15:04:05"))
 }
@@ -336,4 +340,28 @@ func (s *Server) handleRestoreWallpaper(w http.ResponseWriter, r *http.Request) 
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+// handleShutdown handles POST requests to shutdown the server
+func (s *Server) handleShutdown(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	slog.Info("Shutdown request received via HTTP endpoint")
+
+	response := map[string]interface{}{
+		"success": true,
+		"message": "Shutdown initiated",
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+
+	// Initiate graceful shutdown in a goroutine to allow response to be sent
+	go func() {
+		time.Sleep(100 * time.Millisecond) // Small delay to ensure response is sent
+		s.app.Shutdown()
+		// Note: The application will exit after Shutdown() completes
+	}()
 }

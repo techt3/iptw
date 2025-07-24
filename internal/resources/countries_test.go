@@ -1,6 +1,8 @@
 package resources
 
 import (
+	"image"
+	"image/color"
 	"sort"
 	"strings"
 	"testing"
@@ -627,4 +629,76 @@ func findSimilarCSVEntries(neName string, csvCountries []Country) []Country {
 	}
 
 	return matches
+}
+
+func TestFillOceanBackground(t *testing.T) {
+	// Test that the ocean background function doesn't panic and produces valid colors
+	width, height := 100, 100
+
+	// Test light theme
+	img := image.NewRGBA(image.Rect(0, 0, width, height))
+	fillOceanBackground(img, width, height, false)
+
+	// Check that pixels are set and have valid ocean-like colors
+	centerColor := img.RGBAAt(width/2, height/2)
+	if centerColor.A == 0 {
+		t.Error("Ocean background should not be transparent")
+	}
+
+	// Ocean should have blue-ish colors (B component should be significant)
+	if centerColor.B < 50 {
+		t.Errorf("Ocean color should be blue-ish, got RGB(%d,%d,%d)", centerColor.R, centerColor.G, centerColor.B)
+	}
+
+	// Test dark theme
+	img2 := image.NewRGBA(image.Rect(0, 0, width, height))
+	fillOceanBackground(img2, width, height, true)
+
+	centerColorDark := img2.RGBAAt(width/2, height/2)
+	if centerColorDark.A == 0 {
+		t.Error("Dark ocean background should not be transparent")
+	}
+
+	// Dark theme should be darker overall
+	lightSum := int(centerColor.R) + int(centerColor.G) + int(centerColor.B)
+	darkSum := int(centerColorDark.R) + int(centerColorDark.G) + int(centerColorDark.B)
+
+	if darkSum >= lightSum {
+		t.Error("Dark theme ocean should be darker than light theme")
+	}
+}
+
+func TestInterpolateColor(t *testing.T) {
+	// Test color interpolation
+	c1 := color.RGBA{R: 0, G: 0, B: 0, A: 255}       // Black
+	c2 := color.RGBA{R: 255, G: 255, B: 255, A: 255} // White
+
+	// Test at 0 (should be c1)
+	result := interpolateColor(c1, c2, 0.0)
+	if result != c1 {
+		t.Errorf("Expected %v at t=0, got %v", c1, result)
+	}
+
+	// Test at 1 (should be c2)
+	result = interpolateColor(c1, c2, 1.0)
+	if result != c2 {
+		t.Errorf("Expected %v at t=1, got %v", c2, result)
+	}
+
+	// Test at 0.5 (should be gray)
+	result = interpolateColor(c1, c2, 0.5)
+	expected := color.RGBA{R: 127, G: 127, B: 127, A: 255} // Mid-gray (with rounding)
+	// Allow for small rounding differences
+	if abs(int(result.R)-int(expected.R)) > 1 ||
+		abs(int(result.G)-int(expected.G)) > 1 ||
+		abs(int(result.B)-int(expected.B)) > 1 {
+		t.Errorf("Expected approximately %v at t=0.5, got %v", expected, result)
+	}
+}
+
+func abs(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
 }

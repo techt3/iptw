@@ -9,9 +9,9 @@ import (
 	"fmt"
 	"image"
 	"image/color"
-	"image/draw"
 	"image/png"
 	"io"
+	"log/slog"
 	"math"
 	"math/rand"
 	"strings"
@@ -63,7 +63,7 @@ type NaturalEarthData struct {
 func (c *CountryData) getAlpha2Code() string {
 	alpha2, err := GetAlpha2ByName(c.Name)
 	if err != nil {
-		fmt.Printf("Warning: failed to load country data: %v\n", err)
+		slog.Warn("failed to load country data for", "name", c.Name, "error", err)
 		return ""
 	}
 	return alpha2
@@ -532,17 +532,22 @@ func (ne *NaturalEarthData) GetCountryBounds(countryName string) (minLat, maxLat
 
 // RenderNaturalEarthMap creates a map image with country boundaries from Natural Earth data
 func RenderNaturalEarthMap(ne *NaturalEarthData, width, height int, black bool, hitCountries map[string]int, targetCountry string, flagManager *FlagManager, boringCountries map[string]bool, recentHitCountries map[string]bool) (image.Image, error) {
+	// Debug: show available flags
+	if flagManager != nil {
+		availableFlags := flagManager.ListFlags()
+		slog.Debug("Available flags", "flags", availableFlags)
+	}
+
+	// Debug: show boring countries
+	if boringCountries != nil {
+		slog.Debug("Boring countries", "countries", boringCountries)
+	}
+
 	// Create the image
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
 
-	// Background color
-	bgColor := color.RGBA{240, 240, 240, 255} // Light background
-	if black {
-		bgColor = color.RGBA{32, 32, 32, 255} // Dark background
-	}
-
-	// Fill background
-	draw.Draw(img, img.Bounds(), &image.Uniform{bgColor}, image.Point{}, draw.Src)
+	// Fill background with ocean gradient waves
+	fillOceanBackground(img, width, height, black)
 
 	// Draw each country
 	for _, country := range ne.Countries {
@@ -550,15 +555,20 @@ func RenderNaturalEarthMap(ne *NaturalEarthData, width, height int, black bool, 
 		isBoring := boringCountries != nil && boringCountries[country.Name]
 
 		if isBoring && flagManager != nil && country.getAlpha2Code() != "" {
+			alpha2 := country.getAlpha2Code()
+			slog.Debug("Country is boring", "name", country.Name, "alpha2", alpha2)
+
 			// Try to get flag for boring country
-			flag := flagManager.GetFlag(country.getAlpha2Code())
+			flag := flagManager.GetFlag(alpha2)
 			if flag != nil {
+				slog.Debug("Found flag for country", "name", country.Name, "alpha2", alpha2)
 				// Check if this boring country was recently hit to apply gamma correction
 				applyGammaCorrection := recentHitCountries != nil && recentHitCountries[country.Name]
 
 				// Draw country with flag background
 				drawCountryWithFlagBackground(img, country.Geometry, flag, width, height, applyGammaCorrection)
 			} else {
+				slog.Warn("No flag found for country", "name", country.Name, "alpha2", alpha2)
 				// Fallback to regular color if no flag found
 				var fillColor color.RGBA
 				if hitCount, exists := hitCountries[country.Name]; exists && hitCount > 0 {
@@ -574,6 +584,9 @@ func RenderNaturalEarthMap(ne *NaturalEarthData, width, height int, black bool, 
 				drawCountryGeometry(img, country.Geometry, fillColor, width, height)
 			}
 		} else {
+			if isBoring {
+				slog.Warn("Country is boring", "name", country.Name, "alpha2", country.getAlpha2Code(), "flagManager", flagManager != nil)
+			}
 			// Regular country drawing logic
 			var fillColor color.RGBA
 			if hitCount, exists := hitCountries[country.Name]; exists && hitCount > 0 {
@@ -596,6 +609,80 @@ func RenderNaturalEarthMap(ne *NaturalEarthData, width, height int, black bool, 
 	}
 
 	return img, nil
+}
+
+// fillOceanBackground fills the background with ocean gradient waves
+func fillOceanBackground(img *image.RGBA, width, height int, dark bool) {
+	// Define ocean colors based on theme
+	var deepOcean, shallowOcean, waveHighlight color.RGBA
+
+	if dark {
+		// Dark theme ocean colors
+		deepOcean = color.RGBA{15, 25, 45, 255}     // Deep dark blue
+		shallowOcean = color.RGBA{25, 40, 70, 255}  // Medium dark blue
+		waveHighlight = color.RGBA{35, 55, 95, 255} // Lighter dark blue
+	} else {
+		// Light theme ocean colors
+		deepOcean = color.RGBA{65, 105, 180, 255}      // Deep ocean blue
+		shallowOcean = color.RGBA{100, 140, 210, 255}  // Medium ocean blue
+		waveHighlight = color.RGBA{135, 175, 235, 255} // Light ocean blue
+	}
+
+	// Create wave pattern using multiple sine waves
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+			// Calculate multiple wave patterns with different frequencies and phases
+			wave1 := math.Sin(float64(x)*0.02+float64(y)*0.015+0) * 0.3
+			wave2 := math.Sin(float64(x)*0.035+float64(y)*0.008+math.Pi/3) * 0.2
+			wave3 := math.Sin(float64(x)*0.01+float64(y)*0.025+math.Pi/6) * 0.15
+
+			// Combine waves and normalize to 0-1 range
+			combinedWave := (wave1 + wave2 + wave3 + 0.65) // Offset to keep mostly positive
+
+			// Add some vertical gradient (deeper at bottom)
+			depthGradient := float64(y) / float64(height) * 0.3
+
+			// Combine wave and depth for final intensity
+			intensity := math.Max(0, math.Min(1, combinedWave+depthGradient))
+
+			// Interpolate between ocean colors based on intensity
+			var finalColor color.RGBA
+			if intensity < 0.33 {
+				// Deep to shallow interpolation
+				t := intensity / 0.33
+				finalColor = interpolateColor(deepOcean, shallowOcean, t)
+			} else if intensity < 0.66 {
+				// Shallow to highlight interpolation
+				t := (intensity - 0.33) / 0.33
+				finalColor = interpolateColor(shallowOcean, waveHighlight, t)
+			} else {
+				// Highlight with some variation
+				t := (intensity - 0.66) / 0.34
+				brighterHighlight := color.RGBA{
+					uint8(math.Min(255, float64(waveHighlight.R)+t*20)),
+					uint8(math.Min(255, float64(waveHighlight.G)+t*20)),
+					uint8(math.Min(255, float64(waveHighlight.B)+t*20)),
+					255,
+				}
+				finalColor = interpolateColor(waveHighlight, brighterHighlight, t)
+			}
+
+			img.Set(x, y, finalColor)
+		}
+	}
+}
+
+// interpolateColor linearly interpolates between two colors
+func interpolateColor(c1, c2 color.RGBA, t float64) color.RGBA {
+	// Clamp t to [0, 1]
+	t = math.Max(0, math.Min(1, t))
+
+	return color.RGBA{
+		R: uint8(float64(c1.R) + t*(float64(c2.R)-float64(c1.R))),
+		G: uint8(float64(c1.G) + t*(float64(c2.G)-float64(c1.G))),
+		B: uint8(float64(c1.B) + t*(float64(c2.B)-float64(c1.B))),
+		A: uint8(float64(c1.A) + t*(float64(c2.A)-float64(c1.A))),
+	}
 }
 
 // getCountryHitColor returns the color for a country based on hit count

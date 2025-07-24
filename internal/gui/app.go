@@ -228,19 +228,20 @@ func (gs *GameState) GetCountryColor(country string) color.RGBA {
 
 // App represents the main application
 type App struct {
-	config            *config.Config
-	geoip             *geoip.Database
-	monitor           *network.Monitor
-	worldMap          image.Image
-	running           bool
-	outputDir         string
-	gameState         *GameState
-	naturalEarth      *resources.NaturalEarthData
-	achievements      *achievements.AchievementManager
-	fontManager       *resources.FontManager
-	flagManager       *resources.FlagManager
-	originalWallpaper string // Path to the backed up original wallpaper
-	wallpaperBackedUp bool   // Flag to track if we've backed up the wallpaper
+	config                 *config.Config
+	geoip                  *geoip.Database
+	monitor                *network.Monitor
+	worldMap               image.Image
+	running                bool
+	outputDir              string
+	gameState              *GameState
+	naturalEarth           *resources.NaturalEarthData
+	achievements           *achievements.AchievementManager
+	fontManager            *resources.FontManager
+	flagManager            *resources.FlagManager
+	originalWallpaper      string // Path to the backed up original wallpaper
+	wallpaperBackedUp      bool   // Flag to track if we've backed up the wallpaper
+	wallpaperBackedUpError error
 }
 
 // NewApp creates a new application instance
@@ -616,10 +617,12 @@ func (a *App) generateAndDisplayMap() error {
 	}
 
 	// Backup original wallpaper before first change
-	if !a.wallpaperBackedUp {
+	if !a.wallpaperBackedUp && a.wallpaperBackedUpError == nil {
 		backupPath, err := background.BackupCurrentWallpaper(a.outputDir)
 		if err != nil {
 			slog.Warn("Failed to backup original wallpaper - restore functionality will not be available", "error", err)
+			a.wallpaperBackedUpError = err
+
 		} else {
 			a.originalWallpaper = backupPath
 			a.wallpaperBackedUp = true
