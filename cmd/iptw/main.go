@@ -226,6 +226,9 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Ensure clean shutdown when the application exits
+	defer app.Shutdown()
+
 	// Start in server mode if requested
 	if serverMode {
 		fmt.Printf("Starting IP Travel Wallpaper (iptw) with statistics server on port %s...\n", serverPort)

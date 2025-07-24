@@ -13,7 +13,9 @@ import (
 	"image/png"
 	"io"
 	"math"
+	"math/rand"
 	"strings"
+	"time"
 
 	"github.com/golang/freetype"
 	"github.com/golang/freetype/truetype"
@@ -529,7 +531,7 @@ func (ne *NaturalEarthData) GetCountryBounds(countryName string) (minLat, maxLat
 }
 
 // RenderNaturalEarthMap creates a map image with country boundaries from Natural Earth data
-func RenderNaturalEarthMap(ne *NaturalEarthData, width, height int, black bool, hitCountries map[string]int, targetCountry string, flagManager *FlagManager, boringCountries map[string]bool) (image.Image, error) {
+func RenderNaturalEarthMap(ne *NaturalEarthData, width, height int, black bool, hitCountries map[string]int, targetCountry string, flagManager *FlagManager, boringCountries map[string]bool, recentHitCountries map[string]bool) (image.Image, error) {
 	// Create the image
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
 
@@ -551,8 +553,11 @@ func RenderNaturalEarthMap(ne *NaturalEarthData, width, height int, black bool, 
 			// Try to get flag for boring country
 			flag := flagManager.GetFlag(country.getAlpha2Code())
 			if flag != nil {
+				// Check if this boring country was recently hit to apply gamma correction
+				applyGammaCorrection := recentHitCountries != nil && recentHitCountries[country.Name]
+
 				// Draw country with flag background
-				drawCountryWithFlagBackground(img, country.Geometry, flag, width, height)
+				drawCountryWithFlagBackground(img, country.Geometry, flag, width, height, applyGammaCorrection)
 			} else {
 				// Fallback to regular color if no flag found
 				var fillColor color.RGBA
@@ -630,8 +635,38 @@ func drawCountryGeometry(img *image.RGBA, geom orb.MultiPolygon, fillColor color
 	}
 }
 
+// applyRandomGammaCorrection applies random gamma correction to a color to indicate recent activity
+func applyRandomGammaCorrection(c color.Color) color.Color {
+	r, g, b, a := c.RGBA()
+
+	// Generate random gamma value between 0.7 and 1.4 for subtle but noticeable effect
+	// Use current time with pixel color for pseudo-randomness that changes per frame
+	seed := (time.Now().UnixNano() / 1000000) + int64(r+g+b) // Changes every millisecond
+	rng := rand.New(rand.NewSource(seed))
+	gamma := 0.7 + rng.Float64()*0.7 // Random gamma between 0.7 and 1.4 (more subtle range)
+
+	// Apply gamma correction
+	// Convert from 16-bit to 8-bit, apply gamma, convert back
+	rNorm := float64(r>>8) / 255.0
+	gNorm := float64(g>>8) / 255.0
+	bNorm := float64(b>>8) / 255.0
+
+	rGamma := math.Pow(rNorm, gamma)
+	gGamma := math.Pow(gNorm, gamma)
+	bGamma := math.Pow(bNorm, gamma)
+
+	// Clamp and convert back to 8-bit
+	rFinal := uint8(math.Min(255, math.Max(0, rGamma*255)))
+	gFinal := uint8(math.Min(255, math.Max(0, gGamma*255)))
+	bFinal := uint8(math.Min(255, math.Max(0, bGamma*255)))
+	aFinal := uint8(a >> 8) // Keep original alpha
+
+	return color.RGBA{rFinal, gFinal, bFinal, aFinal}
+}
+
 // drawCountryWithFlagBackground draws a country's geometry with a flag image as background
-func drawCountryWithFlagBackground(img *image.RGBA, geom orb.MultiPolygon, flag image.Image, width, height int) {
+// If applyGammaCorrection is true, applies random gamma correction to indicate recent activity on boring countries
+func drawCountryWithFlagBackground(img *image.RGBA, geom orb.MultiPolygon, flag image.Image, width, height int, applyGammaCorrection bool) {
 	// Create a temporary mask to determine which pixels belong to the country
 	mask := image.NewAlpha(image.Rect(0, 0, width, height))
 
@@ -711,6 +746,11 @@ func drawCountryWithFlagBackground(img *image.RGBA, geom orb.MultiPolygon, flag 
 
 					// Get flag color at this position
 					flagColor := flag.At(flagX, flagY)
+
+					// Apply random gamma correction if this boring country was recently hit
+					if applyGammaCorrection {
+						flagColor = applyRandomGammaCorrection(flagColor)
+					}
 
 					// Apply flag color to the pixel
 					img.Set(x, y, flagColor)

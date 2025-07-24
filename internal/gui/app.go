@@ -39,8 +39,10 @@ import (
 	"math"
 	"math/rand"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"sync"
+	"syscall"
 	"time"
 
 	"iptw/internal/achievements"
@@ -108,7 +110,7 @@ func (gs *GameState) AddCountryHitWithTargetCheck(country string) (becameBoring 
 			countryState.Boring = true
 			becameBoring = true
 			wasTarget = gs.targetCountry == country
-			
+
 			if wasTarget {
 				// Clear the target since it's now boring
 				gs.targetCountry = ""
@@ -116,7 +118,7 @@ func (gs *GameState) AddCountryHitWithTargetCheck(country string) (becameBoring 
 			}
 		}
 	}
-	
+
 	return becameBoring, wasTarget
 }
 
@@ -133,18 +135,18 @@ func (gs *GameState) MarkCountryAsBoring(country string) (wasTarget bool, target
 	if !countryState.Boring {
 		countryState.Boring = true
 		countryState.LastHit = time.Now()
-		
+
 		// Check if this was the target country
 		wasTarget = gs.targetCountry == country
 		targetCountry = gs.targetCountry
-		
+
 		if wasTarget {
 			// Clear the target since it's now boring
 			gs.targetCountry = ""
 			gs.targetSetAt = time.Time{}
 		}
 	}
-	
+
 	return wasTarget, targetCountry
 }
 
@@ -226,17 +228,19 @@ func (gs *GameState) GetCountryColor(country string) color.RGBA {
 
 // App represents the main application
 type App struct {
-	config       *config.Config
-	geoip        *geoip.Database
-	monitor      *network.Monitor
-	worldMap     image.Image
-	running      bool
-	outputDir    string
-	gameState    *GameState
-	naturalEarth *resources.NaturalEarthData
-	achievements *achievements.AchievementManager
-	fontManager  *resources.FontManager
-	flagManager  *resources.FlagManager
+	config            *config.Config
+	geoip             *geoip.Database
+	monitor           *network.Monitor
+	worldMap          image.Image
+	running           bool
+	outputDir         string
+	gameState         *GameState
+	naturalEarth      *resources.NaturalEarthData
+	achievements      *achievements.AchievementManager
+	fontManager       *resources.FontManager
+	flagManager       *resources.FlagManager
+	originalWallpaper string // Path to the backed up original wallpaper
+	wallpaperBackedUp bool   // Flag to track if we've backed up the wallpaper
 }
 
 // NewApp creates a new application instance
@@ -274,21 +278,34 @@ func NewApp(cfg *config.Config, geoipDB *geoip.Database, monitor *network.Monito
 	}
 
 	return &App{
-		config:       cfg,
-		geoip:        geoipDB,
-		monitor:      monitor,
-		running:      true,
-		outputDir:    outputDir,
-		gameState:    gameState,
-		naturalEarth: naturalEarth,
-		achievements: achievements.NewAchievementManager(),
-		fontManager:  fontManager,
-		flagManager:  flagManager,
+		config:            cfg,
+		geoip:             geoipDB,
+		monitor:           monitor,
+		running:           true,
+		outputDir:         outputDir,
+		gameState:         gameState,
+		naturalEarth:      naturalEarth,
+		achievements:      achievements.NewAchievementManager(),
+		fontManager:       fontManager,
+		flagManager:       flagManager,
+		wallpaperBackedUp: false,
 	}, nil
 }
 
 // Run starts the application
 func (a *App) Run() error {
+	// Set up signal handling for graceful shutdown
+	signalCh := make(chan os.Signal, 1)
+	signal.Notify(signalCh, os.Interrupt, syscall.SIGTERM)
+
+	// Start graceful shutdown handler in a goroutine
+	go func() {
+		<-signalCh
+		slog.Info("Received shutdown signal, cleaning up...")
+		a.Shutdown()
+		os.Exit(0)
+	}()
+
 	// Log startup information
 	slog.Info("IP Travel Wallpaper started",
 		"screen_auto_detection", a.config.AutoDetectScreen,
@@ -361,7 +378,7 @@ func (a *App) loadWorldMap() error {
 	hitCountries := make(map[string]int)
 	boringCountries := a.getBoringCountries()
 
-	img, err := resources.RenderNaturalEarthMap(a.naturalEarth, width, height, a.config.Black, hitCountries, "", a.flagManager, boringCountries)
+	img, err := resources.RenderNaturalEarthMap(a.naturalEarth, width, height, a.config.Black, hitCountries, "", a.flagManager, boringCountries, nil)
 	if err != nil {
 		return fmt.Errorf("failed to render Natural Earth map: %w", err)
 	}
@@ -492,7 +509,7 @@ func (a *App) generateAndDisplayMap() error {
 			// Handle fastest traveler achievement if country became boring and was target
 			if becameBoring && wasTarget {
 				achievementID := a.achievements.UnlockFastestTravelerAchievement(countryName)
-				
+
 				if achievementID != "" {
 					slog.Info("🚀 Fastest Traveler Achievement earned automatically!",
 						"country", countryName,
@@ -500,10 +517,10 @@ func (a *App) generateAndDisplayMap() error {
 						"reason", "reached_10_hits_while_target",
 					)
 				}
-				
+
 				// Immediately select a new target country
 				a.SelectRandomTargetCountry()
-				
+
 				newTarget, _ := a.gameState.GetTargetCountry()
 				if newTarget != "" {
 					slog.Info("🎯 New target selected after automatic fastest traveler achievement",
@@ -544,7 +561,7 @@ func (a *App) generateAndDisplayMap() error {
 		boringCountries := a.getBoringCountries()
 
 		// Render map with Natural Earth data
-		outputImg, err = resources.RenderNaturalEarthMap(a.naturalEarth, width, height, a.config.Black, hitCountries, targetCountry, a.flagManager, boringCountries)
+		outputImg, err = resources.RenderNaturalEarthMap(a.naturalEarth, width, height, a.config.Black, hitCountries, targetCountry, a.flagManager, boringCountries, recentCountries)
 		if err != nil {
 			logging.LogError("render Natural Earth map", err)
 			return err
@@ -596,6 +613,18 @@ func (a *App) generateAndDisplayMap() error {
 	outputPath := filepath.Join(a.outputDir, "iptw.png")
 	if err := a.saveImage(rgbaImg, outputPath); err != nil {
 		return err
+	}
+
+	// Backup original wallpaper before first change
+	if !a.wallpaperBackedUp {
+		backupPath, err := background.BackupCurrentWallpaper(a.outputDir)
+		if err != nil {
+			slog.Warn("Failed to backup original wallpaper - restore functionality will not be available", "error", err)
+		} else {
+			a.originalWallpaper = backupPath
+			a.wallpaperBackedUp = true
+			slog.Info("💾 Original wallpaper backed up successfully")
+		}
 	}
 
 	// Display using macOS Preview or similar
@@ -1102,21 +1131,21 @@ func (a *App) getBoringCountries() map[string]bool {
 func (a *App) HandleFastestTravelerAchievement(countryName string) {
 	// Check if this country was the target and mark it as boring
 	wasTarget, _ := a.gameState.MarkCountryAsBoring(countryName)
-	
+
 	if wasTarget {
 		// Unlock the fastest traveler achievement for this country
 		achievementID := a.achievements.UnlockFastestTravelerAchievement(countryName)
-		
+
 		if achievementID != "" {
 			slog.Info("🚀 Fastest Traveler Achievement earned!",
 				"country", countryName,
 				"achievement_id", achievementID,
 			)
 		}
-		
+
 		// Immediately select a new target country
 		a.SelectRandomTargetCountry()
-		
+
 		newTarget, _ := a.gameState.GetTargetCountry()
 		if newTarget != "" {
 			slog.Info("🎯 New target selected after fastest traveler achievement",
@@ -1125,4 +1154,50 @@ func (a *App) HandleFastestTravelerAchievement(countryName string) {
 			)
 		}
 	}
+}
+
+// Stop stops the application gracefully
+func (a *App) Stop() {
+	a.running = false
+}
+
+// Shutdown performs cleanup operations including wallpaper restoration
+func (a *App) Shutdown() {
+	slog.Info("🛑 Shutting down IP Travel Wallpaper...")
+
+	// Stop the application
+	a.Stop()
+
+	// Restore original wallpaper if we backed it up
+	if a.wallpaperBackedUp && a.originalWallpaper != "" {
+		slog.Info("🔄 Restoring original wallpaper...")
+		if err := background.RestoreWallpaper(a.originalWallpaper); err != nil {
+			slog.Error("Failed to restore original wallpaper", "error", err)
+		} else {
+			slog.Info("✅ Original wallpaper restored successfully")
+		}
+	} else {
+		slog.Info("No wallpaper backup available - leaving current wallpaper as is")
+	}
+
+	slog.Info("👋 IP Travel Wallpaper shutdown complete")
+}
+
+// HasWallpaperBackup returns whether a wallpaper backup is available
+func (a *App) HasWallpaperBackup() bool {
+	return a.wallpaperBackedUp && a.originalWallpaper != ""
+}
+
+// RestoreOriginalWallpaper restores the original wallpaper if available
+func (a *App) RestoreOriginalWallpaper() error {
+	if !a.wallpaperBackedUp || a.originalWallpaper == "" {
+		return fmt.Errorf("no wallpaper backup available")
+	}
+
+	if err := background.RestoreWallpaper(a.originalWallpaper); err != nil {
+		return fmt.Errorf("failed to restore wallpaper: %w", err)
+	}
+
+	slog.Info("✅ Original wallpaper restored via API request")
+	return nil
 }

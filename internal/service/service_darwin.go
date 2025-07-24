@@ -102,9 +102,26 @@ func (sm *ServiceManager) uninstallMacOS() error {
 
 // startMacOS starts the macOS LaunchAgent
 func (sm *ServiceManager) startMacOS() error {
-	cmd := exec.Command("launchctl", "start", fmt.Sprintf("com.%s", sm.ServiceName))
+	currentUser, err := user.Current()
+	if err != nil {
+		return fmt.Errorf("failed to get current user: %w", err)
+	}
+
+	plistPath := filepath.Join(currentUser.HomeDir, "Library", "LaunchAgents", fmt.Sprintf("com.%s.plist", sm.ServiceName))
+
+	// Check if plist file exists
+	if _, err := os.Stat(plistPath); os.IsNotExist(err) {
+		return fmt.Errorf("service not installed. Run with -install-service first")
+	}
+
+	// Load the service (this also starts it)
+	cmd := exec.Command("launchctl", "load", plistPath)
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to start service: %w", err)
+		// If load fails, try start command as fallback
+		startCmd := exec.Command("launchctl", "start", fmt.Sprintf("com.%s", sm.ServiceName))
+		if startErr := startCmd.Run(); startErr != nil {
+			return fmt.Errorf("failed to start service (both load and start failed): load error: %v, start error: %v", err, startErr)
+		}
 	}
 
 	fmt.Printf("✅ Service started on macOS\n")
@@ -113,9 +130,21 @@ func (sm *ServiceManager) startMacOS() error {
 
 // stopMacOS stops the macOS LaunchAgent
 func (sm *ServiceManager) stopMacOS() error {
-	cmd := exec.Command("launchctl", "stop", fmt.Sprintf("com.%s", sm.ServiceName))
+	currentUser, err := user.Current()
+	if err != nil {
+		return fmt.Errorf("failed to get current user: %w", err)
+	}
+
+	plistPath := filepath.Join(currentUser.HomeDir, "Library", "LaunchAgents", fmt.Sprintf("com.%s.plist", sm.ServiceName))
+
+	// Use unload to stop and prevent restart
+	cmd := exec.Command("launchctl", "unload", plistPath)
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to stop service: %w", err)
+		// Try the stop command as fallback (though it's less effective)
+		stopCmd := exec.Command("launchctl", "stop", fmt.Sprintf("com.%s", sm.ServiceName))
+		if stopErr := stopCmd.Run(); stopErr != nil {
+			return fmt.Errorf("failed to stop service (both unload and stop failed): unload error: %v, stop error: %v", err, stopErr)
+		}
 	}
 
 	fmt.Printf("✅ Service stopped on macOS\n")

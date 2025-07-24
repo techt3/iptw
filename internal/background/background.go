@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"time"
 )
 
@@ -189,4 +190,134 @@ func cleanupOldWallpapers(dir string) {
 			slog.Debug("🗑️  Cleaned up old wallpaper:", "file", filepath.Base(file))
 		}
 	}
+}
+
+// BackupCurrentWallpaper backs up the current desktop wallpaper
+// Returns the path where the backup was saved
+func BackupCurrentWallpaper(backupDir string) (string, error) {
+	// Ensure backup directory exists
+	if err := os.MkdirAll(backupDir, 0755); err != nil {
+		return "", fmt.Errorf("failed to create backup directory: %w", err)
+	}
+
+	var currentWallpaperPath string
+	var err error
+
+	switch runtime.GOOS {
+	case "darwin":
+		currentWallpaperPath, err = getMacOSCurrentWallpaper()
+	case "linux":
+		currentWallpaperPath, err = getLinuxCurrentWallpaper()
+	case "windows":
+		currentWallpaperPath, err = getWindowsCurrentWallpaper()
+	default:
+		return "", fmt.Errorf("wallpaper backup is not supported on %s", runtime.GOOS)
+	}
+
+	if err != nil {
+		return "", fmt.Errorf("failed to get current wallpaper path: %w", err)
+	}
+
+	if currentWallpaperPath == "" {
+		return "", fmt.Errorf("could not determine current wallpaper path")
+	}
+
+	// Create backup filename with timestamp
+	timestamp := time.Now().Format("20060102_150405")
+	backupFilename := fmt.Sprintf("original_wallpaper_%s%s", timestamp, filepath.Ext(currentWallpaperPath))
+	backupPath := filepath.Join(backupDir, backupFilename)
+
+	// Copy the current wallpaper to backup location
+	if err := copyFile(currentWallpaperPath, backupPath); err != nil {
+		return "", fmt.Errorf("failed to backup wallpaper: %w", err)
+	}
+
+	slog.Info("💾 Original wallpaper backed up", "from", currentWallpaperPath, "to", backupPath)
+	return backupPath, nil
+}
+
+// RestoreWallpaper restores the wallpaper from a backup file
+func RestoreWallpaper(backupPath string) error {
+	// Check if backup file exists
+	if _, err := os.Stat(backupPath); os.IsNotExist(err) {
+		return fmt.Errorf("backup wallpaper file does not exist: %s", backupPath)
+	}
+
+	// Set the backup as the current wallpaper
+	if err := SetDesktopBackground(backupPath); err != nil {
+		return fmt.Errorf("failed to restore wallpaper: %w", err)
+	}
+
+	slog.Info("🔄 Original wallpaper restored", "from", backupPath)
+	return nil
+}
+
+// getMacOSCurrentWallpaper gets the current wallpaper path on macOS
+func getMacOSCurrentWallpaper() (string, error) {
+	script := `tell application "System Events"
+		tell current desktop
+			get picture
+		end tell
+	end tell`
+
+	cmd := exec.Command("osascript", "-e", script)
+	output, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("failed to get macOS wallpaper: %w", err)
+	}
+
+	wallpaperPath := strings.TrimSpace(string(output))
+	// Remove alias format if present
+	wallpaperPath = strings.TrimPrefix(wallpaperPath, "alias ")
+	// Remove quotes if present
+	wallpaperPath = strings.Trim(wallpaperPath, "\"")
+
+	return wallpaperPath, nil
+}
+
+// getLinuxCurrentWallpaper gets the current wallpaper path on Linux
+func getLinuxCurrentWallpaper() (string, error) {
+	// Try different desktop environments
+
+	// GNOME/Ubuntu
+	cmd := exec.Command("gsettings", "get", "org.gnome.desktop.background", "picture-uri")
+	if output, err := cmd.Output(); err == nil {
+		wallpaperURI := strings.TrimSpace(string(output))
+		wallpaperURI = strings.Trim(wallpaperURI, "'\"")
+		if strings.HasPrefix(wallpaperURI, "file://") {
+			return strings.TrimPrefix(wallpaperURI, "file://"), nil
+		}
+		return wallpaperURI, nil
+	}
+
+	// XFCE
+	cmd = exec.Command("xfconf-query", "-c", "xfce4-desktop", "-p", "/backdrop/screen0/monitor0/workspace0/last-image")
+	if output, err := cmd.Output(); err == nil {
+		return strings.TrimSpace(string(output)), nil
+	}
+
+	// KDE - this is more complex, try to get from config
+	homeDir, _ := os.UserHomeDir()
+	kdePlasmaConfig := filepath.Join(homeDir, ".config", "plasma-org.kde.plasma.desktop-appletsrc")
+	if _, err := os.Stat(kdePlasmaConfig); err == nil {
+		// This is a simplified approach - KDE config parsing is complex
+		slog.Warn("KDE wallpaper detection is limited - backup may not work perfectly")
+		return "", fmt.Errorf("KDE wallpaper backup not fully supported")
+	}
+
+	return "", fmt.Errorf("could not detect current wallpaper on this Linux desktop environment")
+}
+
+// getWindowsCurrentWallpaper gets the current wallpaper path on Windows
+func getWindowsCurrentWallpaper() (string, error) {
+	script := `Get-ItemProperty -Path "HKCU:\Control Panel\Desktop" -Name Wallpaper | Select-Object -ExpandProperty Wallpaper`
+
+	cmd := exec.Command("powershell", "-Command", script)
+	output, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("failed to get Windows wallpaper: %w", err)
+	}
+
+	wallpaperPath := strings.TrimSpace(string(output))
+	return wallpaperPath, nil
 }

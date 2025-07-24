@@ -3,6 +3,8 @@
 
 IP Travel Wallpaper transforms your network browsing into a gamified world exploration experience. As you visit websites and connect to servers around the globe, your digital footprints are visualized as virtual travels on a beautiful world map that becomes your desktop wallpaper.
 
+![Example wallpaper](./files/wallpaper.png)
+
 ## Game Philosophy: Breaking Out of Digital Bubbles
 
 In our interconnected world, most internet traffic flows through a handful of major hosting platforms and CDNs located in just a few countries. This creates digital "bubbles" where we unknowingly consume content from a very limited geographic and cultural perspective.
@@ -20,8 +22,9 @@ The game rewards curiosity and geographic diversity over convenience, encouragin
 
 - **Virtual Travel**: Each network connection to a foreign IP address represents a "visit" to that country
 - **Progressive Country Coloring**: Countries change appearance based on your visit frequency:
-  - **1-9 visits**: Vibrant colors from green to orange (fresh destinations worth exploring)
-  - **10+ visits**: Countries become "boring" and turn red (time to find new places!)
+  - **1-9 visits**: Vibrant colors from yellow to orange (fresh destinations worth exploring)
+  - **10+ visits**: Countries become "boring" and display their national flag as background (time to find new places!)
+  - **Continued Activity on Boring Countries**: When boring countries receive additional hits, their flags show random gamma correction effects to indicate ongoing activity
 - **Exploration Incentives**: 
   - **Target Countries**: Red borders highlight unvisited countries, encouraging global exploration
   - **Achievement System**: Unlock achievements by visiting all countries in geographic regions
@@ -138,13 +141,12 @@ curl -X POST http://localhost:32782/countries/boring \
 - **Competitive Element**: Race to mark targets before they naturally become boring
 
 #### Testing
-Use the included test files to try the new feature:
+Use the web API to test the new feature:
 ```bash
-# Command line test
-./test_fastest_traveler.sh
-
-# Web interface test
-open test_fastest_traveler.html
+# Mark the current target country as boring
+curl -X POST http://localhost:32782/countries/boring \
+  -H "Content-Type: application/json" \
+  -d '{"country": "United States"}'
 ```
 
 ## Configuration
@@ -193,6 +195,48 @@ stats_y 100   # Position stats 100 pixels from top edge
 
 📖 **For detailed service management, see [SERVICE.md](SERVICE.md)**
 
+## Wallpaper Backup & Restore
+
+IPTW automatically backs up your original desktop wallpaper before making any changes and can restore it when the application exits or on demand.
+
+### Automatic Backup & Restore
+- **Automatic Backup**: On the first wallpaper change, IPTW automatically saves your current wallpaper
+- **Graceful Shutdown**: When IPTW exits (Ctrl+C or SIGTERM), it automatically restores your original wallpaper
+- **Backup Location**: Wallpaper backups are stored in `~/.config/iptw/output/` with timestamps
+
+### Manual Restore via API
+If you need to restore your original wallpaper while IPTW is still running:
+
+```bash
+# Restore original wallpaper via HTTP API
+curl -X POST http://localhost:32782/wallpaper/restore
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Original wallpaper restored successfully"
+}
+```
+
+### Supported Platforms
+- **macOS**: Full support using AppleScript
+- **Linux**: GNOME, XFCE, and basic support for other desktop environments
+- **Windows**: Full support using Windows API
+
+### Troubleshooting
+- If backup fails, IPTW will continue running but warn that restore functionality won't be available
+- KDE Linux support is limited - backup may not work perfectly on all KDE configurations
+- Backup files are automatically cleaned up on application restart
+
+### Testing
+Test the wallpaper backup functionality:
+```bash
+# Run the test script
+./scripts/test-wallpaper-backup.sh
+```
+
 ## Server-Client Mode 
 
 IPTW now supports server-client functionality for remote monitoring and statistics sharing:
@@ -232,7 +276,7 @@ Connect to a remote IPTW server to view statistics:
 - **Achievement Tracking**: Monitor progress across multiple instances
 - **Team Challenges**: Share statistics for group competitions
 
-📖 **For detailed server-client documentation, see [SERVER-CLIENT.md](SERVER-CLIENT.md)**
+📖 **For detailed service management, see [SERVICE.md](SERVICE.md)**
 
 ## Troubleshooting
 
@@ -326,8 +370,9 @@ IPTW incorporates several high-quality open resources. We gratefully acknowledge
 - **GeoJSON Maps**: Country boundary processing assisted by [geojson-maps.kyd.au](https://geojson-maps.kyd.au/)
 
 ### Flags
-  - **Source**: [Flagpedia](https://flagpedia.net/)
-  - **License**: Flag images are in the public domain (exempt from copyright). They are completely free for non-commercial and even commercial use. (https://flagpedia.net/about)
+- **Source**: [Flagpedia](https://flagpedia.net/)
+- **License**: Flag images are in the public domain (exempt from copyright). They are completely free for non-commercial and even commercial use. (https://flagpedia.net/about)
+- **Usage**: Flag backgrounds are displayed for boring countries (10+ visits) when available
 ## Contributing
 
 We welcome contributions to help make digital exploration more accessible and diverse! Areas where help is needed:

@@ -40,6 +40,7 @@ func (s *Server) Start() error {
 	http.HandleFunc("/achievements", s.handleAchievements)
 	http.HandleFunc("/countries", s.handleCountries)
 	http.HandleFunc("/countries/boring", s.handleMarkBoring)
+	http.HandleFunc("/wallpaper/restore", s.handleRestoreWallpaper)
 	http.HandleFunc("/health", s.handleHealth)
 
 	addr := ":" + s.port
@@ -51,6 +52,7 @@ func (s *Server) Start() error {
 	slog.Info("  GET /achievements - Achievement details")
 	slog.Info("  GET /countries  - Country visit details")
 	slog.Info("  POST /countries/boring - Mark a country as boring")
+	slog.Info("  POST /wallpaper/restore - Restore original wallpaper")
 	slog.Info("  GET /health     - Health check")
 
 	return http.ListenAndServe(addr, nil)
@@ -293,4 +295,45 @@ func (s *Server) collectGameStatistics() *stats.GameStatistics {
 		ServerVersion:        "dev",
 		Timestamp:            time.Now(),
 	}
+}
+
+// handleRestoreWallpaper handles POST requests to restore the original wallpaper
+func (s *Server) handleRestoreWallpaper(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Check if app has a backup wallpaper
+	if !s.app.HasWallpaperBackup() {
+		response := map[string]interface{}{
+			"success": false,
+			"error":   "No wallpaper backup available",
+			"message": "Original wallpaper was not backed up or backup failed",
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// Attempt to restore wallpaper
+	if err := s.app.RestoreOriginalWallpaper(); err != nil {
+		response := map[string]interface{}{
+			"success": false,
+			"error":   err.Error(),
+			"message": "Failed to restore original wallpaper",
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	response := map[string]interface{}{
+		"success": true,
+		"message": "Original wallpaper restored successfully",
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
