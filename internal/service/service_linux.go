@@ -31,7 +31,7 @@ After=graphical-session.target
 
 [Service]
 Type=simple
-ExecStart=%s -force -server -port %s
+ExecStart=%s -force -port %s
 WorkingDirectory=%s
 Restart=always
 RestartSec=10

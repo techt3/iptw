@@ -59,7 +59,7 @@ func main() {
 	flag.BoolVar(&serverMode, "server", true, "Run in server mode (with HTTP statistics server)")
 	flag.StringVar(&serverPort, "port", "32782", "Server port for statistics HTTP server")
 	flag.BoolVar(&clientMode, "client", false, "Run in client mode (fetch stats from remote server)")
-	flag.StringVar(&clientServer, "server-url", "http://localhost:32782", "Server URL for client mode")
+	flag.StringVar(&clientServer, "server-url", "http://127.0.0.1:32782", "Server URL for client mode")
 	flag.BoolVar(&clientWatch, "watch", false, "Watch mode: continuously poll and display stats")
 	flag.IntVar(&clientInterval, "interval", 30, "Poll interval in seconds for watch mode")
 	flag.BoolVar(&clientAchievements, "achievements", false, "Show achievements in client mode")

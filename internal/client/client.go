@@ -21,7 +21,7 @@ type Client struct {
 // NewClient creates a new client instance
 func NewClient(serverURL string) *Client {
 	if serverURL == "" {
-		serverURL = "http://localhost:32782" // Default server URL
+		serverURL = "http://127.0.0.1:32782" // Default server URL (IPv4)
 	}
 	return &Client{
 		serverURL: serverURL,

@@ -34,7 +34,7 @@ func (sm *ServiceManager) installWindows() error {
 
 	// Use sc command to create service running as current user
 	cmd := exec.Command("sc", "create", sm.ServiceName,
-		"binPath="+fmt.Sprintf(`"%s" -force -server -port %s`, sm.ExecutablePath, sm.ServerPort),
+		"binPath="+fmt.Sprintf(`"%s" -force -port %s`, sm.ExecutablePath, sm.ServerPort),
 		"DisplayName="+sm.DisplayName,
 		"start=auto",
 		"obj="+serviceUser,
