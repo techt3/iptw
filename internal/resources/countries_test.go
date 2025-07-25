@@ -668,6 +668,45 @@ func TestFillOceanBackground(t *testing.T) {
 	}
 }
 
+func TestSandRocksGradient(t *testing.T) {
+	// Test that the sand/rocks gradient function produces valid colors
+	width, height := 100, 100
+	hitCount := 15 // Boring country
+
+	// Test different positions to ensure variety
+	color1 := getSandRocksGradientColor(hitCount, 10, 10, width, height)
+	color2 := getSandRocksGradientColor(hitCount, 50, 50, width, height)
+	color3 := getSandRocksGradientColor(hitCount, 90, 90, width, height)
+
+	// Colors should not be transparent
+	if color1.A == 0 || color2.A == 0 || color3.A == 0 {
+		t.Error("Sand/rocks gradient should not be transparent")
+	}
+
+	// Colors should be in sand/rock range (brownish tones)
+	// Check that they're not purely black or white
+	for _, c := range []color.RGBA{color1, color2, color3} {
+		if c.R == 0 && c.G == 0 && c.B == 0 {
+			t.Error("Sand/rocks color should not be pure black")
+		}
+		if c.R == 255 && c.G == 255 && c.B == 255 {
+			t.Error("Sand/rocks color should not be pure white")
+		}
+	}
+
+	// Test that higher hit counts produce slightly darker colors
+	color10 := getSandRocksGradientColor(10, 50, 50, width, height)
+	color30 := getSandRocksGradientColor(30, 50, 50, width, height)
+
+	// color30 should be darker (lower values) than color10
+	sum10 := int(color10.R) + int(color10.G) + int(color10.B)
+	sum30 := int(color30.R) + int(color30.G) + int(color30.B)
+
+	if sum30 >= sum10 {
+		t.Error("Higher hit counts should produce darker sand/rocks colors")
+	}
+}
+
 func TestInterpolateColor(t *testing.T) {
 	// Test color interpolation
 	c1 := color.RGBA{R: 0, G: 0, B: 0, A: 255}       // Black

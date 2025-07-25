@@ -551,48 +551,41 @@ func RenderNaturalEarthMap(ne *NaturalEarthData, width, height int, black bool, 
 
 	// Draw each country
 	for _, country := range ne.Countries {
-		// Check if this country is boring and should use flag background
+		// Get hit count for this country
+		hitCount := 0
+		if count, exists := hitCountries[country.Name]; exists {
+			hitCount = count
+		}
+
+		// Check if this country is boring (>=10 hits) and should use sand/rocks gradient
 		isBoring := boringCountries != nil && boringCountries[country.Name]
 
-		if isBoring && flagManager != nil && country.getAlpha2Code() != "" {
+		// New logic: After first hit, show flag. When boring, show sand/rocks gradient.
+		if hitCount >= 1 && hitCount < 10 && flagManager != nil && country.getAlpha2Code() != "" {
+			// Show flag for countries with 1-9 hits
 			alpha2 := country.getAlpha2Code()
-			slog.Debug("Country is boring", "name", country.Name, "alpha2", alpha2)
-
-			// Try to get flag for boring country
 			flag := flagManager.GetFlag(alpha2)
 			if flag != nil {
-				slog.Debug("Found flag for country", "name", country.Name, "alpha2", alpha2)
-				// Check if this boring country was recently hit to apply gamma correction
+				// Check if this country was recently hit to apply gamma correction
 				applyGammaCorrection := recentHitCountries != nil && recentHitCountries[country.Name]
 
 				// Draw country with flag background
 				drawCountryWithFlagBackground(img, country.Geometry, flag, width, height, applyGammaCorrection)
 			} else {
-				slog.Warn("No flag found for country", "name", country.Name, "alpha2", alpha2)
 				// Fallback to regular color if no flag found
-				var fillColor color.RGBA
-				if hitCount, exists := hitCountries[country.Name]; exists && hitCount > 0 {
-					fillColor = getCountryHitColor(hitCount)
-				} else {
-					// Default country color
-					if black {
-						fillColor = color.RGBA{60, 60, 60, 255} // Dark gray for dark theme
-					} else {
-						fillColor = color.RGBA{200, 200, 200, 255} // Light gray for light theme
-					}
-				}
+				fillColor := getCountryHitColor(hitCount)
 				drawCountryGeometry(img, country.Geometry, fillColor, width, height)
 			}
+		} else if isBoring && hitCount >= 10 {
+			// Show sand/rocks gradient for boring countries (10+ hits)
+			drawCountryWithSandRocksGradient(img, country.Geometry, hitCount, width, height)
 		} else {
-			if isBoring {
-				slog.Warn("Country is boring", "name", country.Name, "alpha2", country.getAlpha2Code(), "flagManager", flagManager != nil)
-			}
-			// Regular country drawing logic
+			// Regular country drawing logic for unvisited countries or as fallback
 			var fillColor color.RGBA
-			if hitCount, exists := hitCountries[country.Name]; exists && hitCount > 0 {
+			if hitCount > 0 {
 				fillColor = getCountryHitColor(hitCount)
 			} else {
-				// Default country color
+				// Default country color for unvisited countries
 				if black {
 					fillColor = color.RGBA{60, 60, 60, 255} // Dark gray for dark theme
 				} else {
@@ -687,6 +680,7 @@ func interpolateColor(c1, c2 color.RGBA, t float64) color.RGBA {
 
 // getCountryHitColor returns the color for a country based on hit count
 func getCountryHitColor(hitCount int) color.RGBA {
+	// This function is no longer used in the new logic, keeping for compatibility
 	if hitCount >= 10 {
 		// Bright red for occupied countries (conquered)
 		return color.RGBA{255, 50, 50, 200}
@@ -704,6 +698,52 @@ func getCountryHitColor(hitCount int) color.RGBA {
 	return color.RGBA{red, green, blue, alpha}
 }
 
+// getSandRocksGradientColor returns a gradient color representing sand and rocks for boring countries
+func getSandRocksGradientColor(hitCount int, x, y, width, height int) color.RGBA {
+	// Define sand and rock colors
+	lightSand := color.RGBA{210, 180, 140, 200} // Light sandy beige
+	darkSand := color.RGBA{160, 130, 90, 200}   // Darker sand
+	lightRock := color.RGBA{120, 100, 80, 220}  // Light gray-brown rock
+	darkRock := color.RGBA{80, 65, 50, 240}     // Dark brownish rock
+
+	// Create spatial variation using position
+	normalizedX := float64(x) / float64(width)
+	normalizedY := float64(y) / float64(height)
+
+	// Create noise-like patterns using sine waves for natural rock/sand distribution
+	noiseX := math.Sin(normalizedX*20.0+normalizedY*15.0)*0.5 + 0.5
+	noiseY := math.Sin(normalizedY*18.0+normalizedX*12.0)*0.5 + 0.5
+
+	// Combine noise patterns
+	rockiness := (noiseX + noiseY) * 0.5
+
+	// Interpolate between sand and rock based on the noise
+	var baseColor color.RGBA
+	if rockiness < 0.3 {
+		// More sandy areas
+		t := rockiness / 0.3
+		baseColor = interpolateColor(lightSand, darkSand, t)
+	} else if rockiness < 0.7 {
+		// Mixed sand and rock
+		t := (rockiness - 0.3) / 0.4
+		baseColor = interpolateColor(darkSand, lightRock, t)
+	} else {
+		// Rocky areas
+		t := (rockiness - 0.7) / 0.3
+		baseColor = interpolateColor(lightRock, darkRock, t)
+	}
+
+	// Add slight variation based on hit count to show it's been visited many times
+	visitIntensity := math.Min(float64(hitCount-10)/20.0, 1.0) // Normalize extra hits beyond 10
+
+	// Darken slightly with more visits to show "wear"
+	baseColor.R = uint8(float64(baseColor.R) * (1.0 - visitIntensity*0.2))
+	baseColor.G = uint8(float64(baseColor.G) * (1.0 - visitIntensity*0.2))
+	baseColor.B = uint8(float64(baseColor.B) * (1.0 - visitIntensity*0.2))
+
+	return baseColor
+}
+
 // drawCountryGeometry draws a country's geometry on the image with solid fill
 func drawCountryGeometry(img *image.RGBA, geom orb.MultiPolygon, fillColor color.RGBA, width, height int) {
 	for _, polygon := range geom {
@@ -718,6 +758,37 @@ func drawCountryGeometry(img *image.RGBA, geom orb.MultiPolygon, fillColor color
 			// Use transparent color for holes
 			holeColor := color.RGBA{0, 0, 0, 0} // Transparent
 			fillPolygon(img, polygon[i], holeColor, width, height)
+		}
+	}
+}
+
+// drawCountryWithSandRocksGradient draws a country's geometry with sand/rocks gradient pattern
+func drawCountryWithSandRocksGradient(img *image.RGBA, geom orb.MultiPolygon, hitCount, width, height int) {
+	// Create a temporary mask to determine which pixels belong to the country
+	mask := image.NewAlpha(image.Rect(0, 0, width, height))
+
+	// Fill the mask with country geometry
+	for _, polygon := range geom {
+		// Fill the main polygon (exterior ring)
+		if len(polygon) > 0 {
+			fillPolygonAlpha(mask, polygon[0], 255, width, height)
+		}
+
+		// Draw holes (interior rings) as transparent
+		for i := 1; i < len(polygon); i++ {
+			fillPolygonAlpha(mask, polygon[i], 0, width, height)
+		}
+	}
+
+	// Apply gradient pattern to country pixels
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+			alpha := mask.AlphaAt(x, y).A
+			if alpha > 0 {
+				// Get sand/rocks gradient color for this pixel
+				gradientColor := getSandRocksGradientColor(hitCount, x, y, width, height)
+				img.Set(x, y, gradientColor)
+			}
 		}
 	}
 }

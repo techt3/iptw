@@ -22,9 +22,9 @@ The game rewards curiosity and geographic diversity over convenience, encouragin
 
 - **Virtual Travel**: Each network connection to a foreign IP address represents a "visit" to that country
 - **Progressive Country Coloring**: Countries change appearance based on your visit frequency:
-  - **1-9 visits**: Vibrant colors from yellow to orange (fresh destinations worth exploring)
-  - **10+ visits**: Countries become "boring" and display their national flag as background (time to find new places!)
-  - **Continued Activity on Boring Countries**: When boring countries receive additional hits, their flags show random gamma correction effects to indicate ongoing activity
+  - **1-9 visits**: Display national flag background (fresh destinations worth exploring)
+  - **10+ visits**: Countries become "boring" and display sand/rocks gradient patterns (time to find new places!)
+  - **Continued Activity on Boring Countries**: When boring countries receive additional hits, their patterns show slight variations to indicate ongoing activity
 - **Exploration Incentives**: 
   - **Target Countries**: Red borders highlight unvisited countries, encouraging global exploration
   - **Achievement System**: Unlock achievements by visiting all countries in geographic regions

@@ -3,8 +3,8 @@
 // Travel Mechanics:
 // - Each network connection to a foreign IP address represents a "visit" to that country
 // - Countries are colored based on the number of visits:
-//   - 1-9 visits: Progressive green to yellow coloring (intensity increases with visits)
-//   - 10+ visits: Country becomes "visited too many times and too boring" and turns gray
+//   - 1-9 visits: Display national flag background (fresh destinations worth exploring)
+//   - 10+ visits: Country becomes "boring" and displays sand/rocks gradient pattern
 //
 // - Countries visited too many times become boring and stop counting additional visits
 // - The goal is to "travel" to different countries by generating network traffic to IPs in those countries
@@ -17,9 +17,10 @@
 //
 // Visual Elements:
 // - World map background (Natural Earth vector data)
-// - Country regions filled with colors based on visit counts
+// - Country regions filled with colors/patterns based on visit counts
 // - White dots show active connection points
-// - Color intensity increases as visit count approaches "too boring" threshold
+// - National flags display for visited countries (1-9 hits)
+// - Sand/rocks gradient patterns show for boring countries (10+ hits)
 // - Red borders highlight target countries for exploration
 //
 // Resources:
