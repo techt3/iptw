@@ -2,175 +2,48 @@
 
 package service
 
-import (
-	"fmt"
-	"os"
-	"os/exec"
-	"os/user"
-	"strings"
-)
+import "fmt"
 
-// installWindows installs the service as a Windows service
+// Windows service functionality is disabled - wallpaper changes don't work properly in service mode
+// Users should run the application directly instead of as a service
+
+// installWindows shows an error message explaining that Windows service is not supported
 func (sm *ServiceManager) installWindows() error {
-	// Validate executable path exists
-	if _, err := os.Stat(sm.ExecutablePath); os.IsNotExist(err) {
-		return fmt.Errorf("executable not found at %s", sm.ExecutablePath)
-	}
+	fmt.Println("❌ Windows service installation is not supported.")
+	fmt.Println()
+	fmt.Println("🖼️  REASON: Windows services cannot change desktop wallpapers due to session isolation.")
+	fmt.Println("   Services run in a different session than the user desktop, preventing")
+	fmt.Println("   wallpaper changes and other desktop interactions.")
+	fmt.Println()
+	fmt.Println("💡 ALTERNATIVE: Run IPTW directly as a regular application:")
+	fmt.Println("   ./iptw                    # Run in foreground")
+	fmt.Println("   ./iptw -server            # Run with HTTP server")
+	fmt.Println()
+	fmt.Println("🚀 TIP: Add to Windows startup folder for automatic startup:")
+	fmt.Println("   %APPDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\Startup")
 
-	// Get current user to run service in user context (needed for desktop access)
-	currentUser, err := user.Current()
-	if err != nil {
-		return fmt.Errorf("failed to get current user: %w", err)
-	}
-
-	// Format user for Windows service (DOMAIN\username or .\username for local)
-	serviceUser := currentUser.Username
-	if currentUser.Username != "" {
-		// Use local user format if no domain
-		if !strings.Contains(currentUser.Username, "\\") {
-			serviceUser = ".\\" + currentUser.Username
-		}
-	}
-
-	// Use sc command to create service running as current user
-	cmd := exec.Command("sc", "create", sm.ServiceName,
-		"binPath="+fmt.Sprintf(`"%s" -force -port %s`, sm.ExecutablePath, sm.ServerPort),
-		"DisplayName="+sm.DisplayName,
-		"start=auto",
-		"obj="+serviceUser,
-		"type=own")
-
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		outputStr := strings.TrimSpace(string(output))
-		// Check if service already exists
-		if strings.Contains(outputStr, "1073") || strings.Contains(outputStr, "already exists") {
-			fmt.Printf("⚠️  Service already exists on Windows\n")
-			return nil
-		}
-		return fmt.Errorf("failed to create Windows service: %w\nOutput: %s", err, outputStr)
-	}
-
-	// Set service description
-	cmd = exec.Command("sc", "description", sm.ServiceName, sm.Description)
-	_ = cmd.Run() // Ignore errors for description
-
-	// Set recovery options - restart on failure
-	cmd = exec.Command("sc", "failure", sm.ServiceName, "reset=86400", "actions=restart/30000/restart/60000/restart/60000")
-	_ = cmd.Run() // Ignore errors for recovery options
-
-	fmt.Printf("✅ Service installed successfully on Windows\n")
-	fmt.Printf("   Service Name: %s\n", sm.ServiceName)
-	fmt.Printf("   Display Name: %s\n", sm.DisplayName)
-	fmt.Printf("   Service User: %s (desktop access enabled)\n", serviceUser)
-	fmt.Printf("   Service will start automatically on boot\n")
-	fmt.Printf("   HTTP statistics server will be available on port %s\n", sm.ServerPort)
-	fmt.Printf("   Note: Service requires user to be logged in for desktop wallpaper changes\n")
-	fmt.Printf("   Note: Windows may prompt for user password when starting the service\n")
-
-	return nil
+	return fmt.Errorf("Windows service installation is not supported")
 }
 
-// uninstallWindows removes the Windows service
+// uninstallWindows shows message that there's nothing to uninstall
 func (sm *ServiceManager) uninstallWindows() error {
-	// Stop the service first
-	_ = sm.stopWindows()
-
-	// Delete the service
-	cmd := exec.Command("sc", "delete", sm.ServiceName)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		outputStr := strings.TrimSpace(string(output))
-		// Ignore "service does not exist" error
-		if !strings.Contains(outputStr, "1060") && !strings.Contains(outputStr, "does not exist") {
-			return fmt.Errorf("failed to delete Windows service: %w\nOutput: %s", err, outputStr)
-		}
-	}
-
-	fmt.Printf("✅ Service uninstalled successfully from Windows\n")
+	fmt.Println("ℹ️  No Windows service to uninstall - service functionality is disabled on Windows.")
 	return nil
 }
 
-// startWindows starts the Windows service
+// startWindows shows error message
 func (sm *ServiceManager) startWindows() error {
-	// First check if service exists
-	statusCmd := exec.Command("sc", "query", sm.ServiceName)
-	statusOutput, statusErr := statusCmd.CombinedOutput()
-	if statusErr != nil {
-		return fmt.Errorf("service '%s' does not exist or cannot be queried: %w\nOutput: %s",
-			sm.ServiceName, statusErr, string(statusOutput))
-	}
-
-	// Check current status
-	statusStr := string(statusOutput)
-	if strings.Contains(statusStr, "RUNNING") {
-		fmt.Printf("✅ Service is already running on Windows\n")
-		return nil
-	}
-
-	// Try to start the service
-	cmd := exec.Command("sc", "start", sm.ServiceName)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		outputStr := strings.TrimSpace(string(output))
-		// Ignore "service already started" error
-		if !strings.Contains(outputStr, "1056") && !strings.Contains(outputStr, "already been started") {
-			return fmt.Errorf("failed to start Windows service: %w\nOutput: %s\nService Status: %s",
-				err, outputStr, statusStr)
-		}
-	}
-
-	fmt.Printf("✅ Service started on Windows\n")
-	return nil
+	return fmt.Errorf("Windows service functionality is disabled - run './iptw' directly instead")
 }
 
-// stopWindows stops the Windows service
+// stopWindows shows error message
 func (sm *ServiceManager) stopWindows() error {
-	cmd := exec.Command("sc", "stop", sm.ServiceName)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		outputStr := strings.TrimSpace(string(output))
-		// Ignore "service not started" error
-		if !strings.Contains(outputStr, "1062") && !strings.Contains(outputStr, "not been started") {
-			return fmt.Errorf("failed to stop Windows service: %w\nOutput: %s", err, outputStr)
-		}
-	}
-
-	fmt.Printf("✅ Service stopped on Windows\n")
-	return nil
+	return fmt.Errorf("Windows service functionality is disabled - no service to stop")
 }
 
-// statusWindows checks if the Windows service is running
+// statusWindows shows that no service exists
 func (sm *ServiceManager) statusWindows() (bool, error) {
-	cmd := exec.Command("sc", "query", sm.ServiceName)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		// Service doesn't exist or query failed
-		return false, fmt.Errorf("service query failed: %w\nOutput: %s", err, string(output))
-	}
-
-	outputStr := string(output)
-
-	// Check various service states
-	if strings.Contains(outputStr, "RUNNING") {
-		return true, nil
-	}
-
-	// If not running, provide more detailed status
-	if strings.Contains(outputStr, "STOPPED") {
-		return false, nil
-	}
-
-	if strings.Contains(outputStr, "START_PENDING") {
-		return false, fmt.Errorf("service is starting up (START_PENDING)")
-	}
-
-	if strings.Contains(outputStr, "STOP_PENDING") {
-		return false, fmt.Errorf("service is shutting down (STOP_PENDING)")
-	}
-
-	// Return false with detailed output for any other status
-	return false, fmt.Errorf("service status unknown: %s", outputStr)
+	return false, fmt.Errorf("Windows service functionality is disabled")
 }
 
 // Stub implementations for other platforms on Windows

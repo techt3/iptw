@@ -94,8 +94,8 @@ IPTW runs natively on **macOS**, **Linux**, and **Windows** with automatic platf
 5. Watch your desktop wallpaper update with your global journey
 
 
-### Background Service (Recommended)
-For continuous automatic operation, install iptw as a background service:
+### Background Service (macOS and Linux)
+For continuous automatic operation on macOS and Linux, install iptw as a background service:
 
 ```bash
 # Install as background service (auto-starts on boot/login)
@@ -111,6 +111,8 @@ For continuous automatic operation, install iptw as a background service:
 # Remove service
 ./iptw -uninstall-service
 ```
+
+**⚠️ Windows Note**: Service functionality is disabled on Windows because Windows services cannot change desktop wallpapers due to session isolation. On Windows, run IPTW directly as a regular application instead.
 
 ## Fastest Traveler Achievement System 🚀
 
@@ -191,7 +193,10 @@ stats_y 100   # Position stats 100 pixels from top edge
 **Cross-Platform Service Support:**
 - **macOS**: LaunchAgent (starts on user login)
 - **Linux**: systemd user service (starts on login)  
-- **Windows**: Windows Service (starts on system boot)
+- **Windows**: ❌ Not supported (services cannot change wallpapers due to session isolation)
+
+**Windows Alternative**: Add IPTW to your Windows startup folder for automatic startup:
+`%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup`
 
 📖 **For detailed service management, see [SERVICE.md](SERVICE.md)**
 
@@ -307,6 +312,23 @@ Connect to a remote IPTW server to view statistics:
 **Execution Policy Errors**
 - If using PowerShell, you may need: `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`
 
+**Windows Wallpaper Support**
+- **Status**: ✅ Full wallpaper support when running as regular application
+- **Service Mode**: ❌ Disabled (Windows services cannot change desktop wallpapers due to session isolation)
+- **Recommended Usage**: Run IPTW directly as a regular application:
+  ```bash
+  # Run with wallpaper support:
+  iptw
+  
+  # Run with HTTP server:
+  iptw -server
+  
+  # Run in background:
+  start /B iptw -server
+  ```
+- **Auto-Start**: Add to Windows startup folder: `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup`
+- **Alternative**: Keep service for statistics only, run separate instance for wallpapers
+
 ### General Issues
 
 **Network Monitoring Not Working**
@@ -420,9 +442,8 @@ The project includes comprehensive cross-platform build support via Makefile and
 - `darwin/amd64` (macOS Intel)
 - `darwin/arm64` (macOS Apple Silicon)
 - `linux/amd64` (Linux x86_64)
-- `linux/arm64` (Linux ARM64)
 - `windows/amd64` (Windows x86_64)
-- `windows/arm64` (Windows ARM64)
+
 
 ### Build System
 
@@ -452,3 +473,15 @@ The project includes comprehensive cross-platform build support via Makefile and
 ## Legal Notice
 
 This software is designed for educational and awareness purposes about global internet infrastructure. Users are responsible for complying with all applicable laws and website terms of service in their jurisdiction. IPTW does not modify network traffic or bypass any security measures - it simply visualizes existing connections. 
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+**MIT License Summary:**
+- ✅ Commercial use
+- ✅ Modification
+- ✅ Distribution
+- ✅ Private use
+- ❌ Liability
+- ❌ Warranty

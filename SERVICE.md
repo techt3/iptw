@@ -1,14 +1,8 @@
 # Service Management Guide
 
-IP Travel Wallpaper (iptw) includes cross-### Windows (System Service)
-- **Service Name**: `iptw`
-- **Display Name**: `IP Travel Wallpaper Server`
-- **Command**: `iptw -force -server -port 32782`
-- **Auto-start**: Starts automatically on system boot
-- **Management**: Uses Windows Service Control Manager (`sc` commands)
-- **Permissions**: May require administrator privileges for installation
-- **User Context**: Runs as the installing user (required for desktop wallpaper access)
-- **Desktop Access**: Service requires user to be logged in for wallpaper changesm background service management capabilities that allow the application to run automatically as a system service with HTTP statistics server functionality on macOS, Linux, and Windows.
+IP Travel Wallpaper (iptw) includes cross-platform background service management capabilities that allow the application to run automatically as a system service with HTTP statistics server functionality on **macOS** and **Linux**.
+
+**⚠️ Windows Note**: Service functionality is **disabled** on Windows because Windows services cannot change desktop wallpapers due to session isolation. On Windows, run IPTW directly as a regular application instead.
 
 ## Service Features
 
@@ -27,7 +21,7 @@ iptw -install-service
 Installs iptw as a background service that starts automatically:
 - **macOS**: Creates a LaunchAgent in `~/Library/LaunchAgents/`
 - **Linux**: Creates a systemd user service in `~/.config/systemd/user/`
-- **Windows**: Creates a Windows service using the Service Control Manager
+- **Windows**: ❌ Not supported (services cannot change wallpapers due to session isolation)
 
 The service runs with server functionality enabled on port 32782, providing HTTP access to statistics and achievements.
 
@@ -76,13 +70,17 @@ Completely remove the service from the system.
   sudo loginctl enable-linger $USER
   ```
 
-### Windows (System Service)
-- **Service Name**: `iptw`
-- **Display Name**: `IP Travel Wallpaper Server`
-- **Command**: `iptw -force -server -port 32782`
-- **Auto-start**: Starts automatically on system boot
-- **Management**: Uses Windows Service Control Manager (`sc` commands)
-- **Permissions**: May require administrator privileges
+### Windows (Not Supported)
+- **Status**: ❌ Service functionality disabled
+- **Reason**: Windows services cannot change desktop wallpapers due to session isolation
+- **Alternative**: Run IPTW directly as a regular application
+- **Auto-Start Option**: Add to Windows startup folder: `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup`
+- **Recommended Commands**:
+  ```cmd
+  iptw                  # Run with full wallpaper support
+  iptw -server          # Run with HTTP server
+  start /B iptw -server # Run in background
+  ```
 
 ## Service Behavior
 
@@ -142,16 +140,40 @@ iptw -client -countries
 2. View logs (platform-specific locations above)
 3. Ensure executable has proper permissions
 4. Try manual start: `iptw -start-service`
-5. **Windows**: Ensure user is logged in (required for desktop wallpaper access)
+5. **Windows**: Service functionality is disabled - run as regular application instead
 
 ### Permission Issues
 - **macOS/Linux**: Service runs under current user account
-- **Windows**: May require administrator privileges for installation; service runs as installing user and needs user to be logged in for desktop access
+- **Windows**: Not applicable (service functionality disabled)
 
 ### Service Conflicts
 - Only one instance of iptw can run at a time
 - Service installation automatically handles singleton management
 - Manual runs should use `-force` if service is installed
+
+### Windows Usage
+**Service Status**: ❌ Disabled (wallpaper functionality would not work)
+**Recommended Approach**: Run IPTW directly as a regular application
+**Setup**:
+1. **Download** and extract IPTW to a permanent location
+2. **Add to startup** for automatic launch:
+   - Press `Win + R`, type `shell:startup`, press Enter
+   - Copy IPTW executable or create a shortcut in the startup folder
+3. **Run commands**:
+   ```cmd
+   # Full functionality (wallpaper + HTTP server)
+   iptw -server
+   
+   # Background mode
+   start /B iptw -server
+   
+   # Just wallpaper (no HTTP server)
+   iptw
+   ```
+   
+   # Separate instance for wallpaper (monitors different port)
+   iptw -port 32783
+   ```
 
 ## Best Practices
 
