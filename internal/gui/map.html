@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IP Travel Map</title>
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #f0f0f0;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #map-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: sans-serif;
+            color: #666;
+            font-size: 1.2rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="loading">Generating Map...</div>
+    <div id="map-container">
+        <!-- The map image will be loaded here -->
+    </div>
+    <script>
+        // _sessionToken is injected by the Go HTTP handler at serve time
+        var sessionToken = (typeof window._sessionToken !== 'undefined') ? window._sessionToken : '';
+
+        function updateMapImage() {
+            const img = document.getElementById('map-img');
+            const loading = document.getElementById('loading');
+            const url = '/api/map.png?_=' + Date.now();
+
+            const newImg = new Image();
+            newImg.onload = function () {
+                if (loading) {
+                    loading.style.display = 'none';
+                }
+                if (img) {
+                    img.src = newImg.src;
+                } else {
+                    const container = document.getElementById('map-container');
+                    const el = document.createElement('img');
+                    el.id = 'map-img';
+                    el.alt = 'IP Travel Map';
+                    el.src = newImg.src;
+                    container.appendChild(el);
+                }
+            };
+            newImg.src = url;
+        }
+
+        // Initial load
+        updateMapImage();
+
+        // Poll every 2 seconds for updates
+        setInterval(updateMapImage, 2000);
+    </script>
+</body>
+
+</html>

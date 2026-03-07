@@ -17,13 +17,9 @@ DIST_DIR = dist
 
 # Platforms and architectures to build for
 PLATFORMS = \
-	darwin/amd64 \
 	darwin/arm64 \
 	linux/amd64 \
-	linux/arm64 \
-	windows/amd64 \
-	windows/arm64
-
+	windows/amd64 
 # Main entry point
 MAIN_PACKAGE = ./cmd/iptw
 
@@ -42,12 +38,15 @@ clean:
 dirs:
 	@mkdir -p $(BUILD_DIR) $(DIST_DIR)
 
+# Executable extension (.exe on Windows)
+BINARY_EXT = $(if $(filter Windows_NT,$(OS)),.exe,)
+
 # Build for current platform
 .PHONY: build
 build: dirs
 	@echo "🔨 Building $(APP_NAME) for current platform..."
-	@go build $(BUILD_FLAGS) -o $(BUILD_DIR)/$(APP_NAME) $(MAIN_PACKAGE)
-	@echo "✅ Build complete: $(BUILD_DIR)/$(APP_NAME)"
+	@go build $(BUILD_FLAGS) -o $(BUILD_DIR)/$(APP_NAME)$(BINARY_EXT) $(MAIN_PACKAGE)
+	@echo "✅ Build complete: $(BUILD_DIR)/$(APP_NAME)$(BINARY_EXT)"
 
 # Build for all platforms
 .PHONY: build-all
@@ -68,7 +67,6 @@ define build_platform
 	 (echo "    ⚠️  CGO build failed for $(GOOS)/$(GOARCH), trying without CGO..." && \
 	  GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=0 go build $(BUILD_FLAGS) -o $(OUTPUT_DIR)/$(BINARY_NAME) $(MAIN_PACKAGE))
 	@cp README.md $(OUTPUT_DIR)/ 2>/dev/null || true
-	@cp SERVICE.md $(OUTPUT_DIR)/ 2>/dev/null || true
 	@cp -r config $(OUTPUT_DIR)/ 2>/dev/null || true
 	@echo "    ✅ $(GOOS)/$(GOARCH) build complete"
 endef
@@ -143,7 +141,7 @@ audit:
 .PHONY: install-dev-deps
 install-dev-deps:
 	@echo "📦 Installing development dependencies..."
-	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	curl -sSfL https://golangci-lint.run/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.11.1
 	@echo "✅ Development dependencies installed"
 
 # Quick build and run
@@ -152,14 +150,7 @@ run: build
 	@echo "🚀 Running $(APP_NAME)..."
 	@./$(BUILD_DIR)/$(APP_NAME)
 
-# Build with service capabilities
-.PHONY: build-service
-build-service: dirs
-	@echo "🔨 Building $(APP_NAME) with service support..."
-	@go build $(BUILD_FLAGS) -tags=service -o $(BUILD_DIR)/$(APP_NAME)-service $(MAIN_PACKAGE)
-	@echo "✅ Service build complete: $(BUILD_DIR)/$(APP_NAME)-service"
 
-# Release preparation
 .PHONY: release
 release: clean test lint build-all package
 	@echo "🎉 Release $(VERSION) is ready!"

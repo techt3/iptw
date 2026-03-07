@@ -1,9 +1,16 @@
 
 # IP Travel Wallpaper (iptw)
 
-IP Travel Wallpaper transforms your network browsing into a gamified world exploration experience. As you visit websites and connect to servers around the globe, your digital footprints are visualized as virtual travels on a beautiful world map that becomes your desktop wallpaper.
+IP Travel Wallpaper transforms your network browsing into a gamified world exploration experience. As you visit websites and connect to servers around the globe, your digital footprints are visualized on a stunning interactive world map that stays in your system tray.
 
-![Example wallpaper](./files/wallpaper.png)
+![Example map](./files/map_screenshot.png)
+
+## What's New: System Tray & Interactive Map
+IPTW has been modernized into a lightweight system tray application:
+- **System Tray Icon**: Access all features quickly from your OS menu bar.
+- **Interactive Map**: Click the tray icon to open a beautiful, real-time world map in your browser.
+- **Opt-in Wallpaper**: By default, IPTW no longer changes your OS wallpaper. You can enable this as an optional feature in the menu.
+- **Auto-Start**: Easily configure IPTW to start when you log in via the tray menu.
 
 ## Game Philosophy: Breaking Out of Digital Bubbles
 
@@ -17,21 +24,15 @@ In our interconnected world, most internet traffic flows through a handful of ma
 
 The game rewards curiosity and geographic diversity over convenience, encouraging you to venture beyond the mainstream digital highways.
 
-
 ## How It Works: Travel Mechanics
 
-- **Virtual Travel**: Each network connection to a foreign IP address represents a "visit" to that country
+- **Virtual Travel**: Each network connection to a foreign IP address represents a "visit" to that country.
 - **Progressive Country Coloring**: Countries change appearance based on your visit frequency:
   - **1-9 visits**: Display national flag background (fresh destinations worth exploring)
   - **10+ visits**: Countries become "boring" and display sand/rocks gradient patterns (time to find new places!)
   - **Continued Activity on Boring Countries**: When boring countries receive additional hits, their patterns show slight variations to indicate ongoing activity
-- **Exploration Incentives**: 
-  - **Target Countries**: Red borders highlight unvisited countries, encouraging global exploration
-  - **Achievement System**: Unlock achievements by visiting all countries in geographic regions
-  - **Fastest Traveler Achievements**: Special rewards for marking target countries as boring quickly
-  - **Discovery Rewards**: Special recognition for finding rare hosting locations
-- **Real-time Visualization**: Watch your virtual travel map expand as you browse, with live connection points
-- **Wallpaper Generation**: Your journey becomes a personalized, ever-changing desktop background
+- **Interactive Visualization**: Open the map from the tray to see your travels expand with live connection points.
+- **Optional Wallpaper**: If enabled, your journey becomes a personalized, ever-changing desktop background.
 
 ## Game Goals & Challenges
 
@@ -58,6 +59,7 @@ The modern internet is dominated by a few major hosting providers, creating invi
 - **Direct Sources**: Government, academic, and institutional websites hosted locally
 - **Cultural Content**: Local entertainment, art, and cultural preservation sites
 
+
 ## Installation & Usage
 
 ### Download Pre-built Binaries
@@ -78,41 +80,18 @@ The modern internet is dominated by a few major hosting providers, creating invi
 ### Cross-Platform Support
 IPTW runs natively on **macOS**, **Linux**, and **Windows** with automatic platform detection for network monitoring.
 
-
-
 ### Self-Contained Application
 - **No Setup Required**: Single executable contains all dependencies
 - **No External Downloads**: Everything is embedded in the binary
 - **Portable**: Run from any location without installation
 - **Privacy-First**: All data processing happens locally on your machine
-
 ### Quick Start
-1. Download the binary for your platform from [Releases](https://github.com/techt3/iptw/releases)
-2. Extract the archive
-3. Run `iptw` from terminal/command prompt
-4. Start browsing the internet to begin your virtual travels
-5. Watch your desktop wallpaper update with your global journey
+1. Download the binary for your platform from [Releases](https://github.com/techt3/iptw/releases).
+2. Extract the archive.
+3. Run `iptw` to start the system tray application.
+4. Click the **Tray Icon** and select **Show Map** to see your journey.
+5. (Optional) Enable **Update OS Wallpaper** to have the map as your background!
 
-
-### Background Service (macOS and Linux)
-For continuous automatic operation on macOS and Linux, install iptw as a background service:
-
-```bash
-# Install as background service (auto-starts on boot/login)
-./iptw -install-service
-
-# Check service status
-./iptw -service-status
-
-# Control service manually  
-./iptw -start-service
-./iptw -stop-service
-
-# Remove service
-./iptw -uninstall-service
-```
-
-**⚠️ Windows Note**: Service functionality is disabled on Windows because Windows services cannot change desktop wallpapers due to session isolation. On Windows, run IPTW directly as a regular application instead.
 
 ## Fastest Traveler Achievement System 🚀
 
@@ -190,16 +169,6 @@ stats_y 100   # Position stats 100 pixels from top edge
 - `target_interval`: Minutes between target country changes (default: 5)
 - `log_level`: Logging verbosity: debug, info, warn, error (default: info)
 
-**Cross-Platform Service Support:**
-- **macOS**: LaunchAgent (starts on user login)
-- **Linux**: systemd user service (starts on login)  
-- **Windows**: ❌ Not supported (services cannot change wallpapers due to session isolation)
-
-**Windows Alternative**: Add IPTW to your Windows startup folder for automatic startup:
-`%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup`
-
-📖 **For detailed service management, see [SERVICE.md](SERVICE.md)**
-
 ## Wallpaper Backup & Restore
 
 IPTW automatically backs up your original desktop wallpaper before making any changes and can restore it when the application exits or on demand.
@@ -242,46 +211,7 @@ Test the wallpaper backup functionality:
 ./scripts/test-wallpaper-backup.sh
 ```
 
-## Server-Client Mode 
 
-IPTW now supports server-client functionality for remote monitoring and statistics sharing:
-
-### Server Mode 
-Run IPTW with a built-in HTTP statistics server:
-```bash
-# Start with statistics server on port 32782
-./iptw -server
-
-# Use custom port
-./iptw -server -port 9090
-```
-
-### Client Mode
-Connect to a remote IPTW server to view statistics:
-```bash
-# View stats from default server (localhost:32782)
-./iptw -client
-
-# Connect to remote server
-./iptw -client -server-url http://192.168.1.100:32782
-
-# Show achievements
-./iptw -client -achievements
-
-# Show country details
-./iptw -client -countries
-
-# Watch mode: continuously poll for updates
-./iptw -client -watch -interval 30
-```
-
-### Use Cases
-- **Remote Monitoring**: Monitor IPTW statistics from another machine
-- **Dashboard Integration**: JSON API for custom dashboards (`/stats/json`)
-- **Achievement Tracking**: Monitor progress across multiple instances
-- **Team Challenges**: Share statistics for group competitions
-
-📖 **For detailed service management, see [SERVICE.md](SERVICE.md)**
 
 ## Troubleshooting
 
@@ -300,7 +230,6 @@ Connect to a remote IPTW server to view statistics:
 
 **Permission Denied**
 - Make the binary executable: `chmod +x iptw`
-- For service installation: May need `sudo` depending on your system
 
 ### Windows Issues
 
@@ -312,22 +241,6 @@ Connect to a remote IPTW server to view statistics:
 **Execution Policy Errors**
 - If using PowerShell, you may need: `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`
 
-**Windows Wallpaper Support**
-- **Status**: ✅ Full wallpaper support when running as regular application
-- **Service Mode**: ❌ Disabled (Windows services cannot change desktop wallpapers due to session isolation)
-- **Recommended Usage**: Run IPTW directly as a regular application:
-  ```bash
-  # Run with wallpaper support:
-  iptw
-  
-  # Run with HTTP server:
-  iptw -server
-  
-  # Run in background:
-  start /B iptw -server
-  ```
-- **Auto-Start**: Add to Windows startup folder: `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup`
-- **Alternative**: Keep service for statistics only, run separate instance for wallpapers
 
 ### General Issues
 
@@ -408,7 +321,7 @@ We welcome contributions to help make digital exploration more accessible and di
 ### Development Setup
 
 **Prerequisites:**
-- Go 1.24 or later
+- Go 1.26.0 or later
 - Git
 - C compiler (for CGO dependencies)
 
@@ -460,10 +373,6 @@ The project includes comprehensive cross-platform build support via Makefile and
 
 ### Architecture
 
-**Cross-Platform Service Management:**
-- Platform-specific service implementations with Go build tags
-- Unified service interface for consistent behavior across platforms
-- Native system integration (LaunchAgent, systemd, Windows Service)
 
 **Network Monitoring:**
 - Platform-specific network connection tracking

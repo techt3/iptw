@@ -34,9 +34,6 @@ func (sm *ServiceManager) installMacOS() error {
     <key>ProgramArguments</key>
     <array>
         <string>%s</string>
-        <string>-force</string>
-        <string>-port</string>
-        <string>%s</string>
     </array>
     <key>WorkingDirectory</key>
     <string>%s</string>
@@ -47,16 +44,10 @@ func (sm *ServiceManager) installMacOS() error {
         <key>SuccessfulExit</key>
         <false/>
     </dict>
-    <key>StandardOutPath</key>
-    <string>%s/Library/Logs/%s.out.log</string>
-    <key>StandardErrorPath</key>
-    <string>%s/Library/Logs/%s.err.log</string>
     <key>ProcessType</key>
-    <string>Background</string>
+    <string>Interactive</string>
 </dict>
-</plist>`, sm.ServiceName, sm.ExecutablePath, sm.ServerPort, sm.WorkingDir,
-		currentUser.HomeDir, sm.ServiceName,
-		currentUser.HomeDir, sm.ServiceName)
+</plist>`, sm.ServiceName, sm.ExecutablePath, sm.WorkingDir)
 
 	// Write plist file
 	if err := os.WriteFile(plistPath, []byte(plistContent), 0644); err != nil {
@@ -72,7 +63,6 @@ func (sm *ServiceManager) installMacOS() error {
 	fmt.Printf("✅ Service installed successfully on macOS\n")
 	fmt.Printf("   Plist file: %s\n", plistPath)
 	fmt.Printf("   Service will start automatically on login\n")
-	fmt.Printf("   HTTP statistics server will be available on port %s\n", sm.ServerPort)
 
 	return nil
 }
@@ -163,41 +153,41 @@ func (sm *ServiceManager) statusMacOS() (bool, error) {
 
 // Stub implementations for other platforms on macOS
 func (sm *ServiceManager) installLinux() error {
-	return fmt.Errorf("Linux service management not available on macOS")
+	return fmt.Errorf("linux service management not available on macOS")
 }
 
 func (sm *ServiceManager) uninstallLinux() error {
-	return fmt.Errorf("Linux service management not available on macOS")
+	return fmt.Errorf("linux service management not available on macOS")
 }
 
 func (sm *ServiceManager) startLinux() error {
-	return fmt.Errorf("Linux service management not available on macOS")
+	return fmt.Errorf("linux service management not available on macOS")
 }
 
 func (sm *ServiceManager) stopLinux() error {
-	return fmt.Errorf("Linux service management not available on macOS")
+	return fmt.Errorf("linux service management not available on macOS")
 }
 
 func (sm *ServiceManager) statusLinux() (bool, error) {
-	return false, fmt.Errorf("Linux service management not available on macOS")
+	return false, fmt.Errorf("linux service management not available on macOS")
 }
 
 func (sm *ServiceManager) installWindows() error {
-	return fmt.Errorf("Windows service management not available on macOS")
+	return fmt.Errorf("windows service management not available on macOS")
 }
 
 func (sm *ServiceManager) uninstallWindows() error {
-	return fmt.Errorf("Windows service management not available on macOS")
+	return fmt.Errorf("windows service management not available on macOS")
 }
 
 func (sm *ServiceManager) startWindows() error {
-	return fmt.Errorf("Windows service management not available on macOS")
+	return fmt.Errorf("windows service management not available on macOS")
 }
 
 func (sm *ServiceManager) stopWindows() error {
-	return fmt.Errorf("Windows service management not available on macOS")
+	return fmt.Errorf("windows service management not available on macOS")
 }
 
 func (sm *ServiceManager) statusWindows() (bool, error) {
-	return false, fmt.Errorf("Windows service management not available on macOS")
+	return false, fmt.Errorf("windows service management not available on macOS")
 }

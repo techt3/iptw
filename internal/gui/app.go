@@ -31,6 +31,11 @@
 package gui
 
 import (
+	"bytes"
+	"crypto/rand"
+	_ "embed"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"image"
 	"image/color"
@@ -38,13 +43,17 @@ import (
 	"image/png"
 	"log/slog"
 	"math"
-	"math/rand"
+	mathrand "math/rand"
+	"net"
+	"net/http"
 	"os"
-	"os/signal"
 	"path/filepath"
+	"sort"
 	"sync"
-	"syscall"
 	"time"
+
+	"github.com/getlantern/systray"
+	"github.com/skratchdot/open-golang/open"
 
 	"iptw/internal/achievements"
 	"iptw/internal/background"
@@ -54,7 +63,11 @@ import (
 	"iptw/internal/network"
 	"iptw/internal/resources"
 	"iptw/internal/screen"
+	"iptw/internal/service"
 )
+
+//go:embed map.html
+var mapHTMLContent []byte
 
 // CountryGameState represents the game state for a country
 type CountryGameState struct {
@@ -230,6 +243,7 @@ func (gs *GameState) GetCountryColor(country string) color.RGBA {
 // App represents the main application
 type App struct {
 	config                 *config.Config
+	configMu               sync.RWMutex // protects concurrent access to config fields
 	geoip                  *geoip.Database
 	monitor                *network.Monitor
 	worldMap               image.Image
@@ -243,6 +257,11 @@ type App struct {
 	originalWallpaper      string // Path to the backed up original wallpaper
 	wallpaperBackedUp      bool   // Flag to track if we've backed up the wallpaper
 	wallpaperBackedUpError error
+	lastMapPNG             []byte       // Cached PNG bytes of the last generated map image
+	mapPNGMu               sync.RWMutex // protects lastMapPNG
+	sessionToken           string       // Per-session token for POST endpoint authorization
+	serverURL              string       // URL of the local HTTP server
+	serverListener         net.Listener // Local HTTP listener; closed on shutdown
 }
 
 // NewApp creates a new application instance
@@ -279,6 +298,22 @@ func NewApp(cfg *config.Config, geoipDB *geoip.Database, monitor *network.Monito
 		slog.Info("Flag bitmaps loaded successfully", "count", len(flagManager.ListFlags()))
 	}
 
+	// Generate a per-session token for POST endpoint authorization
+	tokenBytes := make([]byte, 16)
+	if _, err := rand.Read(tokenBytes); err != nil {
+		return nil, fmt.Errorf("failed to generate session token: %w", err)
+	}
+	generatedToken := hex.EncodeToString(tokenBytes)
+
+	// Check for existing wallpaper backups in the output directory
+	var firstBackup string
+	if files, err := filepath.Glob(filepath.Join(outputDir, "original_wallpaper_*")); err == nil && len(files) > 0 {
+		// Sort files to pick the earliest backup
+		sort.Strings(files)
+		firstBackup = files[0]
+		slog.Info("🔍 Found existing wallpaper backup", "path", firstBackup)
+	}
+
 	return &App{
 		config:            cfg,
 		geoip:             geoipDB,
@@ -290,29 +325,27 @@ func NewApp(cfg *config.Config, geoipDB *geoip.Database, monitor *network.Monito
 		achievements:      achievements.NewAchievementManager(),
 		fontManager:       fontManager,
 		flagManager:       flagManager,
-		wallpaperBackedUp: false,
+		originalWallpaper: firstBackup,
+		wallpaperBackedUp: firstBackup != "",
+		sessionToken:      generatedToken,
 	}, nil
 }
 
 // Run starts the application
 func (a *App) Run() error {
-	// Set up signal handling for graceful shutdown
-	signalCh := make(chan os.Signal, 1)
-	signal.Notify(signalCh, os.Interrupt, syscall.SIGTERM)
+	// Start systray lifecycle. This blocks until systray quits.
+	systray.Run(a.onReady, a.onExit)
+	return nil
+}
 
-	// Start graceful shutdown handler in a goroutine
-	go func() {
-		<-signalCh
-		slog.Info("Received shutdown signal, cleaning up...")
-		a.Shutdown()
-		os.Exit(0)
-	}()
-
+func (a *App) onReady() {
 	// Log startup information
 	slog.Info("IP Travel Wallpaper started",
 		"screen_auto_detection", a.config.AutoDetectScreen,
 		"log_level", a.config.LogLevel,
 		"target_interval_minutes", a.config.TargetInterval,
+		"update_wallpaper", a.config.UpdateWallpaper,
+		"start_on_login", a.config.StartOnLogin,
 	)
 	if !a.config.AutoDetectScreen {
 		slog.Debug("Manual map dimensions configured",
@@ -321,9 +354,21 @@ func (a *App) Run() error {
 		)
 	}
 
+	// Setup Systray
+	setTrayTitleAndTooltip("IPTW", "IP Travel Map")
+	// TODO: set an actual icon bytes array, for now using a placeholder text if no icon
+
+	mShowMap := systray.AddMenuItem("Show Map", "Open the interactive travel map")
+	mToggleWallpaper := systray.AddMenuItemCheckbox("Update OS Wallpaper", "Automatically update desktop wallpaper", a.config.UpdateWallpaper)
+	mStartOnLogin := systray.AddMenuItemCheckbox("Start on Login", "Automatically start IP Travel Map on system login", a.config.StartOnLogin)
+	systray.AddSeparator()
+	mQuit := systray.AddMenuItem("Quit", "Quit the whole app")
+
 	// Load world map
 	if err := a.loadWorldMap(); err != nil {
-		return fmt.Errorf("failed to load world map: %w", err)
+		slog.Error("failed to load world map", "error", err)
+		systray.Quit()
+		return
 	}
 
 	slog.Info("World map loaded successfully")
@@ -337,12 +382,229 @@ func (a *App) Run() error {
 	// Start image generation and display loop
 	go a.displayLoop()
 
-	// Keep application running
-	for a.running {
-		time.Sleep(1 * time.Second)
+	// Start local HTTP server to host the UI
+	go a.startLocalServer()
+
+	// Handle Menu events
+	go func() {
+		for {
+			select {
+			case <-mShowMap.ClickedCh:
+				a.showMapWindow()
+			case <-mToggleWallpaper.ClickedCh:
+				a.configMu.Lock()
+				a.config.UpdateWallpaper = !a.config.UpdateWallpaper
+				newVal := a.config.UpdateWallpaper
+				a.configMu.Unlock()
+				if newVal {
+					mToggleWallpaper.Check()
+				} else {
+					mToggleWallpaper.Uncheck()
+					// Restore original wallpaper if we backed it up
+					if a.HasWallpaperBackup() {
+						if err := a.RestoreOriginalWallpaper(); err != nil {
+							slog.Error("Failed to restore original wallpaper", "error", err)
+						}
+					}
+				}
+				if err := a.saveConfig(); err != nil {
+					slog.Error("Failed to save config after toggling wallpaper", "error", err)
+				}
+			case <-mStartOnLogin.ClickedCh:
+				a.configMu.Lock()
+				a.config.StartOnLogin = !a.config.StartOnLogin
+				newVal := a.config.StartOnLogin
+				a.configMu.Unlock()
+				if newVal {
+					mStartOnLogin.Check()
+					if sm, err := service.NewServiceManager(); err == nil {
+						if err := sm.Install(); err != nil {
+							slog.Error("Failed to install auto-start service", "error", err)
+						}
+					}
+				} else {
+					mStartOnLogin.Uncheck()
+					if sm, err := service.NewServiceManager(); err == nil {
+						if err := sm.Uninstall(); err != nil {
+							slog.Error("Failed to uninstall auto-start service", "error", err)
+						}
+					}
+				}
+				if err := a.saveConfig(); err != nil {
+					slog.Error("Failed to save config after toggling start-on-login", "error", err)
+				}
+			case <-mQuit.ClickedCh:
+				systray.Quit()
+				return
+			}
+		}
+	}()
+}
+
+func (a *App) onExit() {
+	slog.Info("Received shutdown signal from systray, cleaning up...")
+	a.Shutdown()
+}
+
+// saveConfig saves the current configuration to disk. It resolves the config
+// path consistently with LoadConfig.
+func (a *App) saveConfig() error {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("failed to get home directory: %w", err)
+	}
+	configPath := filepath.Join(homeDir, ".config", "iptw", "iptwrc")
+	a.configMu.RLock()
+	defer a.configMu.RUnlock()
+	return a.config.Save(configPath)
+}
+
+// requireSessionToken is middleware for POST endpoints that validates the
+// per-session token to prevent cross-site request forgery from malicious pages.
+func (a *App) requireSessionToken(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		token := r.Header.Get("X-Session-Token")
+		if token == "" {
+			token = r.URL.Query().Get("_t")
+		}
+		if token != a.sessionToken {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
+		}
+		next(w, r)
+	}
+}
+
+func (a *App) startLocalServer() {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		slog.Error("Failed to bind local HTTP server", "error", err)
+		return
 	}
 
-	return nil
+	tcpAddr, ok := ln.Addr().(*net.TCPAddr)
+	if !ok {
+		slog.Error("Unexpected listener address type for local HTTP server")
+		if err := ln.Close(); err != nil {
+			slog.Warn("Failed to close temporary listener", "error", err)
+		}
+		return
+	}
+
+	a.serverListener = ln
+	a.serverURL = fmt.Sprintf("http://127.0.0.1:%d", tcpAddr.Port)
+	slog.Info("Starting local HTTP server for UI", "url", a.serverURL)
+
+	mux := http.NewServeMux()
+
+	// Serve the embedded map HTML, injecting the session token so JS can use it
+	mux.HandleFunc("/map.html", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		// Inject the session token as a JS variable before </head>
+		injected := bytes.Replace(
+			mapHTMLContent,
+			[]byte("</head>"),
+			[]byte(fmt.Sprintf(`<script>window._sessionToken = %q;</script></head>`, a.sessionToken)),
+			1,
+		)
+		if _, err := w.Write(injected); err != nil {
+			slog.Error("Failed to write map HTML", "error", err)
+		}
+	})
+
+	// Serve the latest map image as PNG bytes directly (no double-encoding)
+	mux.HandleFunc("/api/map.png", func(w http.ResponseWriter, r *http.Request) {
+		a.mapPNGMu.RLock()
+		pngBytes := a.lastMapPNG
+		a.mapPNGMu.RUnlock()
+		if len(pngBytes) == 0 {
+			http.Error(w, "Map not yet generated", http.StatusServiceUnavailable)
+			return
+		}
+		w.Header().Set("Content-Type", "image/png")
+		w.Header().Set("Cache-Control", "no-cache")
+		if _, err := w.Write(pngBytes); err != nil {
+			slog.Error("Failed to write map PNG", "error", err)
+		}
+	})
+
+	// Mark a country as boring manually
+	mux.HandleFunc("/countries/boring", a.requireSessionToken(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		var data struct {
+			Country string `json:"country"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+			http.Error(w, "Invalid request body", http.StatusBadRequest)
+			return
+		}
+
+		if data.Country == "" {
+			http.Error(w, "Country name is required", http.StatusBadRequest)
+			return
+		}
+
+		wasTarget, _ := a.gameState.MarkCountryAsBoring(data.Country)
+		if wasTarget {
+			a.achievements.UnlockFastestTravelerAchievement(data.Country)
+		}
+
+		if err := json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": true,
+			"message": fmt.Sprintf("Country %s marked as boring", data.Country),
+		}); err != nil {
+			slog.Error("Failed to encode boring country response", "error", err)
+		}
+	}))
+
+	// Restore original wallpaper
+	mux.HandleFunc("/wallpaper/restore", a.requireSessionToken(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		if a.originalWallpaper == "" {
+			http.Error(w, "No original wallpaper backup found", http.StatusNotFound)
+			return
+		}
+
+		if err := a.RestoreOriginalWallpaper(); err != nil {
+			slog.Error("Failed to restore wallpaper via API", "error", err)
+			http.Error(w, "Failed to restore wallpaper", http.StatusInternalServerError)
+			return
+		}
+
+		if err := json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": true,
+			"message": "Original wallpaper restored successfully",
+		}); err != nil {
+			slog.Error("Failed to encode wallpaper restore response", "error", err)
+		}
+	}))
+
+	// Redirect root to map.html
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/map.html", http.StatusSeeOther)
+	})
+
+	if err := http.Serve(ln, mux); err != nil {
+		slog.Error("Local HTTP server stopped", "error", err)
+	}
+}
+
+func (a *App) showMapWindow() {
+	if a.serverURL == "" {
+		slog.Warn("Local HTTP server not yet ready, cannot open map")
+		return
+	}
+	if err := open.Run(a.serverURL); err != nil {
+		slog.Error("Failed to open browser", "error", err)
+	}
 }
 
 // loadWorldMap loads the world map image from Natural Earth data
@@ -611,28 +873,50 @@ func (a *App) generateAndDisplayMap() error {
 	// Draw game status rectangle
 	a.drawGameStatusRectangle(rgbaImg, width, height)
 
-	// Save the image
+	// Encode once to buffer, then write to disk and cache for the HTTP server
+	buf := new(bytes.Buffer)
+	if err := png.Encode(buf, rgbaImg); err != nil {
+		return fmt.Errorf("failed to encode map image: %w", err)
+	}
+	pngBytes := buf.Bytes()
+
+	// Save the image to output path
 	outputPath := filepath.Join(a.outputDir, "iptw.png")
-	if err := a.saveImage(rgbaImg, outputPath); err != nil {
-		return err
+	if err := os.WriteFile(outputPath, pngBytes, 0644); err != nil {
+		return fmt.Errorf("failed to save map image: %w", err)
 	}
 
-	// Backup original wallpaper before first change
-	if !a.wallpaperBackedUp && a.wallpaperBackedUpError == nil {
-		backupPath, err := background.BackupCurrentWallpaper(a.outputDir)
-		if err != nil {
-			slog.Warn("Failed to backup original wallpaper - restore functionality will not be available", "error", err)
-			a.wallpaperBackedUpError = err
+	// Cache PNG bytes for the local HTTP server (protected by mutex to prevent races)
+	a.mapPNGMu.Lock()
+	a.lastMapPNG = pngBytes
+	a.mapPNGMu.Unlock()
 
-		} else {
-			a.originalWallpaper = backupPath
-			a.wallpaperBackedUp = true
-			slog.Info("💾 Original wallpaper backed up successfully")
+	a.configMu.RLock()
+	updateWallpaper := a.config.UpdateWallpaper
+	a.configMu.RUnlock()
+
+	if updateWallpaper {
+		// Backup original wallpaper before first change
+		if !a.wallpaperBackedUp && a.wallpaperBackedUpError == nil {
+			backupPath, err := background.BackupCurrentWallpaper(a.outputDir)
+			if err != nil {
+				slog.Warn("Failed to backup original wallpaper - restore functionality will not be available", "error", err)
+				a.wallpaperBackedUpError = err
+
+			} else {
+				a.originalWallpaper = backupPath
+				a.wallpaperBackedUp = true
+				slog.Info("💾 Original wallpaper backed up successfully")
+			}
+		}
+
+		// Display using macOS Preview or similar
+		if err := background.SetDesktopBackground(outputPath); err != nil {
+			slog.Error("Failed to set desktop background", "error", err)
 		}
 	}
 
-	// Display using macOS Preview or similar
-	return background.SetDesktopBackground(outputPath)
+	return nil
 }
 
 // latLngToMapCoords converts latitude/longitude to map pixel coordinates
@@ -789,21 +1073,6 @@ func (a *App) getGameInfoConfig(darkTheme bool, fontSize float64, padding int) r
 			BorderWidth:     2, // Thicker border for better visibility
 		}
 	}
-}
-
-// saveImage saves an image to file
-func (a *App) saveImage(img image.Image, path string) error {
-	file, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if closeErr := file.Close(); closeErr != nil {
-			slog.Warn("Failed to close file", "path", path, "error", closeErr)
-		}
-	}()
-
-	return png.Encode(file, img)
 }
 
 // drawCountryFills draws country fills based on hit counts
@@ -1064,7 +1333,7 @@ func (a *App) SelectRandomTargetCountry() {
 	}
 
 	// Select a random unhit country
-	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	rng := mathrand.New(mathrand.NewSource(time.Now().UnixNano()))
 	targetIndex := rng.Intn(len(unhitCountries))
 	newTarget := unhitCountries[targetIndex]
 
@@ -1172,13 +1441,18 @@ func (a *App) Shutdown() {
 	// Stop the application
 	a.Stop()
 
+	// Close the local HTTP server listener
+	if a.serverListener != nil {
+		if err := a.serverListener.Close(); err != nil {
+			slog.Warn("Failed to close local HTTP server listener", "error", err)
+		}
+	}
+
 	// Restore original wallpaper if we backed it up
-	if a.wallpaperBackedUp && a.originalWallpaper != "" {
+	if a.HasWallpaperBackup() {
 		slog.Info("🔄 Restoring original wallpaper...")
-		if err := background.RestoreWallpaper(a.originalWallpaper); err != nil {
-			slog.Error("Failed to restore original wallpaper", "error", err)
-		} else {
-			slog.Info("✅ Original wallpaper restored successfully")
+		if err := a.RestoreOriginalWallpaper(); err != nil {
+			slog.Error("Failed to restore original wallpaper during shutdown", "error", err)
 		}
 	} else {
 		slog.Info("No wallpaper backup available - leaving current wallpaper as is")
@@ -1202,6 +1476,17 @@ func (a *App) RestoreOriginalWallpaper() error {
 		return fmt.Errorf("failed to restore wallpaper: %w", err)
 	}
 
-	slog.Info("✅ Original wallpaper restored via API request")
+	// Delete the backup file after successful restoration
+	if err := os.Remove(a.originalWallpaper); err != nil {
+		slog.Warn("Failed to delete wallpaper backup file after restore", "path", a.originalWallpaper, "error", err)
+	} else {
+		slog.Info("🗑️  Wallpaper backup file deleted after successful restore")
+	}
+
+	// Reset state
+	a.originalWallpaper = ""
+	a.wallpaperBackedUp = false
+
+	slog.Info("✅ Original wallpaper restored successfully")
 	return nil
 }

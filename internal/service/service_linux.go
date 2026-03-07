@@ -5,127 +5,72 @@ package service
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"os/user"
 	"path/filepath"
 )
 
-// installLinux installs the service as a systemd user service
+// installLinux creates a .desktop file in ~/.config/autostart
 func (sm *ServiceManager) installLinux() error {
 	currentUser, err := user.Current()
 	if err != nil {
 		return fmt.Errorf("failed to get current user: %w", err)
 	}
 
-	// Create systemd user directory if it doesn't exist
-	systemdDir := filepath.Join(currentUser.HomeDir, ".config", "systemd", "user")
-	if err := os.MkdirAll(systemdDir, 0755); err != nil {
-		return fmt.Errorf("failed to create systemd user directory: %w", err)
+	autostartDir := filepath.Join(currentUser.HomeDir, ".config", "autostart")
+	if err := os.MkdirAll(autostartDir, 0755); err != nil {
+		return fmt.Errorf("failed to create autostart directory: %w", err)
 	}
 
-	// Create service file
-	servicePath := filepath.Join(systemdDir, fmt.Sprintf("%s.service", sm.ServiceName))
-	serviceContent := fmt.Sprintf(`[Unit]
-Description=%s
-After=graphical-session.target
+	desktopFile := filepath.Join(autostartDir, fmt.Sprintf("%s.desktop", sm.ServiceName))
+	desktopContent := fmt.Sprintf(`[Desktop Entry]
+Type=Application
+Exec="%s"
+Hidden=false
+NoDisplay=false
+Terminal=false
+X-GNOME-Autostart-enabled=true
+Name=%s
+Comment=%s
+`, sm.ExecutablePath, sm.DisplayName, sm.Description)
 
-[Service]
-Type=simple
-ExecStart=%s -force -port %s
-WorkingDirectory=%s
-Restart=always
-RestartSec=10
-KillMode=process
-TimeoutStopSec=20
-
-[Install]
-WantedBy=default.target`, sm.Description, sm.ExecutablePath, sm.ServerPort, sm.WorkingDir)
-
-	// Write service file
-	if err := os.WriteFile(servicePath, []byte(serviceContent), 0644); err != nil {
-		return fmt.Errorf("failed to write service file: %w", err)
+	if err := os.WriteFile(desktopFile, []byte(desktopContent), 0644); err != nil {
+		return fmt.Errorf("failed to write autostart file: %w", err)
 	}
 
-	// Reload systemd daemon
-	cmd := exec.Command("systemctl", "--user", "daemon-reload")
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to reload systemd daemon: %w", err)
-	}
-
-	// Enable the service
-	cmd = exec.Command("systemctl", "--user", "enable", fmt.Sprintf("%s.service", sm.ServiceName))
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to enable service: %w", err)
-	}
-
-	fmt.Printf("✅ Service installed successfully on Linux\n")
-	fmt.Printf("   Service file: %s\n", servicePath)
-	fmt.Printf("   Service will start automatically on login\n")
-	fmt.Printf("   HTTP statistics server will be available on port %s\n", sm.ServerPort)
-	fmt.Printf("   To enable lingering (start without login): sudo loginctl enable-linger %s\n", currentUser.Username)
-
+	fmt.Printf("✅ Auto-start installed successfully on Linux\n")
 	return nil
 }
 
-// uninstallLinux removes the systemd user service
+// uninstallLinux removes the .desktop file
 func (sm *ServiceManager) uninstallLinux() error {
-	// Stop the service first
-	_ = sm.stopLinux()
-
-	// Disable the service
-	cmd := exec.Command("systemctl", "--user", "disable", fmt.Sprintf("%s.service", sm.ServiceName))
-	_ = cmd.Run() // Ignore errors as service might not be enabled
-
-	// Remove service file
 	currentUser, err := user.Current()
 	if err != nil {
 		return fmt.Errorf("failed to get current user: %w", err)
 	}
 
-	servicePath := filepath.Join(currentUser.HomeDir, ".config", "systemd", "user", fmt.Sprintf("%s.service", sm.ServiceName))
-	if err := os.Remove(servicePath); err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("failed to remove service file: %w", err)
+	desktopFile := filepath.Join(currentUser.HomeDir, ".config", "autostart", fmt.Sprintf("%s.desktop", sm.ServiceName))
+
+	if err := os.Remove(desktopFile); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("failed to remove autostart file: %w", err)
 	}
 
-	// Reload systemd daemon
-	cmd = exec.Command("systemctl", "--user", "daemon-reload")
-	_ = cmd.Run()
-
-	fmt.Printf("✅ Service uninstalled successfully from Linux\n")
+	fmt.Printf("✅ Auto-start uninstalled successfully from Linux\n")
 	return nil
 }
 
-// startLinux starts the systemd user service
+// startLinux
 func (sm *ServiceManager) startLinux() error {
-	cmd := exec.Command("systemctl", "--user", "start", fmt.Sprintf("%s.service", sm.ServiceName))
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to start service: %w", err)
-	}
-
-	fmt.Printf("✅ Service started on Linux\n")
-	return nil
+	return fmt.Errorf("manual start from service manager not supported. Run './iptw' directly")
 }
 
-// stopLinux stops the systemd user service
+// stopLinux
 func (sm *ServiceManager) stopLinux() error {
-	cmd := exec.Command("systemctl", "--user", "stop", fmt.Sprintf("%s.service", sm.ServiceName))
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to stop service: %w", err)
-	}
-
-	fmt.Printf("✅ Service stopped on Linux\n")
-	return nil
+	return fmt.Errorf("manual stop from service manager not supported")
 }
 
-// statusLinux checks if the systemd user service is running
+// statusLinux
 func (sm *ServiceManager) statusLinux() (bool, error) {
-	cmd := exec.Command("systemctl", "--user", "is-active", fmt.Sprintf("%s.service", sm.ServiceName))
-	err := cmd.Run()
-	if err != nil {
-		// Service is not active
-		return false, nil
-	}
-	return true, nil
+	return false, fmt.Errorf("service status not supported for user-space app")
 }
 
 // Stub implementations for other platforms on Linux
@@ -146,25 +91,25 @@ func (sm *ServiceManager) stopMacOS() error {
 }
 
 func (sm *ServiceManager) statusMacOS() (bool, error) {
-	return false, fmt.Errorf("macOS service management not available on Linux")
+	return false, fmt.Errorf("macos service management not available on Linux")
 }
 
 func (sm *ServiceManager) installWindows() error {
-	return fmt.Errorf("Windows service management not available on Linux")
+	return fmt.Errorf("windows service management not available on Linux")
 }
 
 func (sm *ServiceManager) uninstallWindows() error {
-	return fmt.Errorf("Windows service management not available on Linux")
+	return fmt.Errorf("windows service management not available on Linux")
 }
 
 func (sm *ServiceManager) startWindows() error {
-	return fmt.Errorf("Windows service management not available on Linux")
+	return fmt.Errorf("windows service management not available on Linux")
 }
 
 func (sm *ServiceManager) stopWindows() error {
-	return fmt.Errorf("Windows service management not available on Linux")
+	return fmt.Errorf("windows service management not available on Linux")
 }
 
 func (sm *ServiceManager) statusWindows() (bool, error) {
-	return false, fmt.Errorf("Windows service management not available on Linux")
+	return false, fmt.Errorf("windows service management not available on Linux")
 }
