@@ -1,9 +1,16 @@
 
 # IP Travel Wallpaper (iptw)
 
-IP Travel Wallpaper transforms your network browsing into a gamified world exploration experience. As you visit websites and connect to servers around the globe, your digital footprints are visualized as virtual travels on a beautiful world map that becomes your desktop wallpaper.
+IP Travel Wallpaper transforms your network browsing into a gamified world exploration experience. As you visit websites and connect to servers around the globe, your digital footprints are visualized on a stunning interactive world map that stays in your system tray.
 
-![Example wallpaper](./files/wallpaper.png)
+![Example map](./files/map_screenshot.png)
+
+## What's New: System Tray & Interactive Map
+IPTW has been modernized into a lightweight system tray application:
+- **System Tray Icon**: Access all features quickly from your OS menu bar.
+- **Interactive Map**: Click the tray icon to open a beautiful, real-time world map in your browser.
+- **Opt-in Wallpaper**: By default, IPTW no longer changes your OS wallpaper. You can enable this as an optional feature in the menu.
+- **Auto-Start**: Easily configure IPTW to start when you log in via the tray menu.
 
 ## Game Philosophy: Breaking Out of Digital Bubbles
 
@@ -17,46 +24,15 @@ In our interconnected world, most internet traffic flows through a handful of ma
 
 The game rewards curiosity and geographic diversity over convenience, encouraging you to venture beyond the mainstream digital highways.
 
-
 ## How It Works: Travel Mechanics
 
-- **Virtual Travel**: Each network connection to a foreign IP address represents a "visit" to that country
+- **Virtual Travel**: Each network connection to a foreign IP address represents a "visit" to that country.
 - **Progressive Country Coloring**: Countries change appearance based on your visit frequency:
   - **1-9 visits**: Display national flag background (fresh destinations worth exploring)
   - **10+ visits**: Countries become "boring" and display sand/rocks gradient patterns (time to find new places!)
   - **Continued Activity on Boring Countries**: When boring countries receive additional hits, their patterns show slight variations to indicate ongoing activity
-- **Exploration Incentives**: 
-  - **Target Countries**: Red borders highlight unvisited countries, encouraging global exploration
-  - **Achievement System**: Unlock achievements by visiting all countries in geographic regions
-  - **Fastest Traveler Achievements**: Special rewards for marking target countries as boring quickly
-  - **Discovery Rewards**: Special recognition for finding rare hosting locations
-- **Real-time Visualization**: Watch your virtual travel map expand as you browse, with live connection points
-- **Wallpaper Generation**: Your journey becomes a personalized, ever-changing desktop background
-
-## Game Goals & Challenges
-
-### 🎯 **Primary Objectives**
-1. **Visit All Countries**: Can you find internet content hosted in every nation?
-2. **Regional Completion**: Complete entire continents by discovering local hosting
-3. **Rare Country Hunter**: Find websites in countries with minimal global hosting presence
-4. **Local News Explorer**: Discover authentic local newspapers and community sites
-5. **Escape the Big Three**: Minimize connections to US, EU, and Chinese mega-platforms
-
-### 🌍 **Discovery Challenges**
-- **Small Nation Challenge**: Find active websites hosted in microstates and island nations
-- **Language Diversity**: Connect to servers hosting content in minority languages
-- **Community Voices**: Discover local radio stations, newspapers, and blogs
-- **Academic Networks**: Find university and research institution servers worldwide
-- **Government Transparency**: Access official government websites hosted locally
-- **Cultural Preservation**: Find sites dedicated to local traditions and heritage
-
-### 📰 **Breaking News Bubbles**
-The modern internet is dominated by a few major hosting providers, creating invisible geographic barriers to information diversity. IPTW helps you discover:
-- **Hyperlocal News**: Small-town newspapers and community bulletins
-- **Alternative Perspectives**: Non-Western viewpoints on global events
-- **Underrepresented Voices**: Media from developing nations and marginalized communities
-- **Direct Sources**: Government, academic, and institutional websites hosted locally
-- **Cultural Content**: Local entertainment, art, and cultural preservation sites
+- **Interactive Visualization**: Open the map from the tray to see your travels expand with live connection points.
+- **Optional Wallpaper**: If enabled, your journey becomes a personalized, ever-changing desktop background.
 
 ## Installation & Usage
 
@@ -78,20 +54,17 @@ The modern internet is dominated by a few major hosting providers, creating invi
 ### Cross-Platform Support
 IPTW runs natively on **macOS**, **Linux**, and **Windows** with automatic platform detection for network monitoring.
 
-
-
 ### Self-Contained Application
 - **No Setup Required**: Single executable contains all dependencies
 - **No External Downloads**: Everything is embedded in the binary
 - **Portable**: Run from any location without installation
 - **Privacy-First**: All data processing happens locally on your machine
-
 ### Quick Start
-1. Download the binary for your platform from [Releases](https://github.com/techt3/iptw/releases)
-2. Extract the archive
-3. Run `iptw` from terminal/command prompt
-4. Start browsing the internet to begin your virtual travels
-5. Watch your desktop wallpaper update with your global journey
+1. Download the binary for your platform from [Releases](https://github.com/techt3/iptw/releases).
+2. Extract the archive.
+3. Run `iptw` to start the system tray application.
+4. Click the **Tray Icon** and select **Show Map** to see your journey.
+5. (Optional) Enable **Update OS Wallpaper** to have the map as your background!
 
 
 ## Fastest Traveler Achievement System 🚀

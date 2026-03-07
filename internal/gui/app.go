@@ -33,6 +33,7 @@ package gui
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"image"
 	"image/color"
@@ -424,6 +425,61 @@ func (a *App) startLocalServer() {
 	mux.HandleFunc("/api/map", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 		w.Write([]byte(a.lastMapBase64))
+	})
+
+	// Mark a country as boring manually
+	mux.HandleFunc("/countries/boring", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		var data struct {
+			Country string `json:"country"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+			http.Error(w, "Invalid request body", http.StatusBadRequest)
+			return
+		}
+
+		if data.Country == "" {
+			http.Error(w, "Country name is required", http.StatusBadRequest)
+			return
+		}
+
+		wasTarget, _ := a.gameState.MarkCountryAsBoring(data.Country)
+		if wasTarget {
+			a.achievements.UnlockFastestTravelerAchievement(data.Country)
+		}
+
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": true,
+			"message": fmt.Sprintf("Country %s marked as boring", data.Country),
+		})
+	})
+
+	// Restore original wallpaper
+	mux.HandleFunc("/wallpaper/restore", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		if a.originalWallpaper == "" {
+			http.Error(w, "No original wallpaper backup found", http.StatusNotFound)
+			return
+		}
+
+		if err := a.RestoreOriginalWallpaper(); err != nil {
+			slog.Error("Failed to restore wallpaper via API", "error", err)
+			http.Error(w, "Failed to restore wallpaper", http.StatusInternalServerError)
+			return
+		}
+
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": true,
+			"message": "Original wallpaper restored successfully",
+		})
 	})
 
 	// Redirect root to map.html

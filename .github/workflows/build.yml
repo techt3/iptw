@@ -130,7 +130,6 @@ jobs:
 
           # Copy additional files
           cp README.md "$OUTPUT_DIR/" 2>/dev/null || true
-          cp SERVICE.md "$OUTPUT_DIR/" 2>/dev/null || true
           cp -r config "$OUTPUT_DIR/" 2>/dev/null || true
 
           # Copy platform-specific helper scripts
@@ -228,7 +227,6 @@ jobs:
 
           # Copy additional files
           cp README.md "$OUTPUT_DIR/" 2>/dev/null || true
-          cp SERVICE.md "$OUTPUT_DIR/" 2>/dev/null || true
           cp -r config "$OUTPUT_DIR/" 2>/dev/null || true
 
           # Copy macOS-specific helper scripts
@@ -333,7 +331,7 @@ jobs:
           echo "1. Download the appropriate archive for your platform" >> release_notes.md
           echo "2. Extract the archive" >> release_notes.md
           echo "3. Run the \`iptw\` binary" >> release_notes.md
-          echo "4. For background service installation, see the included \`SERVICE.md\` file" >> release_notes.md
+          echo "3. Run the \`iptw\` binary"
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
