@@ -325,8 +325,7 @@ func (a *App) onReady() {
 	}
 
 	// Setup Systray
-	systray.SetTitle("IPTW")
-	systray.SetTooltip("IP Travel Map")
+	setTrayTitleAndTooltip("IPTW", "IP Travel Map")
 	// TODO: set an actual icon bytes array, for now using a placeholder text if no icon
 
 	mShowMap := systray.AddMenuItem("Show Map", "Open the interactive travel map")
