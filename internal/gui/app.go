@@ -262,6 +262,8 @@ type App struct {
 	sessionToken           string       // Per-session token for POST endpoint authorization
 	serverURL              string       // URL of the local HTTP server
 	serverListener         net.Listener // Local HTTP listener; closed on shutdown
+	lastAutoWidth          int          // Memoized screen detection width
+	lastAutoHeight         int          // Memoized screen detection height
 }
 
 // NewApp creates a new application instance
@@ -642,7 +644,7 @@ func (a *App) loadWorldMap() error {
 	hitCountries := make(map[string]int)
 	boringCountries := a.getBoringCountries()
 
-	img, err := resources.RenderNaturalEarthMap(a.naturalEarth, width, height, a.config.Black, hitCountries, "", a.flagManager, boringCountries, nil)
+	img, err := resources.RenderNaturalEarthMap(a.naturalEarth, width, height, a.config.Black, hitCountries, "", a.flagManager, a.fontManager, boringCountries, nil)
 	if err != nil {
 		return fmt.Errorf("failed to render Natural Earth map: %w", err)
 	}
@@ -706,8 +708,7 @@ func (a *App) generateAndDisplayMap() error {
 
 	// Use screen auto-detection if enabled
 	if a.config.AutoDetectScreen {
-		var err error
-		width, height, err = screen.AutoDetectMapSize()
+		detWidth, detHeight, err := screen.AutoDetectMapSize()
 		if err != nil {
 			// Fall back to configured size
 			width = a.config.MapWidth
@@ -715,6 +716,14 @@ func (a *App) generateAndDisplayMap() error {
 				width = 1000
 			}
 			height = width / 2
+		} else {
+			// Stabilize resolution: only update if change is > 10 pixels to prevent jitter
+			if a.lastAutoWidth == 0 || math.Abs(float64(detWidth-a.lastAutoWidth)) > 10 || math.Abs(float64(detHeight-a.lastAutoHeight)) > 10 {
+				a.lastAutoWidth = detWidth
+				a.lastAutoHeight = detHeight
+			}
+			width = a.lastAutoWidth
+			height = a.lastAutoHeight
 		}
 	} else {
 		// Use configured map width
@@ -825,7 +834,7 @@ func (a *App) generateAndDisplayMap() error {
 		boringCountries := a.getBoringCountries()
 
 		// Render map with Natural Earth data
-		outputImg, err = resources.RenderNaturalEarthMap(a.naturalEarth, width, height, a.config.Black, hitCountries, targetCountry, a.flagManager, boringCountries, recentCountries)
+		outputImg, err = resources.RenderNaturalEarthMap(a.naturalEarth, width, height, a.config.Black, hitCountries, targetCountry, a.flagManager, a.fontManager, boringCountries, recentCountries)
 		if err != nil {
 			logging.LogError("render Natural Earth map", err)
 			return err
@@ -890,6 +899,16 @@ func (a *App) generateAndDisplayMap() error {
 	a.mapPNGMu.Lock()
 	a.lastMapPNG = pngBytes
 	a.mapPNGMu.Unlock()
+
+	// Diagnostic: Save periodic snapshots (every 10 seconds for verification)
+	if time.Now().Unix()%10 == 0 {
+		diagDir := filepath.Join(a.outputDir, "..", "diagnostics")
+		_ = os.MkdirAll(diagDir, 0755)
+		diagPath := filepath.Join(diagDir, fmt.Sprintf("map_%s.png", time.Now().Format("20060102_150405")))
+		if err := os.WriteFile(diagPath, pngBytes, 0644); err == nil {
+			slog.Debug("Diagnostic snapshot saved", "path", diagPath)
+		}
+	}
 
 	a.configMu.RLock()
 	updateWallpaper := a.config.UpdateWallpaper
@@ -990,7 +1009,10 @@ func (a *App) drawGameStatusRectangle(img *image.RGBA, mapWidth, mapHeight int) 
 	}
 
 	// Calculate rectangle dimensions relative to image size
-	fontSize := float64(mapHeight) * 0.025    // 2.5% of image height
+	fontSize := math.Floor(float64(mapHeight)*0.025 + 0.5) // Round to nearest integer for sharper fonts
+	if fontSize < 12 {
+		fontSize = 12
+	}
 	padding := int(float64(mapWidth) * 0.015) // 1.5% of image width for more padding
 	lineHeight := int(fontSize * 1.5)         // Increased line height from 1.2 to 1.5 for better spacing
 
@@ -1007,14 +1029,6 @@ func (a *App) drawGameStatusRectangle(img *image.RGBA, mapWidth, mapHeight int) 
 		}
 	}
 
-	// Ensure minimum readable size
-	minFontSize := 12.0
-	if fontSize < minFontSize {
-		fontSize = minFontSize
-		lineHeight = int(fontSize * 1.5)               // Keep consistent line height ratio
-		rectHeight = padding*3 + len(lines)*lineHeight // Recalculate with new line height
-	}
-
 	// Position the rectangle - use configured position if available, otherwise use auto positioning
 	var rectX, rectY int
 
@@ -1022,26 +1036,26 @@ func (a *App) drawGameStatusRectangle(img *image.RGBA, mapWidth, mapHeight int) 
 		// Use manually configured position
 		rectX = a.config.StatsX
 		rectY = a.config.StatsY
-
-		// Ensure the rectangle fits within the image bounds when using manual positioning
-		if rectX+rectWidth > mapWidth {
-			rectX = mapWidth - rectWidth
-		}
-		if rectX < 0 {
-			rectX = 0
-		}
-		if rectY+rectHeight > mapHeight {
-			rectY = mapHeight - rectHeight
-		}
-		if rectY < 0 {
-			rectY = 0
-		}
 	} else {
 		// Use automatic positioning (original behavior) at bottom-left corner with relative margins
 		leftMargin := int(float64(mapWidth) * 0.15)    // 15% of image width
 		bottomMargin := int(float64(mapHeight) * 0.15) // 15% of image height
 		rectX = leftMargin
 		rectY = mapHeight - rectHeight - bottomMargin
+	}
+
+	// CRITICAL: Ensure the rectangle stays within image bounds regardless of positioning mode
+	if rectX+rectWidth > mapWidth {
+		rectX = mapWidth - rectWidth
+	}
+	if rectX < 5 {
+		rectX = 5
+	}
+	if rectY+rectHeight > mapHeight {
+		rectY = mapHeight - rectHeight
+	}
+	if rectY < 5 {
+		rectY = 5
 	}
 
 	// Use the simple game info rectangle function from resources package
