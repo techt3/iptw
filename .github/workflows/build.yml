@@ -52,11 +52,13 @@ jobs:
           - goos: linux
             goarch: amd64
             name: linux-amd64
+            cc: gcc
 
           # Windows builds
           - goos: windows
             goarch: amd64
             name: windows-amd64
+            cc: x86_64-w64-mingw32-gcc
 
     steps:
       - uses: actions/checkout@v4
@@ -71,13 +73,11 @@ jobs:
       - name: Install cross-compilation dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc-multilib gcc
+          sudo apt-get install -y gcc-multilib gcc libayatana-appindicator3-dev
 
           # Install Windows cross-compilation tools
           if [ "${{ matrix.goos }}" = "windows" ]; then
             sudo apt-get install -y gcc-mingw-w64
-            # Note: ARM64 Windows cross-compilation may have limited support
-            # Most projects fall back to CGO_ENABLED=0 for Windows ARM64
           fi
 
       - name: Get version
@@ -97,6 +97,7 @@ jobs:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
           VERSION: ${{ steps.version.outputs.version }}
+          CC: ${{ matrix.cc }}
         run: |
           export CGO_ENABLED=1
 
