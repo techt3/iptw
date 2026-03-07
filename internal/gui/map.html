@@ -48,39 +48,41 @@
 <body>
     <div id="loading">Generating Map...</div>
     <div id="map-container">
-        <!-- The map image will go here -->
+        <!-- The map image will be loaded here -->
     </div>
     <script>
-        function updateMapImage(base64Image) {
-            const container = document.getElementById('map-container');
+        // _sessionToken is injected by the Go HTTP handler at serve time
+        var sessionToken = (typeof window._sessionToken !== 'undefined') ? window._sessionToken : '';
+
+        function updateMapImage() {
+            const img = document.getElementById('map-img');
             const loading = document.getElementById('loading');
+            const url = '/api/map.png?_=' + Date.now();
 
-            if (loading) {
-                loading.style.display = 'none';
-            }
-
-            container.innerHTML = '<img src="data:image/png;base64,' + base64Image + '" alt="IP Travel Map" />';
-        }
-
-        async function fetchLatestMap() {
-            try {
-                const response = await fetch('/api/map');
-                if (response.ok) {
-                    const base64Image = await response.text();
-                    if (base64Image) {
-                        updateMapImage(base64Image);
-                    }
+            const newImg = new Image();
+            newImg.onload = function () {
+                if (loading) {
+                    loading.style.display = 'none';
                 }
-            } catch (error) {
-                console.error("Failed to fetch map image:", error);
-            }
+                if (img) {
+                    img.src = newImg.src;
+                } else {
+                    const container = document.getElementById('map-container');
+                    const el = document.createElement('img');
+                    el.id = 'map-img';
+                    el.alt = 'IP Travel Map';
+                    el.src = newImg.src;
+                    container.appendChild(el);
+                }
+            };
+            newImg.src = url;
         }
 
-        // Initial fetch
-        fetchLatestMap();
+        // Initial load
+        updateMapImage();
 
         // Poll every 2 seconds for updates
-        setInterval(fetchLatestMap, 2000);
+        setInterval(updateMapImage, 2000);
     </script>
 </body>
 
