@@ -115,10 +115,10 @@ func (gs *GameState) AddCountryHitWithTargetCheck(country string) (becameBoring 
 	}
 
 	countryState := gs.countries[country]
-	if !countryState.Boring {
-		countryState.HitCount++
-		countryState.LastHit = time.Now()
+	countryState.HitCount++
+	countryState.LastHit = time.Now()
 
+	if !countryState.Boring {
 		// Mark as boring if hits >= 10
 		if countryState.HitCount >= 10 {
 			countryState.Boring = true
@@ -880,7 +880,7 @@ func (a *App) generateAndDisplayMap() error {
 	}
 
 	// Draw game status rectangle
-	a.drawGameStatusRectangle(rgbaImg, width, height)
+	a.drawGameStatusRectangle(rgbaImg, width, height, recentCountries)
 
 	// Encode once to buffer, then write to disk and cache for the HTTP server
 	buf := new(bytes.Buffer)
@@ -963,14 +963,18 @@ func (a *App) drawCircle(img *image.RGBA, centerX, centerY, radius int, col colo
 }
 
 // drawGameStatusRectangle draws a game status rectangle with game information using embedded fonts
-func (a *App) drawGameStatusRectangle(img *image.RGBA, mapWidth, mapHeight int) {
+func (a *App) drawGameStatusRectangle(img *image.RGBA, mapWidth, mapHeight int, recentCountries map[string]bool) {
 	// Get game statistics
 	a.gameState.mutex.RLock()
 	visitedCount := len(a.gameState.countries)
 	boringCount := 0
-	for _, state := range a.gameState.countries {
+	inMatrixPrison := false
+	for country, state := range a.gameState.countries {
 		if state.Boring {
 			boringCount++
+			if recentCountries[country] {
+				inMatrixPrison = true
+			}
 		}
 	}
 	targetCountry, _ := a.gameState.GetTargetCountry()
@@ -1002,6 +1006,8 @@ func (a *App) drawGameStatusRectangle(img *image.RGBA, mapWidth, mapHeight int) 
 	// Add status message
 	if visitedCount == 0 {
 		lines = append(lines, "Start browsing to begin!")
+	} else if inMatrixPrison {
+		lines = append(lines, "MATRIX PRISON ACTIVE!")
 	} else if boringCount > visitedCount/2 {
 		lines = append(lines, "Explore new places!")
 	} else {

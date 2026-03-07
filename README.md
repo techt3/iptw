@@ -29,8 +29,7 @@ The game rewards curiosity and geographic diversity over convenience, encouragin
 - **Virtual Travel**: Each network connection to a foreign IP address represents a "visit" to that country.
 - **Progressive Country Coloring**: Countries change appearance based on your visit frequency:
   - **1-9 visits**: Display national flag background (fresh destinations worth exploring)
-  - **10+ visits**: Countries become "boring" and display sand/rocks gradient patterns (time to find new places!)
-  - **Continued Activity on Boring Countries**: When boring countries receive additional hits, their patterns show slight variations to indicate ongoing activity
+  - **10+ visits**: Countries become "boring." If you continue visiting them, you enter the **Matrix Prison** — the map will display the green Matrix Rain effect to remind you that you are stuck in a digital loop and need to find new, authentic destinations!
 - **Interactive Visualization**: Open the map from the tray to see your travels expand with live connection points.
 - **Optional Wallpaper**: If enabled, your journey becomes a personalized, ever-changing desktop background.
 
