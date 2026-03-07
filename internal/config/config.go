@@ -15,10 +15,12 @@ type Config struct {
 	AutoDetectScreen bool   `config:"auto_detect_screen"`
 	Black            bool   `config:"black"`
 	UpdateInterval   int    `config:"update_interval"`
-	TargetInterval   int    `config:"target_interval"` // Minutes between target changes
-	LogLevel         string `config:"log_level"`       // debug, info, warn, error
-	StatsX           int    `config:"stats_x"`         // X position of stats rectangle (-1 for auto)
-	StatsY           int    `config:"stats_y"`         // Y position of stats rectangle (-1 for auto)
+	TargetInterval   int    `config:"target_interval"`  // Minutes between target changes
+	LogLevel         string `config:"log_level"`        // debug, info, warn, error
+	StatsX           int    `config:"stats_x"`          // X position of stats rectangle (-1 for auto)
+	StatsY           int    `config:"stats_y"`          // Y position of stats rectangle (-1 for auto)
+	UpdateWallpaper  bool   `config:"update_wallpaper"` // Opt-in to update OS wallpaper
+	StartOnLogin     bool   `config:"start_on_login"`   // Auto-start app on login
 }
 
 // DefaultConfig returns the default configuration
@@ -32,6 +34,8 @@ func DefaultConfig() *Config {
 		LogLevel:         "info", // Default log level
 		StatsX:           -1,     // -1 means auto-position (default behavior)
 		StatsY:           -1,     // -1 means auto-position (default behavior)
+		UpdateWallpaper:  false,  // Disabled by default
+		StartOnLogin:     false,  // Disabled by default
 	}
 }
 
@@ -116,6 +120,10 @@ func LoadConfig() (*Config, error) {
 			if val, err := strconv.Atoi(value); err == nil {
 				cfg.StatsY = val
 			}
+		case "update_wallpaper":
+			cfg.UpdateWallpaper = value == "true"
+		case "start_on_login":
+			cfg.StartOnLogin = value == "true"
 		}
 	}
 
@@ -139,7 +147,9 @@ target_interval %d
 log_level %s
 stats_x %d
 stats_y %d
-`, c.MapWidth, c.AutoDetectScreen, c.Black, c.UpdateInterval, c.TargetInterval, c.LogLevel, c.StatsX, c.StatsY)
+update_wallpaper %t
+start_on_login %t
+`, c.MapWidth, c.AutoDetectScreen, c.Black, c.UpdateInterval, c.TargetInterval, c.LogLevel, c.StatsX, c.StatsY, c.UpdateWallpaper, c.StartOnLogin)
 
 	return err
 }

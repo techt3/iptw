@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IP Travel Map</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #f0f0f0;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #map-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: sans-serif;
+            color: #666;
+            font-size: 1.2rem;
+        }
+    </style>
+</head>
+<body>
+    <div id="loading">Generating Map...</div>
+    <div id="map-container">
+        <!-- The map image will go here -->
+    </div>
+    <script>
+        function updateMapImage(base64Image) {
+            const container = document.getElementById('map-container');
+            const loading = document.getElementById('loading');
+            
+            if (loading) {
+                loading.style.display = 'none';
+            }
+
+            container.innerHTML = '<img src="data:image/png;base64,' + base64Image + '" alt="IP Travel Map" />';
+        }
+    </script>
+</body>
+</html>

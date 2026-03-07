@@ -31,6 +31,8 @@
 package gui
 
 import (
+	"bytes"
+	"encoding/base64"
 	"fmt"
 	"image"
 	"image/color"
@@ -40,11 +42,12 @@ import (
 	"math"
 	"math/rand"
 	"os"
-	"os/signal"
 	"path/filepath"
 	"sync"
-	"syscall"
 	"time"
+
+	"github.com/getlantern/systray"
+	webview "github.com/webview/webview_go"
 
 	"iptw/internal/achievements"
 	"iptw/internal/background"
@@ -243,6 +246,7 @@ type App struct {
 	originalWallpaper      string // Path to the backed up original wallpaper
 	wallpaperBackedUp      bool   // Flag to track if we've backed up the wallpaper
 	wallpaperBackedUpError error
+	lastMapBase64          string // Cached base64 string of the last generated map image for webview
 }
 
 // NewApp creates a new application instance
@@ -291,28 +295,25 @@ func NewApp(cfg *config.Config, geoipDB *geoip.Database, monitor *network.Monito
 		fontManager:       fontManager,
 		flagManager:       flagManager,
 		wallpaperBackedUp: false,
+		lastMapBase64:     "",
 	}, nil
 }
 
 // Run starts the application
 func (a *App) Run() error {
-	// Set up signal handling for graceful shutdown
-	signalCh := make(chan os.Signal, 1)
-	signal.Notify(signalCh, os.Interrupt, syscall.SIGTERM)
+	// Start systray lifecycle. This blocks until systray quits.
+	systray.Run(a.onReady, a.onExit)
+	return nil
+}
 
-	// Start graceful shutdown handler in a goroutine
-	go func() {
-		<-signalCh
-		slog.Info("Received shutdown signal, cleaning up...")
-		a.Shutdown()
-		os.Exit(0)
-	}()
-
+func (a *App) onReady() {
 	// Log startup information
 	slog.Info("IP Travel Wallpaper started",
 		"screen_auto_detection", a.config.AutoDetectScreen,
 		"log_level", a.config.LogLevel,
 		"target_interval_minutes", a.config.TargetInterval,
+		"update_wallpaper", a.config.UpdateWallpaper,
+		"start_on_login", a.config.StartOnLogin,
 	)
 	if !a.config.AutoDetectScreen {
 		slog.Debug("Manual map dimensions configured",
@@ -321,9 +322,21 @@ func (a *App) Run() error {
 		)
 	}
 
+	// Setup Systray
+	systray.SetTitle("IPTW")
+	systray.SetTooltip("IP Travel Map")
+	// TODO: set an actual icon bytes array, for now using a placeholder text if no icon
+
+	mShowMap := systray.AddMenuItem("Show Map", "Open the interactive travel map")
+	mToggleWallpaper := systray.AddMenuItemCheckbox("Update OS Wallpaper", "Automatically update desktop wallpaper", a.config.UpdateWallpaper)
+	systray.AddSeparator()
+	mQuit := systray.AddMenuItem("Quit", "Quit the whole app")
+
 	// Load world map
 	if err := a.loadWorldMap(); err != nil {
-		return fmt.Errorf("failed to load world map: %w", err)
+		slog.Error("failed to load world map", "error", err)
+		systray.Quit()
+		return
 	}
 
 	slog.Info("World map loaded successfully")
@@ -337,12 +350,78 @@ func (a *App) Run() error {
 	// Start image generation and display loop
 	go a.displayLoop()
 
-	// Keep application running
-	for a.running {
-		time.Sleep(1 * time.Second)
+	// Handle Menu events
+	go func() {
+		for {
+			select {
+			case <-mShowMap.ClickedCh:
+				a.showMapWindow()
+			case <-mToggleWallpaper.ClickedCh:
+				a.config.UpdateWallpaper = !a.config.UpdateWallpaper
+				if a.config.UpdateWallpaper {
+					mToggleWallpaper.Check()
+				} else {
+					mToggleWallpaper.Uncheck()
+				}
+				// Save config change
+				homeDir, _ := os.UserHomeDir()
+				configPath := filepath.Join(homeDir, ".config", "iptw", "iptwrc")
+				a.config.Save(configPath)
+			case <-mQuit.ClickedCh:
+				systray.Quit()
+				return
+			}
+		}
+	}()
+}
+
+func (a *App) onExit() {
+	slog.Info("Received shutdown signal from systray, cleaning up...")
+	a.Shutdown()
+}
+
+func (a *App) showMapWindow() {
+	debug := false
+	if a.config.LogLevel == "debug" {
+		debug = true
 	}
 
-	return nil
+	width := a.config.MapWidth
+	if width <= 0 {
+		width = 1000
+	}
+	height := width / 2
+
+	w := webview.New(debug)
+	defer w.Destroy()
+	w.SetTitle("IP Travel Map")
+	w.SetSize(width, height, webview.HintNone)
+
+	// Bind the function so JS can request map updates
+	w.Bind("getLatestMap", func() string {
+		return a.lastMapBase64
+	})
+
+	// Use absolute path for html or read it directly (for this example, we'll embed the HTML string or load from file)
+	// For simplicity, navigating to the local file
+	cwd, _ := os.Getwd()
+	htmlPath := filepath.Join(cwd, "internal", "gui", "map.html")
+	w.Navigate("file://" + htmlPath)
+
+	// Periodically push updates to the webview
+	go func() {
+		ticker := time.NewTicker(2 * time.Second)
+		defer ticker.Stop()
+		for a.running {
+			<-ticker.C
+			// Safely execute JS in the webview thread
+			w.Dispatch(func() {
+				w.Eval("if(typeof updateMapImage === 'function') { getLatestMap().then(updateMapImage); }")
+			})
+		}
+	}()
+
+	w.Run()
 }
 
 // loadWorldMap loads the world map image from Natural Earth data
@@ -611,28 +690,42 @@ func (a *App) generateAndDisplayMap() error {
 	// Draw game status rectangle
 	a.drawGameStatusRectangle(rgbaImg, width, height)
 
-	// Save the image
+	// Save the image to output path
 	outputPath := filepath.Join(a.outputDir, "iptw.png")
 	if err := a.saveImage(rgbaImg, outputPath); err != nil {
 		return err
 	}
 
-	// Backup original wallpaper before first change
-	if !a.wallpaperBackedUp && a.wallpaperBackedUpError == nil {
-		backupPath, err := background.BackupCurrentWallpaper(a.outputDir)
-		if err != nil {
-			slog.Warn("Failed to backup original wallpaper - restore functionality will not be available", "error", err)
-			a.wallpaperBackedUpError = err
+	// Cache base64 representation for webview
+	buf := new(bytes.Buffer)
+	if err := png.Encode(buf, rgbaImg); err == nil {
+		a.lastMapBase64 = base64.StdEncoding.EncodeToString(buf.Bytes())
+	} else {
+		slog.Error("Failed to encode map image to base64 for webview", "error", err)
+	}
 
-		} else {
-			a.originalWallpaper = backupPath
-			a.wallpaperBackedUp = true
-			slog.Info("💾 Original wallpaper backed up successfully")
+	if a.config.UpdateWallpaper {
+		// Backup original wallpaper before first change
+		if !a.wallpaperBackedUp && a.wallpaperBackedUpError == nil {
+			backupPath, err := background.BackupCurrentWallpaper(a.outputDir)
+			if err != nil {
+				slog.Warn("Failed to backup original wallpaper - restore functionality will not be available", "error", err)
+				a.wallpaperBackedUpError = err
+
+			} else {
+				a.originalWallpaper = backupPath
+				a.wallpaperBackedUp = true
+				slog.Info("💾 Original wallpaper backed up successfully")
+			}
+		}
+
+		// Display using macOS Preview or similar
+		if err := background.SetDesktopBackground(outputPath); err != nil {
+			slog.Error("Failed to set desktop background", "error", err)
 		}
 	}
 
-	// Display using macOS Preview or similar
-	return background.SetDesktopBackground(outputPath)
+	return nil
 }
 
 // latLngToMapCoords converts latitude/longitude to map pixel coordinates
