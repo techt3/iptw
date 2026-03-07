@@ -322,7 +322,7 @@ We welcome contributions to help make digital exploration more accessible and di
 ### Development Setup
 
 **Prerequisites:**
-- Go 1.24 or later
+- Go 1.25.0 or later
 - Git
 - C compiler (for CGO dependencies)
 
