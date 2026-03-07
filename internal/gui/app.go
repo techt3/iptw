@@ -58,6 +58,7 @@ import (
 	"iptw/internal/network"
 	"iptw/internal/resources"
 	"iptw/internal/screen"
+	"iptw/internal/service"
 )
 
 // CountryGameState represents the game state for a country
@@ -330,6 +331,7 @@ func (a *App) onReady() {
 
 	mShowMap := systray.AddMenuItem("Show Map", "Open the interactive travel map")
 	mToggleWallpaper := systray.AddMenuItemCheckbox("Update OS Wallpaper", "Automatically update desktop wallpaper", a.config.UpdateWallpaper)
+	mStartOnLogin := systray.AddMenuItemCheckbox("Start on Login", "Automatically start IP Travel Map on system login", a.config.StartOnLogin)
 	systray.AddSeparator()
 	mQuit := systray.AddMenuItem("Quit", "Quit the whole app")
 
@@ -366,6 +368,27 @@ func (a *App) onReady() {
 					mToggleWallpaper.Check()
 				} else {
 					mToggleWallpaper.Uncheck()
+				}
+				// Save config change
+				homeDir, _ := os.UserHomeDir()
+				configPath := filepath.Join(homeDir, ".config", "iptw", "iptwrc")
+				a.config.Save(configPath)
+			case <-mStartOnLogin.ClickedCh:
+				a.config.StartOnLogin = !a.config.StartOnLogin
+				if a.config.StartOnLogin {
+					mStartOnLogin.Check()
+					if sm, err := service.NewServiceManager(); err == nil {
+						if err := sm.Install(); err != nil {
+							slog.Error("Failed to install auto-start service", "error", err)
+						}
+					}
+				} else {
+					mStartOnLogin.Uncheck()
+					if sm, err := service.NewServiceManager(); err == nil {
+						if err := sm.Uninstall(); err != nil {
+							slog.Error("Failed to uninstall auto-start service", "error", err)
+						}
+					}
 				}
 				// Save config change
 				homeDir, _ := os.UserHomeDir()
