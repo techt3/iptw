@@ -14,6 +14,7 @@ import (
 	"log/slog"
 	"math"
 	"math/rand"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -24,7 +25,7 @@ import (
 	"github.com/paulmach/orb/planar"
 )
 
-//go:embed *.json *.zip *.csv
+//go:embed *.json *.zip *.csv Matrix-Code.ttf
 var files embed.FS
 
 // CountryData represents a country with its geometry and metadata
@@ -305,14 +306,35 @@ func LoadFonts() (*FontManager, error) {
 					continue // Skip this file
 				}
 
-				// Store the font using filename as key
-				fm.fonts[file.Name] = font
+				// Store the font using base filename as key to prevent directory-prefixed mismatches
+				fm.fonts[filepath.Base(file.Name)] = font
+			}
+		}
+	}
+
+	// Also load .ttf files directly from the embed.FS
+	entries, err := files.ReadDir(".")
+	if err == nil {
+		for _, entry := range entries {
+			if !entry.IsDir() && strings.HasSuffix(strings.ToLower(entry.Name()), ".ttf") {
+				fontData, err := files.ReadFile(entry.Name())
+				if err != nil {
+					continue
+				}
+
+				font, err := truetype.Parse(fontData)
+				if err != nil {
+					continue
+				}
+
+				fm.fonts[entry.Name()] = font
+				slog.Debug("Loaded font from embed.FS", "name", entry.Name())
 			}
 		}
 	}
 
 	if len(fm.fonts) == 0 {
-		return nil, fmt.Errorf("no valid fonts found in Caveat.zip")
+		return nil, fmt.Errorf("no valid fonts found")
 	}
 
 	return fm, nil
@@ -403,10 +425,40 @@ func (fm *FontManager) GetFont(name string) *truetype.Font {
 		}
 	}
 
-	// Return first available font
+	// Return first available font (unpredictable order)
 	for _, font := range fm.fonts {
 		return font
 	}
+	return nil
+}
+
+// GetUIFont returns a primary UI font (Caveat-Regular) or a suitable fallback,
+// ensuring it never accidentally returns an effect font like Matrix-Code.
+func (fm *FontManager) GetUIFont() *truetype.Font {
+	if fm == nil {
+		return nil
+	}
+
+	priority := []string{
+		"Caveat-Regular.ttf",
+		"Caveat-VariableFont_wght.ttf",
+		"Caveat-Medium.ttf",
+		"Caveat-SemiBold.ttf",
+	}
+
+	for _, name := range priority {
+		if font, exists := fm.fonts[name]; exists {
+			return font
+		}
+	}
+
+	// If no Caveat fonts found, return any font that is NOT Matrix-style
+	for name, font := range fm.fonts {
+		if !strings.Contains(strings.ToLower(name), "matrix") {
+			return font
+		}
+	}
+
 	return nil
 }
 
@@ -425,18 +477,10 @@ func DrawGameInfoRectangle(img *image.RGBA, fm *FontManager, x, y, width, height
 		return fmt.Errorf("font manager is nil")
 	}
 
-	// Always try to use Regular weight for consistency
-	ttfFont := fm.GetFont("Caveat-Regular.ttf")
+	// Always try to use UI-suitable fonts for the status rectangle
+	ttfFont := fm.GetUIFont()
 	if ttfFont == nil {
-		// Fallback to variable font if regular not available
-		ttfFont = fm.GetFont("Caveat-VariableFont_wght.ttf")
-	}
-	if ttfFont == nil {
-		// Final fallback to any available font
-		ttfFont = fm.GetFont("")
-	}
-	if ttfFont == nil {
-		return fmt.Errorf("no fonts available")
+		return fmt.Errorf("no suitable UI fonts available")
 	}
 
 	// Validate rectangle dimensions
@@ -531,7 +575,7 @@ func (ne *NaturalEarthData) GetCountryBounds(countryName string) (minLat, maxLat
 }
 
 // RenderNaturalEarthMap creates a map image with country boundaries from Natural Earth data
-func RenderNaturalEarthMap(ne *NaturalEarthData, width, height int, black bool, hitCountries map[string]int, targetCountry string, flagManager *FlagManager, boringCountries map[string]bool, recentHitCountries map[string]bool) (image.Image, error) {
+func RenderNaturalEarthMap(ne *NaturalEarthData, width, height int, black bool, hitCountries map[string]int, targetCountry string, flagManager *FlagManager, fontManager *FontManager, boringCountries map[string]bool, recentHitCountries map[string]bool) (image.Image, error) {
 	// Debug: show available flags
 	if flagManager != nil {
 		availableFlags := flagManager.ListFlags()
@@ -577,8 +621,22 @@ func RenderNaturalEarthMap(ne *NaturalEarthData, width, height int, black bool, 
 				drawCountryGeometry(img, country.Geometry, fillColor, width, height)
 			}
 		} else if isBoring && hitCount >= 10 {
-			// Show sand/rocks gradient for boring countries (10+ hits)
-			drawCountryWithSandRocksGradient(img, country.Geometry, hitCount, width, height)
+			// Show Matrix rain for boring countries (10+ hits)
+			if fontManager != nil {
+				// Fill country with black first to provide the background for Matrix rain
+				drawCountryGeometry(img, country.Geometry, color.RGBA{0, 0, 0, 255}, width, height)
+
+				// Use current time plus a stable seed per country for pseudo-random movement
+				countrySeed := int64(0)
+				for _, char := range country.Name {
+					countrySeed += int64(char)
+				}
+				seed := time.Now().UnixNano()/50000000 + countrySeed
+				DrawMatrixRain(img, country.Geometry, fontManager, width, height, seed)
+			} else {
+				// Fallback to sand/rocks gradient if font manager not available
+				drawCountryWithSandRocksGradient(img, country.Geometry, hitCount, width, height)
+			}
 		} else {
 			// Regular country drawing logic for unvisited countries or as fallback
 			var fillColor color.RGBA
@@ -848,8 +906,8 @@ func drawCountryWithFlagBackground(img *image.RGBA, geom orb.MultiPolygon, flag 
 
 	// Calculate country bounds in pixel coordinates
 	countryBound := geom.Bound()
-	minX, minY := geoToPixel(countryBound.Max[1], countryBound.Min[0], width, height) // maxLat, minLng
-	_, maxY := geoToPixel(countryBound.Min[1], countryBound.Max[0], width, height)    // minLat, maxLng
+	minX, minY := geoToPixel(countryBound.Max[1], countryBound.Min[1], width, height)
+	_, maxY := geoToPixel(countryBound.Min[1], countryBound.Max[0], width, height)
 
 	// Ensure proper bounds ordering (min should be less than max)
 	if minY > maxY {
@@ -1153,6 +1211,137 @@ func drawLine(img *image.RGBA, x1, y1, x2, y2 int, col color.RGBA) {
 		if e2 < dx {
 			err += dx
 			y += sy
+		}
+	}
+}
+
+// DrawMatrixRain draws a Matrix-style falling code effect within a country's geometry
+func DrawMatrixRain(img *image.RGBA, geom orb.MultiPolygon, fm *FontManager, width, height int, seed int64) {
+	if fm == nil {
+		return
+	}
+
+	// Try to get the Matrix font
+	font := fm.GetFont("Matrix-Code.ttf")
+	if font == nil {
+		font = fm.GetFont("") // Fallback to any available font
+	}
+	if font == nil {
+		return
+	}
+
+	// Create a mask to only draw inside the country
+	mask := image.NewAlpha(image.Rect(0, 0, width, height))
+	for _, polygon := range geom {
+		if len(polygon) > 0 {
+			fillPolygonAlpha(mask, polygon[0], 255, width, height)
+		}
+		for i := 1; i < len(polygon); i++ {
+			fillPolygonAlpha(mask, polygon[i], 0, width, height)
+		}
+	}
+
+	// Calculate country bounds to limit the area we process
+	bound := geom.Bound()
+	minX_f, minY_f := geoToPixel(bound.Max[1], bound.Min[0], width, height)
+	maxX_f, maxY_f := geoToPixel(bound.Min[1], bound.Max[0], width, height)
+
+	minX, minY := int(minX_f), int(minY_f)
+	maxX, maxY := int(maxX_f), int(maxY_f)
+
+	if minX > maxX {
+		minX, maxX = maxX, minX
+	}
+	if minY > maxY {
+		minY, maxY = maxY, minY
+	}
+
+	// Pad bounds slightly
+	minX -= 10
+	minY -= 10
+	maxX += 10
+	maxY += 10
+
+	// Clamp to image bounds
+	if minX < 0 {
+		minX = 0
+	}
+	if minY < 0 {
+		minY = 0
+	}
+	if maxX >= width {
+		maxX = width - 1
+	}
+	if maxY >= height {
+		maxY = height - 1
+	}
+
+	// Matrix rain parameters
+	fontSize := 12.0
+	charSpacing := 14
+	colSpacing := 10
+
+	// Create freetype context
+	c := freetype.NewContext()
+	c.SetDPI(72)
+	c.SetFont(font)
+	c.SetFontSize(fontSize)
+	c.SetClip(img.Bounds())
+	c.SetDst(img)
+
+	// Custom characters for Matrix rain
+	chars := "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$+-*/=%\"'#&_(),.;:?!"
+
+	rng := rand.New(rand.NewSource(seed))
+
+	// Draw columns of falling code
+	for x := minX; x <= maxX; x += colSpacing {
+		// Use a stable seed for this column based on X and the overall seed
+		colSeed := seed + int64(x*137)
+		colRng := rand.New(rand.NewSource(colSeed))
+
+		// Random column properties
+		speed := 0.5 + colRng.Float64()*1.5
+		offset := colRng.Float64() * float64(maxY-minY)
+		raindropY := minY + int(float64(seed)*speed+offset)%(maxY-minY+1)
+
+		// Draw the "streak" (tail)
+		streakLen := 10 + colRng.Intn(20)
+
+		for i := 0; i < streakLen; i++ {
+			y := raindropY - (i * charSpacing)
+			if y < minY {
+				// Wrap within country vertical bounds
+				y = maxY - ((minY - y) % (maxY - minY + 1))
+			}
+			if y < minY || y > maxY {
+				continue
+			}
+
+			// Only draw if inside the country mask
+			if mask.AlphaAt(x, y).A < 128 {
+				continue
+			}
+
+			// Calculate color based on position in streak (0 is head, brightness decreases)
+			brightness := 1.0 - (float64(i) / float64(streakLen))
+			var charColor color.RGBA
+			if i == 0 {
+				// Head is white or very light green
+				charColor = color.RGBA{200, 255, 200, 255}
+			} else {
+				// Tail is varying shades of green
+				green := uint8(50 + brightness*205)
+				charColor = color.RGBA{0, green, 0, 255}
+			}
+
+			// Pick a random character
+			char := chars[rng.Intn(len(chars))]
+
+			// Draw the character
+			c.SetSrc(image.NewUniform(charColor))
+			pt := freetype.Pt(x, y)
+			_, _ = c.DrawString(string(char), pt)
 		}
 	}
 }
