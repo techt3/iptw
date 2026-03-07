@@ -909,6 +909,7 @@ func (a *App) generateAndDisplayMap() error {
 			slog.Debug("Diagnostic snapshot saved", "path", diagPath)
 		}
 	}
+	pngBytes := buf.Bytes()
 
 	a.configMu.RLock()
 	updateWallpaper := a.config.UpdateWallpaper

@@ -910,9 +910,6 @@ func drawCountryWithFlagBackground(img *image.RGBA, geom orb.MultiPolygon, flag 
 	maxX, maxY := geoToPixel(countryBound.Min[1], countryBound.Max[0], width, height)
 
 	// Ensure proper bounds ordering (min should be less than max)
-	if minX > maxX {
-		minX, maxX = maxX, minX
-	}
 	if minY > maxY {
 		minY, maxY = maxY, minY
 	}
