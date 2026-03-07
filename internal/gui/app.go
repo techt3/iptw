@@ -41,13 +41,14 @@ import (
 	"log/slog"
 	"math"
 	"math/rand"
+	"net/http"
 	"os"
 	"path/filepath"
 	"sync"
 	"time"
 
 	"github.com/getlantern/systray"
-	webview "github.com/webview/webview_go"
+	"github.com/skratchdot/open-golang/open"
 
 	"iptw/internal/achievements"
 	"iptw/internal/background"
@@ -350,6 +351,9 @@ func (a *App) onReady() {
 	// Start image generation and display loop
 	go a.displayLoop()
 
+	// Start local HTTP server to host the UI
+	go a.startLocalServer()
+
 	// Handle Menu events
 	go func() {
 		for {
@@ -380,48 +384,42 @@ func (a *App) onExit() {
 	a.Shutdown()
 }
 
-func (a *App) showMapWindow() {
-	debug := false
-	if a.config.LogLevel == "debug" {
-		debug = true
-	}
+func (a *App) startLocalServer() {
+	mux := http.NewServeMux()
 
-	width := a.config.MapWidth
-	if width <= 0 {
-		width = 1000
-	}
-	height := width / 2
-
-	w := webview.New(debug)
-	defer w.Destroy()
-	w.SetTitle("IP Travel Map")
-	w.SetSize(width, height, webview.HintNone)
-
-	// Bind the function so JS can request map updates
-	w.Bind("getLatestMap", func() string {
-		return a.lastMapBase64
+	// Serve the map HTML
+	mux.HandleFunc("/map.html", func(w http.ResponseWriter, r *http.Request) {
+		cwd, err := os.Getwd()
+		if err != nil {
+			http.Error(w, "Failed to get working directory", http.StatusInternalServerError)
+			return
+		}
+		htmlPath := filepath.Join(cwd, "internal", "gui", "map.html")
+		http.ServeFile(w, r, htmlPath)
 	})
 
-	// Use absolute path for html or read it directly (for this example, we'll embed the HTML string or load from file)
-	// For simplicity, navigating to the local file
-	cwd, _ := os.Getwd()
-	htmlPath := filepath.Join(cwd, "internal", "gui", "map.html")
-	w.Navigate("file://" + htmlPath)
+	// Serve the latest map image
+	mux.HandleFunc("/api/map", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+		w.Write([]byte(a.lastMapBase64))
+	})
 
-	// Periodically push updates to the webview
-	go func() {
-		ticker := time.NewTicker(2 * time.Second)
-		defer ticker.Stop()
-		for a.running {
-			<-ticker.C
-			// Safely execute JS in the webview thread
-			w.Dispatch(func() {
-				w.Eval("if(typeof updateMapImage === 'function') { getLatestMap().then(updateMapImage); }")
-			})
-		}
-	}()
+	// Redirect root to map.html
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/map.html", http.StatusSeeOther)
+	})
 
-	w.Run()
+	slog.Info("Starting local HTTP server for UI at http://127.0.0.1:32782")
+	if err := http.ListenAndServe("127.0.0.1:32782", mux); err != nil {
+		slog.Error("Failed to start local HTTP server", "error", err)
+	}
+}
+
+func (a *App) showMapWindow() {
+	// Simply open the local HTTP server address in the default OS browser
+	if err := open.Run("http://127.0.0.1:32782"); err != nil {
+		slog.Error("Failed to open browser", "error", err)
+	}
 }
 
 // loadWorldMap loads the world map image from Natural Earth data

@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IP Travel Map</title>
     <style>
-        body, html {
+        body,
+        html {
             margin: 0;
             padding: 0;
             width: 100%;
@@ -42,6 +44,7 @@
         }
     </style>
 </head>
+
 <body>
     <div id="loading">Generating Map...</div>
     <div id="map-container">
@@ -51,13 +54,34 @@
         function updateMapImage(base64Image) {
             const container = document.getElementById('map-container');
             const loading = document.getElementById('loading');
-            
+
             if (loading) {
                 loading.style.display = 'none';
             }
 
             container.innerHTML = '<img src="data:image/png;base64,' + base64Image + '" alt="IP Travel Map" />';
         }
+
+        async function fetchLatestMap() {
+            try {
+                const response = await fetch('/api/map');
+                if (response.ok) {
+                    const base64Image = await response.text();
+                    if (base64Image) {
+                        updateMapImage(base64Image);
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to fetch map image:", error);
+            }
+        }
+
+        // Initial fetch
+        fetchLatestMap();
+
+        // Poll every 2 seconds for updates
+        setInterval(fetchLatestMap, 2000);
     </script>
 </body>
+
 </html>

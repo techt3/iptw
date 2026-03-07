@@ -34,9 +34,6 @@ func (sm *ServiceManager) installMacOS() error {
     <key>ProgramArguments</key>
     <array>
         <string>%s</string>
-        <string>-force</string>
-        <string>-port</string>
-        <string>%s</string>
     </array>
     <key>WorkingDirectory</key>
     <string>%s</string>
@@ -47,16 +44,10 @@ func (sm *ServiceManager) installMacOS() error {
         <key>SuccessfulExit</key>
         <false/>
     </dict>
-    <key>StandardOutPath</key>
-    <string>%s/Library/Logs/%s.out.log</string>
-    <key>StandardErrorPath</key>
-    <string>%s/Library/Logs/%s.err.log</string>
     <key>ProcessType</key>
-    <string>Background</string>
+    <string>Interactive</string>
 </dict>
-</plist>`, sm.ServiceName, sm.ExecutablePath, sm.ServerPort, sm.WorkingDir,
-		currentUser.HomeDir, sm.ServiceName,
-		currentUser.HomeDir, sm.ServiceName)
+</plist>`, sm.ServiceName, sm.ExecutablePath, sm.WorkingDir)
 
 	// Write plist file
 	if err := os.WriteFile(plistPath, []byte(plistContent), 0644); err != nil {
