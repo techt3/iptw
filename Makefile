@@ -68,7 +68,6 @@ define build_platform
 	 (echo "    ⚠️  CGO build failed for $(GOOS)/$(GOARCH), trying without CGO..." && \
 	  GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=0 go build $(BUILD_FLAGS) -o $(OUTPUT_DIR)/$(BINARY_NAME) $(MAIN_PACKAGE))
 	@cp README.md $(OUTPUT_DIR)/ 2>/dev/null || true
-	@cp SERVICE.md $(OUTPUT_DIR)/ 2>/dev/null || true
 	@cp -r config $(OUTPUT_DIR)/ 2>/dev/null || true
 	@echo "    ✅ $(GOOS)/$(GOARCH) build complete"
 endef
@@ -152,14 +151,7 @@ run: build
 	@echo "🚀 Running $(APP_NAME)..."
 	@./$(BUILD_DIR)/$(APP_NAME)
 
-# Build with service capabilities
-.PHONY: build-service
-build-service: dirs
-	@echo "🔨 Building $(APP_NAME) with service support..."
-	@go build $(BUILD_FLAGS) -tags=service -o $(BUILD_DIR)/$(APP_NAME)-service $(MAIN_PACKAGE)
-	@echo "✅ Service build complete: $(BUILD_DIR)/$(APP_NAME)-service"
 
-# Release preparation
 .PHONY: release
 release: clean test lint build-all package
 	@echo "🎉 Release $(VERSION) is ready!"

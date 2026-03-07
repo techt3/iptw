@@ -63,7 +63,6 @@ func (sm *ServiceManager) installMacOS() error {
 	fmt.Printf("✅ Service installed successfully on macOS\n")
 	fmt.Printf("   Plist file: %s\n", plistPath)
 	fmt.Printf("   Service will start automatically on login\n")
-	fmt.Printf("   HTTP statistics server will be available on port %s\n", sm.ServerPort)
 
 	return nil
 }
