@@ -115,11 +115,6 @@ func setLinuxBackground(imagePath string) error {
 func setWindowsBackground(imagePath string) error {
 	slog.Debug("🖼️  Setting Windows desktop background", "image", imagePath)
 
-	// Check if running as a service
-	if os.Getenv("IPTW_SERVICE_MODE") == "1" {
-		return setWindowsBackgroundService(imagePath)
-	}
-
 	// Regular user mode implementation
 	return setWindowsBackgroundUser(imagePath)
 }
@@ -153,71 +148,6 @@ public class Wallpaper {
 	}
 
 	slog.Debug("✅ Windows desktop background set successfully")
-	return nil
-}
-
-// setWindowsBackgroundService attempts to set wallpaper from Windows service context
-func setWindowsBackgroundService(imagePath string) error {
-	slog.Debug("🖼️  Attempting to set wallpaper from Windows service context", "image", imagePath)
-
-	// Service mode: Try multiple approaches
-	approaches := []func(string) error{
-		tryRegistryWallpaperMethod,
-		tryPowerShellUserContext,
-		setWindowsBackgroundUser, // Fallback to regular method
-	}
-
-	for i, approach := range approaches {
-		if err := approach(imagePath); err != nil {
-			slog.Debug("🔄 Wallpaper approach failed", "method", i+1, "error", err)
-			continue
-		}
-		slog.Debug("✅ Wallpaper set successfully using approach", "method", i+1)
-		return nil
-	}
-
-	// All approaches failed - this is expected for services
-	slog.Warn("🚫 Unable to set wallpaper from service context - this is normal for Windows services")
-	slog.Info("💡 Consider running as a regular application for wallpaper functionality")
-	return nil // Don't return error to avoid breaking the service
-}
-
-// tryRegistryWallpaperMethod attempts to set wallpaper via registry
-func tryRegistryWallpaperMethod(imagePath string) error {
-	script := fmt.Sprintf(`
-		Set-ItemProperty -Path "HKCU:\Control Panel\Desktop" -Name "Wallpaper" -Value "%s"
-		rundll32.exe user32.dll,UpdatePerUserSystemParameters
-	`, imagePath)
-
-	cmd := exec.Command("powershell", "-Command", script)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("registry method failed: %w (output: %s)", err, string(output))
-	}
-	return nil
-}
-
-// tryPowerShellUserContext attempts to run PowerShell in user context
-func tryPowerShellUserContext(imagePath string) error {
-	// Try to run PowerShell with user context (may work in some service configurations)
-	script := fmt.Sprintf(`
-		$code = @'
-		using System;
-		using System.Runtime.InteropServices;
-		public class Wallpaper {
-			[DllImport("user32.dll", CharSet=CharSet.Auto)]
-			public static extern int SystemParametersInfo(int uAction, int uParam, string lpvParam, int fuWinIni);
-		}
-'@
-		Add-Type -TypeDefinition $code
-		[Wallpaper]::SystemParametersInfo(20, 0, "%s", 3)
-	`, imagePath)
-
-	cmd := exec.Command("powershell", "-WindowStyle", "Hidden", "-Command", script)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("user context method failed: %w (output: %s)", err, string(output))
-	}
 	return nil
 }
 
