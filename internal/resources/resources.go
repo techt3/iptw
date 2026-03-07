@@ -907,7 +907,7 @@ func drawCountryWithFlagBackground(img *image.RGBA, geom orb.MultiPolygon, flag 
 	// Calculate country bounds in pixel coordinates
 	countryBound := geom.Bound()
 	minX, minY := geoToPixel(countryBound.Max[1], countryBound.Min[1], width, height)
-	maxX, maxY := geoToPixel(countryBound.Min[1], countryBound.Max[0], width, height)
+	_, maxY := geoToPixel(countryBound.Min[1], countryBound.Max[0], width, height)
 
 	// Ensure proper bounds ordering (min should be less than max)
 	if minY > maxY {
