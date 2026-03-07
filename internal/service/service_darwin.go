@@ -153,41 +153,41 @@ func (sm *ServiceManager) statusMacOS() (bool, error) {
 
 // Stub implementations for other platforms on macOS
 func (sm *ServiceManager) installLinux() error {
-	return fmt.Errorf("Linux service management not available on macOS")
+	return fmt.Errorf("linux service management not available on macOS")
 }
 
 func (sm *ServiceManager) uninstallLinux() error {
-	return fmt.Errorf("Linux service management not available on macOS")
+	return fmt.Errorf("linux service management not available on macOS")
 }
 
 func (sm *ServiceManager) startLinux() error {
-	return fmt.Errorf("Linux service management not available on macOS")
+	return fmt.Errorf("linux service management not available on macOS")
 }
 
 func (sm *ServiceManager) stopLinux() error {
-	return fmt.Errorf("Linux service management not available on macOS")
+	return fmt.Errorf("linux service management not available on macOS")
 }
 
 func (sm *ServiceManager) statusLinux() (bool, error) {
-	return false, fmt.Errorf("Linux service management not available on macOS")
+	return false, fmt.Errorf("linux service management not available on macOS")
 }
 
 func (sm *ServiceManager) installWindows() error {
-	return fmt.Errorf("Windows service management not available on macOS")
+	return fmt.Errorf("windows service management not available on macOS")
 }
 
 func (sm *ServiceManager) uninstallWindows() error {
-	return fmt.Errorf("Windows service management not available on macOS")
+	return fmt.Errorf("windows service management not available on macOS")
 }
 
 func (sm *ServiceManager) startWindows() error {
-	return fmt.Errorf("Windows service management not available on macOS")
+	return fmt.Errorf("windows service management not available on macOS")
 }
 
 func (sm *ServiceManager) stopWindows() error {
-	return fmt.Errorf("Windows service management not available on macOS")
+	return fmt.Errorf("windows service management not available on macOS")
 }
 
 func (sm *ServiceManager) statusWindows() (bool, error) {
-	return false, fmt.Errorf("Windows service management not available on macOS")
+	return false, fmt.Errorf("windows service management not available on macOS")
 }

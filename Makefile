@@ -17,13 +17,9 @@ DIST_DIR = dist
 
 # Platforms and architectures to build for
 PLATFORMS = \
-	darwin/amd64 \
 	darwin/arm64 \
 	linux/amd64 \
-	linux/arm64 \
-	windows/amd64 \
-	windows/arm64
-
+	windows/amd64 
 # Main entry point
 MAIN_PACKAGE = ./cmd/iptw
 
@@ -142,7 +138,7 @@ audit:
 .PHONY: install-dev-deps
 install-dev-deps:
 	@echo "📦 Installing development dependencies..."
-	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	curl -sSfL https://golangci-lint.run/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.11.1
 	@echo "✅ Development dependencies installed"
 
 # Quick build and run

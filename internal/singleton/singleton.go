@@ -3,6 +3,7 @@ package singleton
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -82,20 +83,26 @@ func (l *Lock) Acquire() error {
 
 	// Try to acquire an exclusive lock on the file
 	if err := l.acquireFileLock(file); err != nil {
-		file.Close()
+		if closeErr := file.Close(); closeErr != nil {
+			slog.Warn("Failed to close lock file after failed acquire", "error", closeErr)
+		}
 		return fmt.Errorf("failed to acquire lock: %w", err)
 	}
 
 	// Write our PID to the lock file
 	pid := os.Getpid()
 	if _, err := file.WriteString(strconv.Itoa(pid)); err != nil {
-		file.Close()
+		if closeErr := file.Close(); closeErr != nil {
+			slog.Warn("Failed to close lock file after failed WriteString", "error", closeErr)
+		}
 		return fmt.Errorf("failed to write PID to lock file: %w", err)
 	}
 
 	// Sync to ensure PID is written to disk
 	if err := file.Sync(); err != nil {
-		file.Close()
+		if closeErr := file.Close(); closeErr != nil {
+			slog.Warn("Failed to close lock file after failed Sync", "error", closeErr)
+		}
 		return fmt.Errorf("failed to sync lock file: %w", err)
 	}
 

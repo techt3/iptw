@@ -485,7 +485,9 @@ func (a *App) startLocalServer() {
 	tcpAddr, ok := ln.Addr().(*net.TCPAddr)
 	if !ok {
 		slog.Error("Unexpected listener address type for local HTTP server")
-		ln.Close()
+		if err := ln.Close(); err != nil {
+			slog.Warn("Failed to close temporary listener", "error", err)
+		}
 		return
 	}
 
@@ -505,7 +507,9 @@ func (a *App) startLocalServer() {
 			[]byte(fmt.Sprintf(`<script>window._sessionToken = %q;</script></head>`, a.sessionToken)),
 			1,
 		)
-		w.Write(injected)
+		if _, err := w.Write(injected); err != nil {
+			slog.Error("Failed to write map HTML", "error", err)
+		}
 	})
 
 	// Serve the latest map image as PNG bytes directly (no double-encoding)
@@ -519,7 +523,9 @@ func (a *App) startLocalServer() {
 		}
 		w.Header().Set("Content-Type", "image/png")
 		w.Header().Set("Cache-Control", "no-cache")
-		w.Write(pngBytes)
+		if _, err := w.Write(pngBytes); err != nil {
+			slog.Error("Failed to write map PNG", "error", err)
+		}
 	})
 
 	// Mark a country as boring manually
@@ -547,10 +553,12 @@ func (a *App) startLocalServer() {
 			a.achievements.UnlockFastestTravelerAchievement(data.Country)
 		}
 
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		if err := json.NewEncoder(w).Encode(map[string]interface{}{
 			"success": true,
 			"message": fmt.Sprintf("Country %s marked as boring", data.Country),
-		})
+		}); err != nil {
+			slog.Error("Failed to encode boring country response", "error", err)
+		}
 	}))
 
 	// Restore original wallpaper
@@ -571,10 +579,12 @@ func (a *App) startLocalServer() {
 			return
 		}
 
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		if err := json.NewEncoder(w).Encode(map[string]interface{}{
 			"success": true,
 			"message": "Original wallpaper restored successfully",
-		})
+		}); err != nil {
+			slog.Error("Failed to encode wallpaper restore response", "error", err)
+		}
 	}))
 
 	// Redirect root to map.html
