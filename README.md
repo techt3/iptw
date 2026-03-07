@@ -34,6 +34,32 @@ The game rewards curiosity and geographic diversity over convenience, encouragin
 - **Interactive Visualization**: Open the map from the tray to see your travels expand with live connection points.
 - **Optional Wallpaper**: If enabled, your journey becomes a personalized, ever-changing desktop background.
 
+## Game Goals & Challenges
+
+### 🎯 **Primary Objectives**
+1. **Visit All Countries**: Can you find internet content hosted in every nation?
+2. **Regional Completion**: Complete entire continents by discovering local hosting
+3. **Rare Country Hunter**: Find websites in countries with minimal global hosting presence
+4. **Local News Explorer**: Discover authentic local newspapers and community sites
+5. **Escape the Big Three**: Minimize connections to US, EU, and Chinese mega-platforms
+
+### 🌍 **Discovery Challenges**
+- **Small Nation Challenge**: Find active websites hosted in microstates and island nations
+- **Language Diversity**: Connect to servers hosting content in minority languages
+- **Community Voices**: Discover local radio stations, newspapers, and blogs
+- **Academic Networks**: Find university and research institution servers worldwide
+- **Government Transparency**: Access official government websites hosted locally
+- **Cultural Preservation**: Find sites dedicated to local traditions and heritage
+
+### 📰 **Breaking News Bubbles**
+The modern internet is dominated by a few major hosting providers, creating invisible geographic barriers to information diversity. IPTW helps you discover:
+- **Hyperlocal News**: Small-town newspapers and community bulletins
+- **Alternative Perspectives**: Non-Western viewpoints on global events
+- **Underrepresented Voices**: Media from developing nations and marginalized communities
+- **Direct Sources**: Government, academic, and institutional websites hosted locally
+- **Cultural Content**: Local entertainment, art, and cultural preservation sites
+
+
 ## Installation & Usage
 
 ### Download Pre-built Binaries
