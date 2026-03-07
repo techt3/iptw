@@ -68,7 +68,7 @@ func LoadConfig() (*Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to open config file: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	cfg := DefaultConfig()
 	scanner := bufio.NewScanner(file)
@@ -136,7 +136,7 @@ func (c *Config) Save(configPath string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create config file: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	_, err = fmt.Fprintf(file, `
 map_width %d

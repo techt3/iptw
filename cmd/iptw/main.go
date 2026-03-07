@@ -81,7 +81,7 @@ func main() {
 		slog.Error("Failed to initialize embedded GeoIP database", "error", err)
 		os.Exit(1)
 	}
-	defer geoipDB.Close()
+	defer func() { _ = geoipDB.Close() }()
 
 	// Initialize network monitor
 	netMon := network.NewMonitor()
