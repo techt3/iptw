@@ -229,6 +229,13 @@ func BackupCurrentWallpaper(backupDir string) (string, error) {
 		return "", fmt.Errorf("could not determine current wallpaper path")
 	}
 
+	// Don't backup if the current wallpaper is already an IPTW wallpaper
+	// This prevents overwriting the true "original" with our generated output
+	baseName := filepath.Base(currentWallpaperPath)
+	if strings.Contains(baseName, "iptw_wallpaper_") || strings.Contains(baseName, "iptw.png") {
+		return "", fmt.Errorf("current wallpaper is already an IPTW wallpaper, skipping backup to preserve original")
+	}
+
 	// Create backup filename with timestamp
 	timestamp := time.Now().Format("20060102_150405")
 	backupFilename := fmt.Sprintf("original_wallpaper_%s%s", timestamp, filepath.Ext(currentWallpaperPath))

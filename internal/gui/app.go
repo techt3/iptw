@@ -48,6 +48,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"sync"
 	"time"
 
@@ -304,6 +305,15 @@ func NewApp(cfg *config.Config, geoipDB *geoip.Database, monitor *network.Monito
 	}
 	generatedToken := hex.EncodeToString(tokenBytes)
 
+	// Check for existing wallpaper backups in the output directory
+	var firstBackup string
+	if files, err := filepath.Glob(filepath.Join(outputDir, "original_wallpaper_*")); err == nil && len(files) > 0 {
+		// Sort files to pick the earliest backup
+		sort.Strings(files)
+		firstBackup = files[0]
+		slog.Info("🔍 Found existing wallpaper backup", "path", firstBackup)
+	}
+
 	return &App{
 		config:            cfg,
 		geoip:             geoipDB,
@@ -315,7 +325,8 @@ func NewApp(cfg *config.Config, geoipDB *geoip.Database, monitor *network.Monito
 		achievements:      achievements.NewAchievementManager(),
 		fontManager:       fontManager,
 		flagManager:       flagManager,
-		wallpaperBackedUp: false,
+		originalWallpaper: firstBackup,
+		wallpaperBackedUp: firstBackup != "",
 		sessionToken:      generatedToken,
 	}, nil
 }
@@ -389,6 +400,12 @@ func (a *App) onReady() {
 					mToggleWallpaper.Check()
 				} else {
 					mToggleWallpaper.Uncheck()
+					// Restore original wallpaper if we backed it up
+					if a.HasWallpaperBackup() {
+						if err := a.RestoreOriginalWallpaper(); err != nil {
+							slog.Error("Failed to restore original wallpaper", "error", err)
+						}
+					}
 				}
 				if err := a.saveConfig(); err != nil {
 					slog.Error("Failed to save config after toggling wallpaper", "error", err)
@@ -1422,12 +1439,10 @@ func (a *App) Shutdown() {
 	}
 
 	// Restore original wallpaper if we backed it up
-	if a.wallpaperBackedUp && a.originalWallpaper != "" {
+	if a.HasWallpaperBackup() {
 		slog.Info("🔄 Restoring original wallpaper...")
-		if err := background.RestoreWallpaper(a.originalWallpaper); err != nil {
-			slog.Error("Failed to restore original wallpaper", "error", err)
-		} else {
-			slog.Info("✅ Original wallpaper restored successfully")
+		if err := a.RestoreOriginalWallpaper(); err != nil {
+			slog.Error("Failed to restore original wallpaper during shutdown", "error", err)
 		}
 	} else {
 		slog.Info("No wallpaper backup available - leaving current wallpaper as is")
@@ -1451,6 +1466,17 @@ func (a *App) RestoreOriginalWallpaper() error {
 		return fmt.Errorf("failed to restore wallpaper: %w", err)
 	}
 
-	slog.Info("✅ Original wallpaper restored via API request")
+	// Delete the backup file after successful restoration
+	if err := os.Remove(a.originalWallpaper); err != nil {
+		slog.Warn("Failed to delete wallpaper backup file after restore", "path", a.originalWallpaper, "error", err)
+	} else {
+		slog.Info("🗑️  Wallpaper backup file deleted after successful restore")
+	}
+
+	// Reset state
+	a.originalWallpaper = ""
+	a.wallpaperBackedUp = false
+
+	slog.Info("✅ Original wallpaper restored successfully")
 	return nil
 }
