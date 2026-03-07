@@ -44,10 +44,12 @@ jobs:
       - name: Run tests
         run: make test
 
-    # - name: Run linters
-    #   run: |
-    #     go install github.com/golangci/golangci-lint/cmd/golangci-lint@v2.1.6
-    #     make lint
+      - name: Run linters
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libayatana-appindicator3-dev
+          go install github.com/golangci/golangci-lint/cmd/golangci-lint@v2.11.1
+          make lint
 
   build-cross-platform:
     name: Build (Linux/Windows)
