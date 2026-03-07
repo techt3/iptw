@@ -170,12 +170,12 @@ func (am *AchievementManager) GetUnlockedAchievements() []*Achievement {
 // UnlockFastestTravelerAchievement creates and unlocks a "fastest traveler" achievement for a specific country
 func (am *AchievementManager) UnlockFastestTravelerAchievement(countryName string) string {
 	achievementID := "fastest_traveler_" + strings.ToLower(strings.ReplaceAll(countryName, " ", "_"))
-	
+
 	// Check if this achievement already exists
 	if _, exists := am.achievements[achievementID]; exists {
 		return ""
 	}
-	
+
 	// Create the new achievement
 	achievement := &Achievement{
 		ID:          achievementID,
@@ -186,15 +186,15 @@ func (am *AchievementManager) UnlockFastestTravelerAchievement(countryName strin
 		Target:      1,
 		Countries:   []string{countryName},
 	}
-	
+
 	am.achievements[achievementID] = achievement
-	
+
 	slog.Info("🏆 Fastest Traveler Achievement unlocked!",
 		"achievement", achievement.Name,
 		"description", achievement.Description,
 		"country", countryName,
 	)
-	
+
 	return achievementID
 }
 
