@@ -3,7 +3,7 @@
 
 IP Travel Wallpaper transforms your network browsing into a gamified world exploration experience. As you visit websites and connect to servers around the globe, your digital footprints are visualized on a stunning interactive world map that stays in your system tray.
 
-![Example map](./files/map_screenshot.png)
+![Example map](./files/wallpaper.png)
 
 ## What's New: System Tray & Interactive Map
 IPTW has been modernized into a lightweight system tray application:
