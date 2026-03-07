@@ -1,22 +1,176 @@
-<!DOCTYPE html>
-<html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IP Travel Map</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
     <style>
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.3);
+            --accent-color: #3498db;
+            --text-main: #2d3436;
+            --text-secondary: #636e72;
+            --sidebar-width: 350px;
+        }
+
         body,
         html {
             margin: 0;
             padding: 0;
             width: 100%;
             height: 100%;
-            background-color: #f0f0f0;
+            background-color: #e0e0e0;
             overflow: hidden;
+            display: flex;
+            font-family: 'Outfit', sans-serif;
+            color: var(--text-main);
+        }
+
+        #sidebar {
+            width: var(--sidebar-width);
+            height: 100%;
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-right: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 4px 0 15px rgba(0, 0, 0, 0.05);
+            z-index: 100;
+            overflow-y: auto;
+            scrollbar-width: thin;
+        }
+
+        #sidebar::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        #sidebar::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+
+        .sidebar-header {
+            padding: 24px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .sidebar-header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-main);
+            letter-spacing: -0.5px;
+        }
+
+        .section {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .section-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            font-weight: 600;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.5);
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .stat-value {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--accent-color);
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+        }
+
+        .target-box {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            padding: 16px;
+            border-radius: 16px;
+            margin-top: 8px;
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
+        }
+
+        .target-label {
+            font-size: 0.7rem;
+            opacity: 0.8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .target-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        .recent-hit {
+            display: flex;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+        }
+
+        .recent-hit:last-child {
+            border-bottom: none;
+        }
+
+        .hit-info {
+            flex: 1;
+        }
+
+        .hit-domain {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-main);
+            word-break: break-all;
+        }
+
+        .hit-loc {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        .hit-time {
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            opacity: 0.7;
+            text-align: right;
+        }
+
+        #main-content {
+            flex: 1;
+            height: 100%;
+            position: relative;
             display: flex;
             justify-content: center;
             align-items: center;
+            background-color: #f5f5f5;
         }
 
         #map-container {
@@ -25,12 +179,17 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            padding: 40px;
+            box-sizing: border-box;
         }
 
         img {
             max-width: 100%;
             max-height: 100%;
             object-fit: contain;
+            border-radius: 12px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
         }
 
         #loading {
@@ -38,21 +197,276 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            font-family: sans-serif;
-            color: #666;
-            font-size: 1.2rem;
+            font-family: 'Outfit', sans-serif;
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 0.5;
+            }
+
+            50% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0.5;
+            }
+        }
+
+        .prison-badge {
+            background: #000;
+            color: #00ff00;
+            font-family: 'JetBrains Mono', monospace;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            margin-top: 8px;
+            display: inline-block;
+        }
+
+        .about-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .about-toggle .chevron {
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            transition: transform 0.2s ease;
+        }
+
+        .about-toggle.open .chevron {
+            transform: rotate(180deg);
+        }
+
+        .about-body {
+            display: none;
+            margin-top: 12px;
+        }
+
+        .about-body.open {
+            display: block;
+        }
+
+        .about-desc {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            line-height: 1.55;
+            margin: 0 0 12px 0;
+        }
+
+        .about-mechanics {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .mechanic-row {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            font-size: 0.78rem;
+        }
+
+        .mechanic-icon {
+            flex-shrink: 0;
+            font-size: 1rem;
+            line-height: 1.3;
+        }
+
+        .mechanic-text strong {
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        .mechanic-text {
+            color: var(--text-secondary);
+            line-height: 1.45;
+        }
+
+        .goals-list {
+            list-style: none;
+            padding: 0;
+            margin: 12px 0 0 0;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .goals-list li {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            padding-left: 14px;
+            position: relative;
+            line-height: 1.4;
+        }
+
+        .goals-list li::before {
+            content: '›';
+            position: absolute;
+            left: 0;
+            color: var(--accent-color);
+            font-weight: 700;
         }
     </style>
 </head>
 
 <body>
-    <div id="loading">Generating Map...</div>
-    <div id="map-container">
-        <!-- The map image will be loaded here -->
+    <div id="sidebar">
+        <div class="sidebar-header">
+            <h1>IP Travel Map</h1>
+        </div>
+
+        <div class="section" style="border-bottom: none;">
+            <div class="section-title about-toggle" id="about-toggle">
+                About the Game
+                <span class="chevron">▼</span>
+            </div>
+            <div class="about-body" id="about-body">
+                <p class="about-desc">
+                    IP Travel Wallpaper turns every website visit into a world adventure. Each outbound connection
+                    you make is a "visit" to that country — explore the globe just by browsing the web.
+                </p>
+                <div class="about-mechanics">
+                    <div class="mechanic-row">
+                        <span class="mechanic-icon">🌍</span>
+                        <div class="mechanic-text"><strong>Virtual Travel</strong> — connections to foreign IPs count as visits to that country.</div>
+                    </div>
+                    <div class="mechanic-row">
+                        <span class="mechanic-icon">🏳️</span>
+                        <div class="mechanic-text"><strong>1–9 visits</strong> — the country shows its national flag: a fresh destination worth exploring.</div>
+                    </div>
+                    <div class="mechanic-row">
+                        <span class="mechanic-icon">😴</span>
+                        <div class="mechanic-text"><strong>10+ visits</strong> — the country goes "boring." Keep visiting and you'll trigger the <em>Matrix Prison</em> effect.</div>
+                    </div>
+                    <div class="mechanic-row">
+                        <span class="mechanic-icon">🎯</span>
+                        <div class="mechanic-text"><strong>Target Countries</strong> — a random unvisited country is highlighted. Race to make it boring and earn the <em>Fastest Traveler</em> achievement!</div>
+                    </div>
+                </div>
+                <ul class="goals-list">
+                    <li>Visit every country on the map</li>
+                    <li>Complete entire continents</li>
+                    <li>Discover local news &amp; authentic voices</li>
+                    <li>Escape the US / EU / China hosting bubble</li>
+                    <li>Find websites in microstates &amp; island nations</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Statistics</div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="stats-visited">-</div>
+                    <div class="stat-label">Visited</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="stats-boring">-</div>
+                    <div class="stat-label">Matrix Prison</div>
+                </div>
+            </div>
+            <div id="matrix-prison-container"></div>
+            <div class="target-box" id="target-container">
+                <div class="target-label">Let's visit</div>
+                <div class="target-value" id="stats-target">Searching...</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Recent Connections</div>
+            <div id="recent-hits-list">
+                <!-- Hits will be loaded here -->
+            </div>
+        </div>
+
+        <div class="section" style="border-bottom: none;">
+            <div class="section-title">Top Countries</div>
+            <div id="top-countries-list" style="font-size: 0.85rem;">
+                <!-- Top countries will be loaded here -->
+            </div>
+        </div>
+
+        
     </div>
+
+    <div id="main-content">
+        <div id="loading">
+            <div
+                style="width: 20px; height: 20px; border: 3px solid var(--accent-color); border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;">
+            </div>
+            Generating Map...
+        </div>
+        <div id="map-container">
+            <!-- The map image will be loaded here -->
+        </div>
+    </div>
+
+    <style>
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+
     <script>
         // _sessionToken is injected by the Go HTTP handler at serve time
         var sessionToken = (typeof window._sessionToken !== 'undefined') ? window._sessionToken : '';
+
+        function formatRelativeTime(date) {
+            const now = new Date();
+            const diff = Math.floor((now - date) / 1000);
+            if (diff < 5) return 'just now';
+            if (diff < 60) return diff + 's ago';
+            if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+            return Math.floor(diff / 3600) + 'h ago';
+        }
+
+        async function updateStats() {
+            try {
+                const response = await fetch('/api/stats');
+                const data = await response.json();
+
+                document.getElementById('stats-visited').textContent = data.visited_count;
+                document.getElementById('stats-boring').textContent = data.boring_count;
+                document.getElementById('stats-target').textContent = data.target_country || 'None';
+
+                // Update recent hits
+                const hitsList = document.getElementById('recent-hits-list');
+                hitsList.innerHTML = data.recent_hits.map(hit => `
+                    <div class="recent-hit">
+                        <div class="hit-info">
+                            <div class="hit-domain">${hit.domain}</div>
+                            <div class="hit-loc">${hit.city}, ${hit.country} <span style="opacity:0.5">•</span> ${hit.protocol}</div>
+                        </div>
+                        <div class="hit-time">${formatRelativeTime(new Date(hit.time))}</div>
+                    </div>
+                `).join('') || '<div style="font-size:0.8rem; color:var(--text-secondary); opacity:0.5;">No hits yet</div>';
+
+                // Update top countries
+                const topList = document.getElementById('top-countries-list');
+                topList.innerHTML = data.top_countries.map(c => `
+                    <div style="display:flex; justify-content:space-between; padding: 4px 0;">
+                        <span>${c.country}</span>
+                        <span style="font-weight:600; color:var(--accent-color);">${c.hits}</span>
+                    </div>
+                `).join('') || '<div style="font-size:0.8rem; color:var(--text-secondary); opacity:0.5;">No data</div>';
+
+            } catch (err) {
+                console.error('Failed to fetch stats:', err);
+            }
+        }
 
         function updateMapImage() {
             const img = document.getElementById('map-img');
@@ -76,6 +490,9 @@
                 }
             };
             newImg.src = url;
+
+            // Also update stats when map updates
+            updateStats();
         }
 
         // Initial load
@@ -83,7 +500,11 @@
 
         // Poll every 2 seconds for updates
         setInterval(updateMapImage, 2000);
+
+        // About panel toggle
+        document.getElementById('about-toggle').addEventListener('click', function () {
+            this.classList.toggle('open');
+            document.getElementById('about-body').classList.toggle('open');
+        });
     </script>
 </body>
-
-</html>
