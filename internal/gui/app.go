@@ -49,6 +49,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -74,6 +75,15 @@ type CountryGameState struct {
 	HitCount int
 	Boring   bool
 	LastHit  time.Time
+}
+
+// RecentHit represents a recent network connection for the UI
+type RecentHit struct {
+	Country  string    `json:"country"`
+	City     string    `json:"city"`
+	Protocol string    `json:"protocol"`
+	Domain   string    `json:"domain"`
+	Time     time.Time `json:"time"`
 }
 
 // GameState manages the overall game state
@@ -264,6 +274,8 @@ type App struct {
 	serverListener         net.Listener // Local HTTP listener; closed on shutdown
 	lastAutoWidth          int          // Memoized screen detection width
 	lastAutoHeight         int          // Memoized screen detection height
+	recentHits             []RecentHit  // Store the last few hits for the UI
+	recentHitsMu           sync.RWMutex // protects recentHits
 }
 
 // NewApp creates a new application instance
@@ -588,6 +600,78 @@ func (a *App) startLocalServer() {
 			slog.Error("Failed to encode wallpaper restore response", "error", err)
 		}
 	}))
+
+	// Serve game statistics and recent hits
+	mux.HandleFunc("/api/stats", func(w http.ResponseWriter, r *http.Request) {
+		// Get game statistics
+		a.gameState.mutex.RLock()
+		visitedCount := len(a.gameState.countries)
+		boringCount := 0
+
+		// Identify inMatrixPrison state
+		inMatrixPrison := false
+		connections := a.monitor.GetConnections()
+		recentCountries := make(map[string]bool)
+		for _, conn := range connections {
+			loc, err := a.geoip.Lookup(conn.RemoteIP)
+			if err == nil {
+				country := a.naturalEarth.FindCountryAtPoint(loc.Latitude, loc.Longitude)
+				if country != "" {
+					recentCountries[country] = true
+				}
+			}
+		}
+
+		type summaryItem struct {
+			Country string `json:"country"`
+			Hits    int    `json:"hits"`
+		}
+		var topCountries []summaryItem
+
+		for country, state := range a.gameState.countries {
+			if state.Boring {
+				boringCount++
+				if recentCountries[country] {
+					inMatrixPrison = true
+				}
+			}
+			topCountries = append(topCountries, summaryItem{Country: country, Hits: state.HitCount})
+		}
+		targetCountry, _ := a.gameState.GetTargetCountry()
+		a.gameState.mutex.RUnlock()
+
+		// Sort top countries by hits descending
+		sort.Slice(topCountries, func(i, j int) bool {
+			return topCountries[i].Hits > topCountries[j].Hits
+		})
+		if len(topCountries) > 10 {
+			topCountries = topCountries[:10]
+		}
+
+		// Get achievement count
+		achievementCount := len(a.achievements.GetUnlockedAchievements())
+
+		// Get recent hits
+		a.recentHitsMu.RLock()
+		recentHits := make([]RecentHit, len(a.recentHits))
+		copy(recentHits, a.recentHits)
+		a.recentHitsMu.RUnlock()
+
+		data := map[string]interface{}{
+			"visited_count":     visitedCount,
+			"boring_count":      boringCount,
+			"achievement_count": achievementCount,
+			"target_country":    targetCountry,
+			"in_matrix_prison":  inMatrixPrison,
+			"recent_hits":       recentHits,
+			"top_countries":     topCountries,
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(data); err != nil {
+			slog.Error("Failed to encode game stats response", "error", err)
+		}
+	})
 
 	// Redirect root to map.html
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -968,15 +1052,6 @@ func (a *App) drawGameStatusRectangle(img *image.RGBA, mapWidth, mapHeight int, 
 	a.gameState.mutex.RLock()
 	visitedCount := len(a.gameState.countries)
 	boringCount := 0
-	inMatrixPrison := false
-	for country, state := range a.gameState.countries {
-		if state.Boring {
-			boringCount++
-			if recentCountries[country] {
-				inMatrixPrison = true
-			}
-		}
-	}
 	targetCountry, _ := a.gameState.GetTargetCountry()
 	a.gameState.mutex.RUnlock()
 
@@ -988,7 +1063,6 @@ func (a *App) drawGameStatusRectangle(img *image.RGBA, mapWidth, mapHeight int, 
 	lines := []string{
 		"GAME STATUS",
 		fmt.Sprintf("Countries visited: %d", visitedCount),
-		fmt.Sprintf("Boring ones: %d", boringCount),
 		fmt.Sprintf("Achievements: %d", achievementCount),
 	}
 
@@ -1006,8 +1080,6 @@ func (a *App) drawGameStatusRectangle(img *image.RGBA, mapWidth, mapHeight int, 
 	// Add status message
 	if visitedCount == 0 {
 		lines = append(lines, "Start browsing to begin!")
-	} else if inMatrixPrison {
-		lines = append(lines, "MATRIX PRISON ACTIVE!")
 	} else if boringCount > visitedCount/2 {
 		lines = append(lines, "Explore new places!")
 	} else {
@@ -1378,6 +1450,40 @@ func (a *App) logHit(conn network.Connection, location *geoip.Location, mapWidth
 	if cityName == "" {
 		cityName = "Unknown"
 	}
+
+	// Add to recent hits
+	hit := RecentHit{
+		Country:  location.Country,
+		City:     cityName,
+		Protocol: conn.Protocol,
+		Domain:   conn.RemoteIP, // Default to IP, will be updated by async reverse DNS
+		Time:     time.Now(),
+	}
+
+	// Perform async reverse DNS lookup
+	go func(ip string, hitIndex int) {
+		names, err := net.LookupAddr(ip)
+		if err == nil && len(names) > 0 {
+			a.recentHitsMu.Lock()
+			// Need to verify the index is still valid as slice might have shifted
+			// Instead of index, we'll just update if we find the IP in recent hits
+			for i := range a.recentHits {
+				if a.recentHits[i].Domain == ip {
+					// Clean up the trailing dot from reverse DNS
+					name := strings.TrimSuffix(names[0], ".")
+					a.recentHits[i].Domain = name
+				}
+			}
+			a.recentHitsMu.Unlock()
+		}
+	}(conn.RemoteIP, 0)
+
+	a.recentHitsMu.Lock()
+	a.recentHits = append([]RecentHit{hit}, a.recentHits...)
+	if len(a.recentHits) > 10 {
+		a.recentHits = a.recentHits[:10]
+	}
+	a.recentHitsMu.Unlock()
 
 	// Log visit with appropriate detail level based on log level
 	logging.LogVisit(conn.Protocol, cityName, location.Country, conn.RemoteIP, conn.RemotePort, currentHits, currentHits+1)
