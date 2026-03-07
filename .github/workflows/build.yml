@@ -337,7 +337,6 @@ jobs:
           echo "1. Download the appropriate archive for your platform" >> release_notes.md
           echo "2. Extract the archive" >> release_notes.md
           echo "3. Run the \`iptw\` binary" >> release_notes.md
-          echo "3. Run the \`iptw\` binary"
 
       - name: Create Release
         uses: softprops/action-gh-release@v2

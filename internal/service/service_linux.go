@@ -3,10 +3,10 @@
 package service
 
 import (
-"fmt"
-"os"
-"os/user"
-"path/filepath"
+	"fmt"
+	"os"
+	"os/user"
+	"path/filepath"
 )
 
 // installLinux creates a .desktop file in ~/.config/autostart
@@ -24,9 +24,10 @@ func (sm *ServiceManager) installLinux() error {
 	desktopFile := filepath.Join(autostartDir, fmt.Sprintf("%s.desktop", sm.ServiceName))
 	desktopContent := fmt.Sprintf(`[Desktop Entry]
 Type=Application
-Exec=%s
+Exec="%s"
 Hidden=false
 NoDisplay=false
+Terminal=false
 X-GNOME-Autostart-enabled=true
 Name=%s
 Comment=%s
@@ -57,12 +58,12 @@ func (sm *ServiceManager) uninstallLinux() error {
 	return nil
 }
 
-// startLinux 
+// startLinux
 func (sm *ServiceManager) startLinux() error {
 	return fmt.Errorf("Manual start from service manager not supported. Run './iptw' directly")
 }
 
-// stopLinux 
+// stopLinux
 func (sm *ServiceManager) stopLinux() error {
 	return fmt.Errorf("Manual stop from service manager not supported.")
 }
