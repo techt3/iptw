@@ -60,17 +60,17 @@ func (sm *ServiceManager) uninstallLinux() error {
 
 // startLinux
 func (sm *ServiceManager) startLinux() error {
-	return fmt.Errorf("Manual start from service manager not supported. Run './iptw' directly")
+	return fmt.Errorf("manual start from service manager not supported. Run './iptw' directly")
 }
 
 // stopLinux
 func (sm *ServiceManager) stopLinux() error {
-	return fmt.Errorf("Manual stop from service manager not supported.")
+	return fmt.Errorf("manual stop from service manager not supported")
 }
 
 // statusLinux
 func (sm *ServiceManager) statusLinux() (bool, error) {
-	return false, fmt.Errorf("Service status not supported for user-space app")
+	return false, fmt.Errorf("service status not supported for user-space app")
 }
 
 // Stub implementations for other platforms on Linux
@@ -91,25 +91,25 @@ func (sm *ServiceManager) stopMacOS() error {
 }
 
 func (sm *ServiceManager) statusMacOS() (bool, error) {
-	return false, fmt.Errorf("macOS service management not available on Linux")
+	return false, fmt.Errorf("macos service management not available on Linux")
 }
 
 func (sm *ServiceManager) installWindows() error {
-	return fmt.Errorf("Windows service management not available on Linux")
+	return fmt.Errorf("windows service management not available on Linux")
 }
 
 func (sm *ServiceManager) uninstallWindows() error {
-	return fmt.Errorf("Windows service management not available on Linux")
+	return fmt.Errorf("windows service management not available on Linux")
 }
 
 func (sm *ServiceManager) startWindows() error {
-	return fmt.Errorf("Windows service management not available on Linux")
+	return fmt.Errorf("windows service management not available on Linux")
 }
 
 func (sm *ServiceManager) stopWindows() error {
-	return fmt.Errorf("Windows service management not available on Linux")
+	return fmt.Errorf("windows service management not available on Linux")
 }
 
 func (sm *ServiceManager) statusWindows() (bool, error) {
-	return false, fmt.Errorf("Windows service management not available on Linux")
+	return false, fmt.Errorf("windows service management not available on Linux")
 }

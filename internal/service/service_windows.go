@@ -67,56 +67,56 @@ func (sm *ServiceManager) uninstallWindows() error {
 
 // startWindows shows error message
 func (sm *ServiceManager) startWindows() error {
-	return fmt.Errorf("Manual start from service manager not supported. Run './iptw' directly")
+	return fmt.Errorf("manual start from service manager not supported. Run './iptw' directly")
 }
 
 // stopWindows shows error message
 func (sm *ServiceManager) stopWindows() error {
-	return fmt.Errorf("Manual stop from service manager not supported.")
+	return fmt.Errorf("manual stop from service manager not supported")
 }
 
 // statusWindows
 func (sm *ServiceManager) statusWindows() (bool, error) {
-	return false, fmt.Errorf("Service status not supported for user-space app")
+	return false, fmt.Errorf("service status not supported for user-space app")
 }
 
 // Stub implementations for other platforms on Windows
 func (sm *ServiceManager) installMacOS() error {
-	return fmt.Errorf("macOS service management not available on Windows")
+	return fmt.Errorf("macos service management not available on Windows")
 }
 
 func (sm *ServiceManager) uninstallMacOS() error {
-	return fmt.Errorf("macOS service management not available on Windows")
+	return fmt.Errorf("macos service management not available on Windows")
 }
 
 func (sm *ServiceManager) startMacOS() error {
-	return fmt.Errorf("macOS service management not available on Windows")
+	return fmt.Errorf("macos service management not available on Windows")
 }
 
 func (sm *ServiceManager) stopMacOS() error {
-	return fmt.Errorf("macOS service management not available on Windows")
+	return fmt.Errorf("macos service management not available on Windows")
 }
 
 func (sm *ServiceManager) statusMacOS() (bool, error) {
-	return false, fmt.Errorf("macOS service management not available on Windows")
+	return false, fmt.Errorf("macos service management not available on Windows")
 }
 
 func (sm *ServiceManager) installLinux() error {
-	return fmt.Errorf("Linux service management not available on Windows")
+	return fmt.Errorf("linux service management not available on Windows")
 }
 
 func (sm *ServiceManager) uninstallLinux() error {
-	return fmt.Errorf("Linux service management not available on Windows")
+	return fmt.Errorf("linux service management not available on Windows")
 }
 
 func (sm *ServiceManager) startLinux() error {
-	return fmt.Errorf("Linux service management not available on Windows")
+	return fmt.Errorf("linux service management not available on Windows")
 }
 
 func (sm *ServiceManager) stopLinux() error {
-	return fmt.Errorf("Linux service management not available on Windows")
+	return fmt.Errorf("linux service management not available on Windows")
 }
 
 func (sm *ServiceManager) statusLinux() (bool, error) {
-	return false, fmt.Errorf("Linux service management not available on Windows")
+	return false, fmt.Errorf("linux service management not available on Windows")
 }

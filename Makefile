@@ -38,12 +38,15 @@ clean:
 dirs:
 	@mkdir -p $(BUILD_DIR) $(DIST_DIR)
 
+# Executable extension (.exe on Windows)
+BINARY_EXT = $(if $(filter Windows_NT,$(OS)),.exe,)
+
 # Build for current platform
 .PHONY: build
 build: dirs
 	@echo "🔨 Building $(APP_NAME) for current platform..."
-	@go build $(BUILD_FLAGS) -o $(BUILD_DIR)/$(APP_NAME) $(MAIN_PACKAGE)
-	@echo "✅ Build complete: $(BUILD_DIR)/$(APP_NAME)"
+	@go build $(BUILD_FLAGS) -o $(BUILD_DIR)/$(APP_NAME)$(BINARY_EXT) $(MAIN_PACKAGE)
+	@echo "✅ Build complete: $(BUILD_DIR)/$(APP_NAME)$(BINARY_EXT)"
 
 # Build for all platforms
 .PHONY: build-all
