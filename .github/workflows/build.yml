@@ -180,7 +180,7 @@ jobs:
 
       - name: Build binary
         env:
-          CGO_ENABLED: 0
+          CGO_ENABLED: 1
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
           VERSION: ${{ steps.version.outputs.version }}
@@ -188,6 +188,13 @@ jobs:
           BINARY_NAME="iptw"
           OUTPUT_DIR="build/iptw-$VERSION-$GOOS-$GOARCH"
           mkdir -p "$OUTPUT_DIR"
+
+          # fyne.io/systray requires CGO on macOS (Objective-C/Cocoa).
+          # When cross-compiling for amd64 on an arm64 runner, pass -arch x86_64 to clang.
+          if [ "$GOARCH" = "amd64" ]; then
+            export CGO_CFLAGS="-arch x86_64"
+            export CGO_LDFLAGS="-arch x86_64"
+          fi
 
           LDFLAGS="-X main.Version=$VERSION -X main.BuildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ) -X main.GitCommit=$(git rev-parse --short HEAD) -w -s"
 
