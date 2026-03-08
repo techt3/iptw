@@ -1,7 +1,11 @@
 
 # IP Travel Wallpaper (iptw)
 
-IP Travel Wallpaper transforms your network browsing into a gamified world exploration experience. As you visit websites and connect to servers around the globe, your digital footprints are visualized on a stunning interactive world map that stays in your system tray.
+You open your laptop. News apps. Social feeds. Streaming. Fifty tabs — and somehow it all feels like the same story, told by the same voices, hosted on the same three clouds, written for the same curated audience.
+
+*You are already inside the Matrix.*
+
+IP Travel Wallpaper is your way out. Every network connection your computer makes has a location — a country, a server, a story. IPTW maps those connections in real time, painting a living world map that grows more colorful every time you venture beyond the algorithmic mainstream. Escape the news bubble. Find the authentic voices the algorithm buried. The whole world is online — most people never see it.
 
 ![Example map](./files/wallpaper.png)
 
@@ -12,51 +16,76 @@ IPTW has been modernized into a lightweight system tray application:
 - **Opt-in Wallpaper**: By default, IPTW no longer changes your OS wallpaper. You can enable this as an optional feature in the menu.
 - **Auto-Start**: Easily configure IPTW to start when you log in via the tray menu.
 
-## Game Philosophy: Breaking Out of Digital Bubbles
+## The Story: Escaping the Digital Matrix
 
-In our interconnected world, most internet traffic flows through a handful of major hosting platforms and CDNs located in just a few countries. This creates digital "bubbles" where we unknowingly consume content from a very limited geographic and cultural perspective.
+The modern internet has a secret geography.
 
-**IPTW challenges you to:**
-- **Escape the hosting monopoly**: Discover websites hosted outside major cloud platforms (AWS, Google Cloud, Azure)
-- **Find authentic local voices**: Seek out small community newspapers, local blogs, and regional websites
-- **Break news bubbles**: Access diverse perspectives by connecting to servers in different countries
-- **Explore digital diversity**: Experience the internet as it was meant to be - truly global and decentralized
+Ninety percent of global web traffic passes through the infrastructure of fewer than ten corporations. Amazon, Google, Cloudflare, Microsoft — invisible highways that funnel the world's information through a handful of data centers in Virginia, Oregon, Ireland, and Singapore. What appears to be a global, open network is, in practice, a tightly controlled distribution system optimized for engagement, profit, and convenience — not truth, diversity, or authenticity.
 
-The game rewards curiosity and geographic diversity over convenience, encouraging you to venture beyond the mainstream digital highways.
+The result: a **News Bubble**. A personalized prison of algorithmically curated content that mirrors your existing views, your existing language, your existing culture. You didn't choose to live in it. You were guided there — one recommendation at a time, one autoplay at a time, one *"you might also like"* at a time.
 
-## How It Works: Travel Mechanics
+Somewhere out there right now:
 
-- **Virtual Travel**: Each network connection to a foreign IP address represents a "visit" to that country.
-- **Progressive Country Coloring**: Countries change appearance based on your visit frequency:
-  - **1-9 visits**: Display national flag background (fresh destinations worth exploring)
-  - **10+ visits**: Countries become "boring." If you continue visiting them, you enter the **Matrix Prison** — the map will display the green Matrix Rain effect to remind you that you are stuck in a digital loop and need to find new, authentic destinations!
-- **Interactive Visualization**: Open the map from the tray to see your travels expand with live connection points.
-- **Optional Wallpaper**: If enabled, your journey becomes a personalized, ever-changing desktop background.
+- A community newspaper in rural Mozambique is reporting on events that will never reach a Western feed
+- A university in Kazakhstan is publishing climate research that doesn't fit the mainstream narrative
+- A local radio station in the Faroe Islands is streaming traditional music no algorithm has ever surfaced to you
+- A neighborhood blog in Myanmar is the only honest record of what's happening in that village today
 
-## Game Goals & Challenges
+They are real. They are online. Your computer could reach them right now.
+
+But the Matrix has **Agents** — the recommendation engines, the CDN overlords, the walled gardens — endlessly recycling you back toward the familiar, the profitable, the safe. Every time you open the same news aggregator, stream from the same platform, search through the same engine, you feed the system that keeps you contained.
+
+**IPTW is the red pill.**
+
+It doesn't fight the Matrix. It makes it *visible*. Every country your connections touch gets colored on your map. Every country captured by the same few platforms bleeds into **Matrix Rain** — cascading green code washing over the regions where you are most imprisoned. Every local voice you find, every independent source you reach, every underrepresented corner of the internet you touch — that is a crack in the wall.
+
+The mission: go further. Find the local newspaper. Tune into the community station. Connect to something real. The algorithm will never show you the way — that's the point.
+
+## How It Works: Mapping Your Escape
+
+Your computer is already traveling the world — you just haven't been watching the map.
+
+- **Virtual Travel**: Every outbound network connection to a foreign IP is a "visit" to that country. Browse a site, stream a video, load an API — if the server is abroad, you just traveled there.
+- **Progressive Country Coloring**: Countries evolve as your visits accumulate:
+  - **1–9 visits**: The country displays its national flag — a fresh destination, still worth exploring
+  - **10+ visits**: The country "goes boring." Keep visiting it and you enter the **Matrix Prison** — green Matrix Rain bleeds across those captured countries, a visual alarm that you are stuck in a loop and need to break out
+- **Target Countries**: The map highlights a random unvisited country with a red border — your next escape objective. Chase it.
+- **Interactive Map**: Click the tray icon → **Show Map** to see your travels unfold live, with active connection points pulsing in real time
+- **Optional Wallpaper**: Enable wallpaper mode and your escape map becomes a personalized, ever-changing desktop — a daily reminder of how far you've traveled, and how far you still have to go
+
+## Your Mission: Escape the Matrix
+
+The Matrix isn't defeated by a single breakthrough. It is dismantled country by country, server by server, authentic voice by authentic voice.
 
 ### 🎯 **Primary Objectives**
-1. **Visit All Countries**: Can you find internet content hosted in every nation?
-2. **Regional Completion**: Complete entire continents by discovering local hosting
-3. **Rare Country Hunter**: Find websites in countries with minimal global hosting presence
-4. **Local News Explorer**: Discover authentic local newspapers and community sites
-5. **Escape the Big Three**: Minimize connections to US, EU, and Chinese mega-platforms
+1. **Full Liberation**: Visit all 195 countries — find internet content hosted in every corner of the world
+2. **Continental Breakout**: Complete entire continents by finding local hosting outside the major CDNs
+3. **Rare Signal Hunter**: Find active websites in countries with almost no global hosting presence — the digital frontier the algorithm forgot
+4. **News Underground**: Discover authentic local newspapers, community bulletins, and independent regional voices
+5. **Escape the Triad**: Minimize dependency on US, EU, and Chinese mega-platforms — the three pillars of the Matrix
 
-### 🌍 **Discovery Challenges**
-- **Small Nation Challenge**: Find active websites hosted in microstates and island nations
-- **Language Diversity**: Connect to servers hosting content in minority languages
-- **Community Voices**: Discover local radio stations, newspapers, and blogs
-- **Academic Networks**: Find university and research institution servers worldwide
-- **Government Transparency**: Access official government websites hosted locally
-- **Cultural Preservation**: Find sites dedicated to local traditions and heritage
+### 🌍 **Field Operations**
+- **Micro-Nation Signals**: Find active web servers in microstates and island nations — places the CDN empire never bothered to reach
+- **Minority Frequencies**: Connect to servers hosting content in endangered and minority languages — voices the algorithm systematically buries
+- **Community Transmissions**: Discover local radio streams, independent newspapers, and neighborhood blogs
+- **Academic Resistance**: Find university and research servers — knowledge that exists outside the paywall and the recommendation engine
+- **Sovereign Voices**: Access government websites hosted locally — primary sources before the aggregators spin them
+- **Memory Keepers**: Find sites dedicated to local history, oral tradition, and cultural preservation — things no major platform has any financial incentive to surface
 
-### 📰 **Breaking News Bubbles**
-The modern internet is dominated by a few major hosting providers, creating invisible geographic barriers to information diversity. IPTW helps you discover:
-- **Hyperlocal News**: Small-town newspapers and community bulletins
-- **Alternative Perspectives**: Non-Western viewpoints on global events
-- **Underrepresented Voices**: Media from developing nations and marginalized communities
-- **Direct Sources**: Government, academic, and institutional websites hosted locally
-- **Cultural Content**: Local entertainment, art, and cultural preservation sites
+### 📰 **The News Underground**
+Behind the walls of the algorithmic gatekeepers, a parallel internet of authentic voices is waiting:
+- **Hyperlocal Dispatches**: Small-town newspapers and community bulletins reporting on the stories no recommendation engine will ever amplify
+- **Counter-Narratives**: Non-Western perspectives on global events, unfiltered by the editorial choices of a handful of media conglomerates
+- **Underrepresented Signals**: Media from developing nations and communities that are statistically invisible in mainstream coverage
+- **Primary Sources**: Government, academic, and institutional websites hosted locally — data before the spin cycle
+- **Living Culture**: Local entertainment, oral history archives, and cultural networks that exist only because communities chose to build them
+
+### ⚠️ **The Matrix Prison Warning**
+When your map begins turning green — when the **Matrix Rain** starts bleeding across the countries you visit too often — the system is sending you a message:
+
+> *You are stuck. Same platforms. Same voices. Same bubble.*
+
+There is only one way out: go further. Find something new. Connect to something real.
 
 
 ## Installation & Usage
