@@ -2,7 +2,7 @@
 
 package gui
 
-import "github.com/getlantern/systray"
+import "fyne.io/systray"
 
 func setTrayTitleAndTooltip(title, tooltip string) {
 	systray.SetTitle(title)

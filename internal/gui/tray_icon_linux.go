@@ -8,9 +8,8 @@ import (
 	"image/color"
 	"image/png"
 	"math"
-	"time"
 
-	"github.com/getlantern/systray"
+	"fyne.io/systray"
 )
 
 // generateTrayIcon creates a 32×32 globe icon as a PNG.
@@ -50,14 +49,9 @@ func generateTrayIcon() []byte {
 
 // setTrayIcon sets the system tray icon.
 //
-// On Linux, calling systray.SetIcon() synchronously inside onReady triggers:
-//   Gtk-CRITICAL **: gtk_widget_get_scale_factor: assertion 'GTK_IS_WIDGET (widget)' failed
-// because the AppIndicator widget has not yet been realized by the GTK main
-// loop.  Deferring the call by one GTK event loop cycle (250 ms is enough in
-// practice) avoids the race and lets the icon appear correctly.
+// fyne.io/systray on Linux uses the StatusNotifierItem D-Bus protocol
+// (pure Go, no GTK/AppIndicator dependency) so SetIcon can be called
+// synchronously without any race against the GTK main loop.
 func setTrayIcon() {
-	go func() {
-		time.Sleep(250 * time.Millisecond)
-		systray.SetIcon(generateTrayIcon())
-	}()
+	systray.SetIcon(generateTrayIcon())
 }

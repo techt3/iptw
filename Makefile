@@ -12,13 +12,6 @@ LDFLAGS = -ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME) -
 LDFLAGS_WINDOWS = -ldflags "-H windowsgui -X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME) -X main.GitCommit=$(GIT_COMMIT) -w -s"
 BUILD_FLAGS = $(LDFLAGS) -trimpath
 
-# Docker build command used for Linux targets (CGO requires a native Linux toolchain)
-DOCKER_BUILD = docker buildx build \
-	--build-arg VERSION=$(VERSION) \
-	--build-arg GIT_COMMIT=$(GIT_COMMIT) \
-	--build-arg BUILD_TIME=$(BUILD_TIME) \
-	-f Dockerfile.linux
-
 # Build directory
 BUILD_DIR = build
 DIST_DIR = dist
@@ -27,6 +20,7 @@ DIST_DIR = dist
 PLATFORMS = \
 	darwin/arm64 \
 	linux/amd64 \
+	linux/arm64 \
 	windows/amd64 
 # Main entry point
 MAIN_PACKAGE = ./cmd/iptw
@@ -73,21 +67,11 @@ define build_platform
 	@echo "  📦 Building for $(GOOS)/$(GOARCH)..."
 	@mkdir -p $(OUTPUT_DIR)
 	@if GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go build $(PLATFORM_BUILD_FLAGS) -o $(OUTPUT_DIR)/$(BINARY_NAME) $(MAIN_PACKAGE) 2>/dev/null; then \
-		echo "    ✅ $(GOOS)/$(GOARCH) build complete (CGO)"; \
+		echo "    ✅ $(GOOS)/$(GOARCH) build complete"; \
 	elif GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=0 go build $(PLATFORM_BUILD_FLAGS) -o $(OUTPUT_DIR)/$(BINARY_NAME) $(MAIN_PACKAGE) 2>/dev/null; then \
-		echo "    ✅ $(GOOS)/$(GOARCH) build complete (no CGO)"; \
-	elif command -v docker >/dev/null 2>&1 && [ -f Dockerfile.linux ]; then \
-		echo "    🐳 Native cross-compile failed, trying Docker..."; \
-		if $(DOCKER_BUILD) --platform $(GOOS)/$(GOARCH) --output "type=local,dest=$(OUTPUT_DIR)" . ; then \
-			mv $(OUTPUT_DIR)/iptw $(OUTPUT_DIR)/$(BINARY_NAME) 2>/dev/null || true; \
-			echo "    ✅ $(GOOS)/$(GOARCH) build complete (Docker)"; \
-		else \
-			echo "    ⚠️  $(GOOS)/$(GOARCH) Docker build also failed"; \
-			rm -rf $(OUTPUT_DIR); \
-		fi; \
+		echo "    ✅ $(GOOS)/$(GOARCH) build complete"; \
 	else \
-		echo "    ⚠️  $(GOOS)/$(GOARCH) cross-compilation failed — build on the target OS or use a cross-toolchain (e.g. Docker)"; \
-		echo "    ℹ️  Hint: some packages (e.g. systray on Linux) require CGO and a native or cross compiler"; \
+		echo "    ⚠️  $(GOOS)/$(GOARCH) cross-compilation failed"; \
 		rm -rf $(OUTPUT_DIR); \
 	fi
 	@cp README.md $(OUTPUT_DIR)/ 2>/dev/null || true
@@ -110,36 +94,6 @@ package: build-all
 		fi; \
 	done
 	@echo "✅ All packages created in $(DIST_DIR)/"
-
-# Docker-based Linux builds — works from any host OS including macOS.
-# linux/amd64 runs natively inside the container; linux/arm64 uses QEMU
-# (slower first run, subsequent runs use the layer cache).
-.PHONY: build-linux-docker
-build-linux-docker: build-linux-amd64-docker build-linux-arm64-docker
-
-.PHONY: build-linux-amd64-docker
-build-linux-amd64-docker: dirs
-	@echo "  🐳 Building linux/amd64 via Docker..."
-	@mkdir -p $(BUILD_DIR)/$(APP_NAME)-$(VERSION)-linux-amd64
-	@$(DOCKER_BUILD) --platform linux/amd64 \
-		--output "type=local,dest=$(BUILD_DIR)/$(APP_NAME)-$(VERSION)-linux-amd64" \
-		.
-	@mv $(BUILD_DIR)/$(APP_NAME)-$(VERSION)-linux-amd64/iptw $(BUILD_DIR)/$(APP_NAME)-$(VERSION)-linux-amd64/$(APP_NAME) 2>/dev/null || true
-	@cp README.md $(BUILD_DIR)/$(APP_NAME)-$(VERSION)-linux-amd64/ 2>/dev/null || true
-	@cp -r config $(BUILD_DIR)/$(APP_NAME)-$(VERSION)-linux-amd64/ 2>/dev/null || true
-	@echo "    ✅ linux/amd64 build complete"
-
-.PHONY: build-linux-arm64-docker
-build-linux-arm64-docker: dirs
-	@echo "  🐳 Building linux/arm64 via Docker (QEMU — first run is slower)..."
-	@mkdir -p $(BUILD_DIR)/$(APP_NAME)-$(VERSION)-linux-arm64
-	@$(DOCKER_BUILD) --platform linux/arm64 \
-		--output "type=local,dest=$(BUILD_DIR)/$(APP_NAME)-$(VERSION)-linux-arm64" \
-		.
-	@mv $(BUILD_DIR)/$(APP_NAME)-$(VERSION)-linux-arm64/iptw $(BUILD_DIR)/$(APP_NAME)-$(VERSION)-linux-arm64/$(APP_NAME) 2>/dev/null || true
-	@cp README.md $(BUILD_DIR)/$(APP_NAME)-$(VERSION)-linux-arm64/ 2>/dev/null || true
-	@cp -r config $(BUILD_DIR)/$(APP_NAME)-$(VERSION)-linux-arm64/ 2>/dev/null || true
-	@echo "    ✅ linux/arm64 build complete"
 
 # Development build with live reload support
 .PHONY: dev
@@ -238,9 +192,6 @@ help:
 	@echo "================="
 	@echo ""
 	@echo "Available targets:"
-	@echo "  build-linux-docker       - Build Linux binaries (amd64+arm64) via Docker"
-	@echo "  build-linux-amd64-docker - Build Linux amd64 binary via Docker"
-	@echo "  build-linux-arm64-docker - Build Linux arm64 binary via Docker (QEMU)"
 	@echo "  build          - Build for current platform"
 	@echo "  build-all      - Build for all supported platforms"
 	@echo "  package        - Create release packages"

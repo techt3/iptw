@@ -7,7 +7,7 @@ import (
 	"encoding/binary"
 	"math"
 
-	"github.com/getlantern/systray"
+	"fyne.io/systray"
 )
 
 // setTrayIcon sets the system tray icon.
@@ -17,10 +17,9 @@ func setTrayIcon() {
 
 // generateTrayIcon creates a 32×32 globe icon in ICO format.
 //
-// getlantern/systray on Windows passes the bytes directly to the Win32
-// CreateIconFromResourceEx API, which expects an ICO-format DIB
-// (BITMAPINFOHEADER + BGRA XOR-mask + AND-mask), NOT a PNG file.
-// Passing PNG bytes results in a silent failure and an invisible icon.
+// fyne.io/systray on Windows passes the bytes to CreateIconFromResourceEx,
+// which expects an ICO-format DIB (BITMAPINFOHEADER + BGRA XOR-mask +
+// AND-mask), NOT a PNG file. Passing PNG results in an invisible icon.
 func generateTrayIcon() []byte {
 	const size = 32
 	cx, cy := float64(size)/2, float64(size)/2

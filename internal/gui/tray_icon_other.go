@@ -9,7 +9,7 @@ import (
 	"image/png"
 	"math"
 
-	"github.com/getlantern/systray"
+	"fyne.io/systray"
 )
 
 // setTrayIcon sets the system tray icon.
@@ -21,8 +21,7 @@ func setTrayIcon() {
 
 // generateTrayIcon creates a 32×32 globe icon as a PNG.
 //
-// On Linux and macOS, getlantern/systray passes the bytes to GTK /
-// AppIndicator which expects standard PNG data, not an ICO DIB.
+// fyne.io/systray on macOS passes PNG bytes to NSImage.
 func generateTrayIcon() []byte {
 	const size = 32
 	cx, cy := float64(size)/2, float64(size)/2

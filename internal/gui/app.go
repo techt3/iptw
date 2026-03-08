@@ -53,7 +53,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/getlantern/systray"
+	"fyne.io/systray"
 	"github.com/skratchdot/open-golang/open"
 
 	"iptw/internal/achievements"

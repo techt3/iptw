@@ -17,12 +17,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Linux dependencies
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libayatana-appindicator3-dev
-
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
@@ -48,13 +42,16 @@ jobs:
     strategy:
       matrix:
         include:
-          # Linux builds
+          # Linux builds — CGO not needed (fyne.io/systray uses pure-Go D-Bus)
           - goos: linux
             goarch: amd64
             name: linux-amd64
-            cc: gcc
 
-          # Windows builds
+          - goos: linux
+            goarch: arm64
+            name: linux-arm64
+
+          # Windows build — CGO required for Win32 tray / singleton APIs
           - goos: windows
             goarch: amd64
             name: windows-amd64
@@ -72,11 +69,9 @@ jobs:
 
       - name: Install cross-compilation dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc-multilib gcc libayatana-appindicator3-dev
-
-          # Install Windows cross-compilation tools
+          # Linux builds are CGO-free; only Windows needs a C cross-compiler.
           if [ "${{ matrix.goos }}" = "windows" ]; then
+            sudo apt-get update
             sudo apt-get install -y gcc-mingw-w64
           fi
 
@@ -99,7 +94,13 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
           CC: ${{ matrix.cc }}
         run: |
-          export CGO_ENABLED=1
+          # Linux: pure-Go build, no C toolchain needed.
+          # Windows: CGO required for Win32 tray / singleton.
+          if [ "$GOOS" = "linux" ]; then
+            export CGO_ENABLED=0
+          else
+            export CGO_ENABLED=1
+          fi
 
           # Build binary
           BINARY_NAME="iptw"
@@ -113,7 +114,7 @@ jobs:
           # Set build flags
           LDFLAGS="-X main.Version=$VERSION -X main.BuildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ) -X main.GitCommit=$(git rev-parse --short HEAD) -w -s"
 
-          echo "Building for $GOOS/$GOARCH with CGO_ENABLED=$CGO_ENABLED..."
+          echo "Building for $GOOS/$GOARCH with CGO_ENABLED=${CGO_ENABLED}..."
           go build -ldflags="$LDFLAGS" -trimpath -o "$OUTPUT_DIR/$BINARY_NAME" ./cmd/iptw
 
           # Copy additional files
@@ -150,79 +151,6 @@ jobs:
         with:
           name: iptw-${{ matrix.name }}-${{ steps.version.outputs.version }}
           path: build/iptw-*-${{ matrix.goos }}-${{ matrix.goarch }}.*
-          retention-days: 30
-
-  build-linux-arm64:
-    name: Build (Linux ARM64)
-    needs: test
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push'
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: arm64
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Get version
-        id: version
-        run: |
-          if [[ $GITHUB_REF == refs/tags/* ]]; then
-            VERSION=${GITHUB_REF#refs/tags/}
-          else
-            VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.1.0")
-            VERSION="${VERSION}-$(git rev-parse --short HEAD)"
-          fi
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Building version: $VERSION"
-
-      - name: Build linux/arm64 via Docker
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          OUTPUT_DIR="build/iptw-$VERSION-linux-arm64"
-          mkdir -p "$OUTPUT_DIR"
-
-          docker buildx build \
-            --platform linux/arm64 \
-            --build-arg VERSION="$VERSION" \
-            --build-arg GIT_COMMIT="$(git rev-parse --short HEAD)" \
-            --build-arg BUILD_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            -f Dockerfile.linux \
-            --output "type=local,dest=$OUTPUT_DIR" \
-            .
-
-          # Dockerfile exports /iptw; rename to match expected binary name
-          mv "$OUTPUT_DIR/iptw" "$OUTPUT_DIR/iptw" 2>/dev/null || true
-
-          # Copy additional files
-          cp README.md "$OUTPUT_DIR/" 2>/dev/null || true
-          cp -r config "$OUTPUT_DIR/" 2>/dev/null || true
-
-          # Copy Linux helper script
-          mkdir -p "$OUTPUT_DIR/scripts"
-          cp scripts/linux-install-deps.sh "$OUTPUT_DIR/scripts/"
-          chmod +x "$OUTPUT_DIR/scripts/linux-install-deps.sh"
-
-      - name: Create archive
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          cd build
-          tar -czf "iptw-$VERSION-linux-arm64.tar.gz" "iptw-$VERSION-linux-arm64/"
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: iptw-linux-arm64-${{ steps.version.outputs.version }}
-          path: build/iptw-*-linux-arm64.*
           retention-days: 30
 
   build-macos:
@@ -320,7 +248,7 @@ jobs:
 
   release:
     name: Create Release
-    needs: [build-cross-platform, build-linux-arm64, build-macos]
+    needs: [build-cross-platform, build-macos]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     permissions:
@@ -405,7 +333,7 @@ jobs:
 
   cleanup:
     name: Cleanup
-    needs: [build-cross-platform, build-linux-arm64, build-macos, release]
+    needs: [build-cross-platform, build-macos, release]
     runs-on: ubuntu-latest
     if: always()
     steps:

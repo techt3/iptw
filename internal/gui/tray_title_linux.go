@@ -2,6 +2,9 @@
 
 package gui
 
+import "fyne.io/systray"
+
 func setTrayTitleAndTooltip(title, tooltip string) {
-	// SetTitle and SetTooltip are often undefined on Linux in github.com/getlantern/systray
+	systray.SetTitle(title)
+	systray.SetTooltip(tooltip)
 }
