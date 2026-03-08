@@ -3,10 +3,22 @@ package logging
 
 import (
 	"context"
+	"io"
 	"log/slog"
 	"os"
 	"strings"
 )
+
+// extraWriter is an optional additional writer set by platform-specific code
+// (e.g. a log file on Windows where stdout is detached). SetupLogger preserves
+// it so that reconfiguring the log level does not lose file output.
+var extraWriter io.Writer
+
+// SetExtraWriter registers an additional writer to be included in all future
+// SetupLogger calls. Must be called before SetupLogger.
+func SetExtraWriter(w io.Writer) {
+	extraWriter = w
+}
 
 // SetupLogger configures the global slog logger with the specified level
 func SetupLogger(levelStr string) {
@@ -37,7 +49,16 @@ func SetupLogger(levelStr string) {
 		},
 	}
 
-	handler := slog.NewTextHandler(os.Stdout, opts)
+	var dest io.Writer = os.Stdout
+	if extraWriter != nil {
+		// Use the extra writer (e.g. log file on Windows GUI builds) as the
+		// sole destination — do NOT include os.Stdout in the chain. In a
+		// -H windowsgui process os.Stdout.Write returns an error, and
+		// io.MultiWriter aborts on the first writer error, which would silently
+		// drop every line to the file.
+		dest = extraWriter
+	}
+	handler := slog.NewTextHandler(dest, opts)
 	logger := slog.New(handler)
 	slog.SetDefault(logger)
 }

@@ -9,6 +9,7 @@ GIT_COMMIT = $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 
 # Go build flags
 LDFLAGS = -ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME) -X main.GitCommit=$(GIT_COMMIT) -w -s"
+LDFLAGS_WINDOWS = -ldflags "-H windowsgui -X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME) -X main.GitCommit=$(GIT_COMMIT) -w -s"
 BUILD_FLAGS = $(LDFLAGS) -trimpath
 
 # Build directory
@@ -61,11 +62,12 @@ define build_platform
 	$(eval GOARCH := $(word 2,$(subst /, ,$(1))))
 	$(eval BINARY_NAME := $(APP_NAME)$(if $(filter windows,$(GOOS)),.exe))
 	$(eval OUTPUT_DIR := $(BUILD_DIR)/$(APP_NAME)-$(VERSION)-$(GOOS)-$(GOARCH))
+	$(eval PLATFORM_BUILD_FLAGS := $(if $(filter windows,$(GOOS)),$(LDFLAGS_WINDOWS) -trimpath,$(BUILD_FLAGS)))
 	@echo "  📦 Building for $(GOOS)/$(GOARCH)..."
 	@mkdir -p $(OUTPUT_DIR)
-	@GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go build $(BUILD_FLAGS) -o $(OUTPUT_DIR)/$(BINARY_NAME) $(MAIN_PACKAGE) || \
+	@GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go build $(PLATFORM_BUILD_FLAGS) -o $(OUTPUT_DIR)/$(BINARY_NAME) $(MAIN_PACKAGE) || \
 	 (echo "    ⚠️  CGO build failed for $(GOOS)/$(GOARCH), trying without CGO..." && \
-	  GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=0 go build $(BUILD_FLAGS) -o $(OUTPUT_DIR)/$(BINARY_NAME) $(MAIN_PACKAGE))
+	  GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=0 go build $(PLATFORM_BUILD_FLAGS) -o $(OUTPUT_DIR)/$(BINARY_NAME) $(MAIN_PACKAGE))
 	@cp README.md $(OUTPUT_DIR)/ 2>/dev/null || true
 	@cp -r config $(OUTPUT_DIR)/ 2>/dev/null || true
 	@echo "    ✅ $(GOOS)/$(GOARCH) build complete"

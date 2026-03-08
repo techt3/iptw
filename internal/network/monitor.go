@@ -209,6 +209,7 @@ func (m *Monitor) getConnectionsLinuxNetstat(ctx context.Context) ([]Connection,
 // getConnectionsWindows gets connections using netstat on Windows
 func (m *Monitor) getConnectionsWindows(ctx context.Context) ([]Connection, error) {
 	cmd := exec.CommandContext(ctx, "netstat", "-an", "-p", "TCP")
+	hideWindow(cmd) // prevent a CMD flash on every poll when built with -H windowsgui
 	output, err := cmd.Output()
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute netstat on Windows: %w", err)

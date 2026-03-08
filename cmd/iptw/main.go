@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"log/slog"
-	"os"
 
 	"iptw/internal/config"
 	"iptw/internal/geoip"
@@ -38,48 +37,71 @@ func main() {
 		return
 	}
 
+	// On Windows GUI builds, set up file logging immediately so that any
+	// startup failure is recorded even before the config is read.
+	if closer := logging.SetupWindowsFileLogger(slog.LevelDebug); closer != nil {
+		defer closer.Close()
+	}
+	slog.Info("IPTW starting", "version", Version)
+
 	// Create singleton lock to ensure only one instance runs
 	lock, err := singleton.NewLock("iptw")
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to create singleton lock: %v\n", err)
-		os.Exit(1)
+		fatalError("Startup Error", fmt.Sprintf("Failed to create singleton lock: %v", err))
+		return
 	}
 
 	// Attempt to acquire the lock (unless force flag is used)
 	if !forceStart {
 		if err := lock.Acquire(); err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			fmt.Fprintf(os.Stderr, "Please check if another instance is already running and stop it before starting a new one.\n")
-			fmt.Fprintf(os.Stderr, "If you're sure no other instance is running, you may need to manually remove the lock file.\n")
-			fmt.Fprintf(os.Stderr, "Alternatively, use the --force flag to bypass this check.\n")
-			os.Exit(1)
+			fatalError("Already Running",
+				"Another instance of IPTW appears to be running.\n\n"+
+					err.Error()+"\n\n"+
+					"If you are sure no other instance is running, delete the lock file or use --force.")
+			return
 		}
-
-		// Ensure lock is released when application exits
+		// Use defer so the lock is always released even when run() returns an
+		// error — os.Exit() is no longer called after this point.
 		defer func() {
 			if releaseErr := lock.Release(); releaseErr != nil {
-				fmt.Fprintf(os.Stderr, "Warning: Failed to release singleton lock: %v\n", releaseErr)
+				slog.Warn("Failed to release singleton lock", "error", releaseErr)
 			}
 		}()
 	} else {
-		fmt.Println("Warning: Force start enabled - skipping singleton check")
+		slog.Warn("Force start enabled – skipping singleton check")
 	}
 
+	// Recover from any unexpected panics so they produce a visible error
+	// rather than a silent crash on Windows GUI builds.
+	defer func() {
+		if r := recover(); r != nil {
+			fatalError("Unexpected Crash", fmt.Sprintf("panic: %v", r))
+		}
+	}()
+
+	if err := run(configPath); err != nil {
+		fatalError("Application Error", err.Error())
+	}
+}
+
+// run contains the main application logic. Returning an error (instead of
+// calling os.Exit) ensures that all deferred cleanup in main() executes,
+// most importantly releasing the singleton lock file.
+func run(configPath string) error {
 	// Load configuration
 	cfg, err := config.LoadConfig()
 	if err != nil {
-		slog.Error("Failed to load config", "error", err)
-		os.Exit(1)
+		return fmt.Errorf("failed to load config: %w", err)
 	}
+	_ = configPath // flag reserved for future per-path overrides
 
-	// Setup logging based on config
+	// Re-configure logging now that we know the desired level from config.
 	logging.SetupLogger(cfg.LogLevel)
 
-	// Initialize GeoIP database (using embedded database)
+	// Initialize GeoIP database (embedded in binary)
 	geoipDB, err := geoip.NewDatabase("")
 	if err != nil {
-		slog.Error("Failed to initialize embedded GeoIP database", "error", err)
-		os.Exit(1)
+		return fmt.Errorf("failed to initialise embedded GeoIP database: %w", err)
 	}
 	defer func() { _ = geoipDB.Close() }()
 
@@ -89,16 +111,10 @@ func main() {
 	// Create GUI application
 	app, err := gui.NewApp(cfg, geoipDB, netMon)
 	if err != nil {
-		slog.Error("Failed to create application", "error", err)
-		os.Exit(1)
+		return fmt.Errorf("failed to create application: %w", err)
 	}
-
-	// Ensure clean shutdown when the application exits
 	defer app.Shutdown()
 
-	fmt.Println("Starting IP Travel Wallpaper (iptw)...")
-	if err := app.Run(); err != nil {
-		slog.Error("Application error", "error", err)
-		os.Exit(1)
-	}
+	slog.Info("Starting IP Travel Wallpaper (iptw)")
+	return app.Run()
 }
