@@ -124,8 +124,10 @@ func (m *Monitor) getConnectionsMacOS(ctx context.Context) ([]Connection, error)
 
 // getConnectionsLinux gets connections using ss on Linux
 func (m *Monitor) getConnectionsLinux(ctx context.Context) ([]Connection, error) {
-	// Try ss first (preferred on modern Linux)
-	cmd := exec.CommandContext(ctx, "ss", "-tuln", "state", "established")
+	// Try ss first (preferred on modern Linux).
+	// Flags: -t TCP, -u UDP, -n numeric (no DNS). No -l so we get connected
+	// sockets, not listening ones. The ESTAB regex below filters the output.
+	cmd := exec.CommandContext(ctx, "ss", "-tun")
 	output, err := cmd.Output()
 	if err != nil {
 		// Fall back to netstat if ss is not available
@@ -135,8 +137,9 @@ func (m *Monitor) getConnectionsLinux(ctx context.Context) ([]Connection, error)
 	connections := make([]Connection, 0)
 	scanner := bufio.NewScanner(strings.NewReader(string(output)))
 
-	// Regex to parse ss output
-	// Example: tcp   ESTAB  0      0      192.168.1.100:50123   93.184.216.34:80
+	// Regex to parse ss output.
+	// With -tun (no state filter) the State column is present:
+	// tcp   ESTAB  0  0  192.168.1.100:50123  93.184.216.34:80
 	connRegex := regexp.MustCompile(`^(tcp|udp)\s+ESTAB\s+\d+\s+\d+\s+(\S+):(\d+)\s+(\S+):(\d+)`)
 
 	for scanner.Scan() {

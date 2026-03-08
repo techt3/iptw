@@ -227,6 +227,18 @@ Test the wallpaper backup functionality:
 
 ### Linux Issues
 
+**Missing shared libraries (AppIndicator / GTK)**
+
+If you see an error like:
+```
+./iptw: error while loading shared libraries: libayatana-appindicator3.so.1: cannot open shared object file: No such file or directory
+```
+Run the included dependency installer script (requires root / sudo):
+```bash
+sudo ./scripts/linux-install-deps.sh ./iptw
+```
+The script detects your distro (Fedora, RHEL, Debian/Ubuntu, Arch, openSUSE) and installs the correct packages automatically. Pass the path to the `iptw` binary as the first argument so it can verify all libraries resolved correctly after installation.
+
 **Permission Denied**
 - Make the binary executable: `chmod +x iptw`
 
