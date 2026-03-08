@@ -64,9 +64,10 @@ define build_platform
 	$(eval BINARY_NAME := $(APP_NAME)$(if $(filter windows,$(GOOS)),.exe))
 	$(eval OUTPUT_DIR := $(BUILD_DIR)/$(APP_NAME)-$(VERSION)-$(GOOS)-$(GOARCH))
 	$(eval PLATFORM_BUILD_FLAGS := $(if $(filter windows,$(GOOS)),$(LDFLAGS_WINDOWS) -trimpath,$(BUILD_FLAGS)))
+	$(eval CGO_FLAG := $(if $(filter darwin,$(GOOS)),CGO_ENABLED=1,CGO_ENABLED=0))
 	@echo "  📦 Building for $(GOOS)/$(GOARCH)..."
 	@mkdir -p $(OUTPUT_DIR)
-	@if GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=0 go build $(PLATFORM_BUILD_FLAGS) -o $(OUTPUT_DIR)/$(BINARY_NAME) $(MAIN_PACKAGE) 2>/dev/null; then \
+	@if GOOS=$(GOOS) GOARCH=$(GOARCH) $(CGO_FLAG) go build $(PLATFORM_BUILD_FLAGS) -o $(OUTPUT_DIR)/$(BINARY_NAME) $(MAIN_PACKAGE) 2>/dev/null; then \
 		echo "    ✅ $(GOOS)/$(GOARCH) build complete"; \
 	else \
 		echo "    ⚠️  $(GOOS)/$(GOARCH) cross-compilation failed"; \
