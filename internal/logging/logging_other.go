@@ -2,7 +2,10 @@
 
 package logging
 
-import "io"
+import (
+	"io"
+	"log/slog"
+)
 
 // SetupWindowsFileLogger is a no-op on non-Windows platforms.
-func SetupWindowsFileLogger(_ interface{}) io.Closer { return nil }
+func SetupWindowsFileLogger(_ slog.Level) io.Closer { return nil }

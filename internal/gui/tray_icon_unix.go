@@ -1,4 +1,4 @@
-//go:build linux
+//go:build !windows
 
 package gui
 
@@ -12,8 +12,8 @@ import (
 	"fyne.io/systray"
 )
 
-// generateTrayIcon creates a 32×32 globe icon as a PNG.
-// GTK/AppIndicator expect PNG data, not a Win32 ICO DIB.
+// generateTrayIcon creates a 32×32 globe icon as PNG bytes.
+// fyne.io/systray on non-Windows platforms expects PNG data.
 func generateTrayIcon() []byte {
 	const size = 32
 	cx, cy := float64(size)/2, float64(size)/2
@@ -26,6 +26,7 @@ func generateTrayIcon() []byte {
 			dx := float64(x) - cx
 			dy := float64(y) - cy
 			if dx*dx+dy*dy > r*r {
+				// Outside circle — leave transparent (zero value).
 				continue
 			}
 			lat := dy / r
@@ -48,10 +49,6 @@ func generateTrayIcon() []byte {
 }
 
 // setTrayIcon sets the system tray icon.
-//
-// fyne.io/systray on Linux uses the StatusNotifierItem D-Bus protocol
-// (pure Go, no GTK/AppIndicator dependency) so SetIcon can be called
-// synchronously without any race against the GTK main loop.
 func setTrayIcon() {
 	systray.SetIcon(generateTrayIcon())
 }

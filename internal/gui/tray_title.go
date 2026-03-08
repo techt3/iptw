@@ -1,5 +1,3 @@
-//go:build !linux
-
 package gui
 
 import "fyne.io/systray"

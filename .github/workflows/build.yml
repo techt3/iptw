@@ -42,7 +42,6 @@ jobs:
     strategy:
       matrix:
         include:
-          # Linux builds — CGO not needed (fyne.io/systray uses pure-Go D-Bus)
           - goos: linux
             goarch: amd64
             name: linux-amd64
@@ -51,11 +50,9 @@ jobs:
             goarch: arm64
             name: linux-arm64
 
-          # Windows build — CGO required for Win32 tray / singleton APIs
           - goos: windows
             goarch: amd64
             name: windows-amd64
-            cc: x86_64-w64-mingw32-gcc
 
     steps:
       - uses: actions/checkout@v4
@@ -69,10 +66,10 @@ jobs:
 
       - name: Install cross-compilation dependencies
         run: |
-          # Linux builds are CGO-free; only Windows needs a C cross-compiler.
+          # Windows cross-compile: zip is needed to create .zip archives.
           if [ "${{ matrix.goos }}" = "windows" ]; then
             sudo apt-get update
-            sudo apt-get install -y gcc-mingw-w64
+            sudo apt-get install -y zip
           fi
 
       - name: Get version
@@ -92,17 +89,8 @@ jobs:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
           VERSION: ${{ steps.version.outputs.version }}
-          CC: ${{ matrix.cc }}
+          CGO_ENABLED: 0
         run: |
-          # Linux: pure-Go build, no C toolchain needed.
-          # Windows: CGO required for Win32 tray / singleton.
-          if [ "$GOOS" = "linux" ]; then
-            export CGO_ENABLED=0
-          else
-            export CGO_ENABLED=1
-          fi
-
-          # Build binary
           BINARY_NAME="iptw"
           if [ "$GOOS" = "windows" ]; then
             BINARY_NAME="iptw.exe"
@@ -111,10 +99,9 @@ jobs:
           OUTPUT_DIR="build/iptw-$VERSION-$GOOS-$GOARCH"
           mkdir -p "$OUTPUT_DIR"
 
-          # Set build flags
           LDFLAGS="-X main.Version=$VERSION -X main.BuildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ) -X main.GitCommit=$(git rev-parse --short HEAD) -w -s"
 
-          echo "Building for $GOOS/$GOARCH with CGO_ENABLED=${CGO_ENABLED}..."
+          echo "Building for $GOOS/$GOARCH..."
           go build -ldflags="$LDFLAGS" -trimpath -o "$OUTPUT_DIR/$BINARY_NAME" ./cmd/iptw
 
           # Copy additional files
@@ -193,7 +180,7 @@ jobs:
 
       - name: Build binary
         env:
-          CGO_ENABLED: 1
+          CGO_ENABLED: 0
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
           VERSION: ${{ steps.version.outputs.version }}
@@ -202,10 +189,9 @@ jobs:
           OUTPUT_DIR="build/iptw-$VERSION-$GOOS-$GOARCH"
           mkdir -p "$OUTPUT_DIR"
 
-          # Set build flags
           LDFLAGS="-X main.Version=$VERSION -X main.BuildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ) -X main.GitCommit=$(git rev-parse --short HEAD) -w -s"
 
-          echo "Building for $GOOS/$GOARCH with CGO enabled..."
+          echo "Building for $GOOS/$GOARCH..."
           go build -ldflags="$LDFLAGS" -trimpath -o "$OUTPUT_DIR/$BINARY_NAME" ./cmd/iptw
 
           # Copy additional files

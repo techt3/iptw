@@ -38,22 +38,6 @@ func (m *Monitor) GetConnections() []Connection {
 	return m.connections
 }
 
-// GetSupportedPlatforms returns a list of supported operating systems
-func GetSupportedPlatforms() []string {
-	return []string{"darwin", "linux", "windows"}
-}
-
-// IsSupported checks if the current platform is supported
-func IsSupported() bool {
-	supportedPlatforms := GetSupportedPlatforms()
-	for _, platform := range supportedPlatforms {
-		if runtime.GOOS == platform {
-			return true
-		}
-	}
-	return false
-}
-
 // RefreshConnections updates the list of active connections (cross-platform)
 func (m *Monitor) RefreshConnections() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)

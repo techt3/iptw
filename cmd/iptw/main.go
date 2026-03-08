@@ -21,10 +21,8 @@ var (
 )
 
 func main() {
-	var configPath string
 	var forceStart bool
 	var showVersion bool
-	flag.StringVar(&configPath, "config", "", "Path to config file (default: ~/.config/iptw/iptwrc)")
 	flag.BoolVar(&forceStart, "force", false, "Force start even if another instance appears to be running")
 	flag.BoolVar(&showVersion, "version", false, "Show version information")
 	flag.Parse()
@@ -79,7 +77,7 @@ func main() {
 		}
 	}()
 
-	if err := run(configPath); err != nil {
+	if err := run(); err != nil {
 		fatalError("Application Error", err.Error())
 	}
 }
@@ -87,13 +85,12 @@ func main() {
 // run contains the main application logic. Returning an error (instead of
 // calling os.Exit) ensures that all deferred cleanup in main() executes,
 // most importantly releasing the singleton lock file.
-func run(configPath string) error {
+func run() error {
 	// Load configuration
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
-	_ = configPath // flag reserved for future per-path overrides
 
 	// Re-configure logging now that we know the desired level from config.
 	logging.SetupLogger(cfg.LogLevel)

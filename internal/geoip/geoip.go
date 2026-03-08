@@ -53,11 +53,6 @@ func NewDatabase(dbPath string) (*Database, error) {
 	return &Database{db: db}, nil
 }
 
-// NewEmbeddedDatabase creates a new GeoIP database instance using embedded data
-func NewEmbeddedDatabase() (*Database, error) {
-	return NewDatabase("")
-}
-
 // loadEmbeddedDatabase decompresses and loads the embedded zipped database
 func loadEmbeddedDatabase() (*geoip2.Reader, error) {
 	// Create a reader from the embedded zip data

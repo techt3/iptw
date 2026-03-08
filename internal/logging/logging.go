@@ -2,7 +2,6 @@
 package logging
 
 import (
-	"context"
 	"io"
 	"log/slog"
 	"os"
@@ -61,19 +60,6 @@ func SetupLogger(levelStr string) {
 	handler := slog.NewTextHandler(dest, opts)
 	logger := slog.New(handler)
 	slog.SetDefault(logger)
-}
-
-// LogStartup logs application startup information
-func LogStartup(appName, version string) {
-	slog.Info("Application starting",
-		"app", appName,
-		"version", version,
-	)
-}
-
-// LogConfig logs configuration information
-func LogConfig(config interface{}) {
-	slog.Debug("Configuration loaded", "config", config)
 }
 
 // LogVisit logs a network connection visit with detailed information
@@ -166,23 +152,6 @@ func LogNaturalEarth(countryCount int) {
 	slog.Info("Natural Earth data loaded", "countries", countryCount)
 }
 
-// LogMapRender logs map rendering information
-func LogMapRender(width, height int, renderer string) {
-	slog.Debug("Map rendered",
-		"width", width,
-		"height", height,
-		"renderer", renderer,
-	)
-}
-
-// LogWallpaper logs wallpaper operations
-func LogWallpaper(action, path string) {
-	slog.Info("Wallpaper operation",
-		"action", action,
-		"path", path,
-	)
-}
-
 // LogError logs errors with context
 func LogError(operation string, err error) {
 	slog.Error("Operation failed",
@@ -191,11 +160,3 @@ func LogError(operation string, err error) {
 	)
 }
 
-// LogWarning logs warnings with context
-func LogWarning(message string, contextData map[string]interface{}) {
-	attrs := make([]slog.Attr, 0, len(contextData))
-	for k, v := range contextData {
-		attrs = append(attrs, slog.Any(k, v))
-	}
-	slog.LogAttrs(context.Background(), slog.LevelWarn, message, attrs...)
-}
