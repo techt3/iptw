@@ -159,4 +159,3 @@ func LogError(operation string, err error) {
 		"error", err.Error(),
 	)
 }
-

@@ -9,13 +9,13 @@ import (
 )
 
 var (
-	user32                  = syscall.MustLoadDLL("user32.dll")
+	user32                   = syscall.MustLoadDLL("user32.dll")
 	procSystemParametersInfo = user32.MustFindProc("SystemParametersInfoW")
 
-	advapi32         = syscall.MustLoadDLL("advapi32.dll")
-	procRegOpenKeyEx = advapi32.MustFindProc("RegOpenKeyExW")
+	advapi32            = syscall.MustLoadDLL("advapi32.dll")
+	procRegOpenKeyEx    = advapi32.MustFindProc("RegOpenKeyExW")
 	procRegQueryValueEx = advapi32.MustFindProc("RegQueryValueExW")
-	procRegCloseKey  = advapi32.MustFindProc("RegCloseKey")
+	procRegCloseKey     = advapi32.MustFindProc("RegCloseKey")
 )
 
 const (
@@ -23,9 +23,9 @@ const (
 	spifUpdateIniFile   = 0x0001
 	spifSendChange      = 0x0002
 
-	hkeyCurrentUser  = uintptr(0x80000001)
-	keyRead          = 0x20019
-	regSZ            = 1
+	hkeyCurrentUser = uintptr(0x80000001)
+	keyRead         = 0x20019
+	regSZ           = 1
 )
 
 // setWindowsBackground calls SystemParametersInfoW directly — no PowerShell
