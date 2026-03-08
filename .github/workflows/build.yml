@@ -125,6 +125,10 @@ jobs:
           if [ "$GOOS" = "windows" ]; then
             cp scripts/windows-unblock.ps1 "$OUTPUT_DIR/scripts/" 2>/dev/null || true
           fi
+          if [ "$GOOS" = "linux" ]; then
+            cp scripts/linux-install-deps.sh "$OUTPUT_DIR/scripts/" 2>/dev/null || true
+            chmod +x "$OUTPUT_DIR/scripts/linux-install-deps.sh" 2>/dev/null || true
+          fi
 
       - name: Create archive
         env:
@@ -146,6 +150,79 @@ jobs:
         with:
           name: iptw-${{ matrix.name }}-${{ steps.version.outputs.version }}
           path: build/iptw-*-${{ matrix.goos }}-${{ matrix.goarch }}.*
+          retention-days: 30
+
+  build-linux-arm64:
+    name: Build (Linux ARM64)
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Get version
+        id: version
+        run: |
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/}
+          else
+            VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.1.0")
+            VERSION="${VERSION}-$(git rev-parse --short HEAD)"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Building version: $VERSION"
+
+      - name: Build linux/arm64 via Docker
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          OUTPUT_DIR="build/iptw-$VERSION-linux-arm64"
+          mkdir -p "$OUTPUT_DIR"
+
+          docker buildx build \
+            --platform linux/arm64 \
+            --build-arg VERSION="$VERSION" \
+            --build-arg GIT_COMMIT="$(git rev-parse --short HEAD)" \
+            --build-arg BUILD_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            -f Dockerfile.linux \
+            --output "type=local,dest=$OUTPUT_DIR" \
+            .
+
+          # Dockerfile exports /iptw; rename to match expected binary name
+          mv "$OUTPUT_DIR/iptw" "$OUTPUT_DIR/iptw" 2>/dev/null || true
+
+          # Copy additional files
+          cp README.md "$OUTPUT_DIR/" 2>/dev/null || true
+          cp -r config "$OUTPUT_DIR/" 2>/dev/null || true
+
+          # Copy Linux helper script
+          mkdir -p "$OUTPUT_DIR/scripts"
+          cp scripts/linux-install-deps.sh "$OUTPUT_DIR/scripts/"
+          chmod +x "$OUTPUT_DIR/scripts/linux-install-deps.sh"
+
+      - name: Create archive
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          cd build
+          tar -czf "iptw-$VERSION-linux-arm64.tar.gz" "iptw-$VERSION-linux-arm64/"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: iptw-linux-arm64-${{ steps.version.outputs.version }}
+          path: build/iptw-*-linux-arm64.*
           retention-days: 30
 
   build-macos:
@@ -243,7 +320,7 @@ jobs:
 
   release:
     name: Create Release
-    needs: [build-cross-platform, build-macos]
+    needs: [build-cross-platform, build-linux-arm64, build-macos]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     permissions:
@@ -298,8 +375,11 @@ jobs:
           echo "- **Intel Macs**: \`iptw-${{ steps.version.outputs.version }}-darwin-amd64.tar.gz\`" >> release_notes.md
           echo "- **Apple Silicon Macs**: \`iptw-${{ steps.version.outputs.version }}-darwin-arm64.tar.gz\`" >> release_notes.md
           echo "" >> release_notes.md
-          echo "### Linux" >> release_notes.md  
+          echo "### Linux" >> release_notes.md
           echo "- **x86_64**: \`iptw-${{ steps.version.outputs.version }}-linux-amd64.tar.gz\`" >> release_notes.md
+          echo "- **ARM64** (Raspberry Pi 4/5, Ampere, etc.): \`iptw-${{ steps.version.outputs.version }}-linux-arm64.tar.gz\`" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "> Linux packages include \`scripts/linux-install-deps.sh\` — run \`sudo ./scripts/linux-install-deps.sh ./iptw\` to install required GTK/AppIndicator libraries on first use." >> release_notes.md
           echo "" >> release_notes.md
           echo "### Windows" >> release_notes.md
           echo "- **x86_64**: \`iptw-${{ steps.version.outputs.version }}-windows-amd64.zip\`" >> release_notes.md
@@ -325,7 +405,7 @@ jobs:
 
   cleanup:
     name: Cleanup
-    needs: [build-cross-platform, build-macos, release]
+    needs: [build-cross-platform, build-linux-arm64, build-macos, release]
     runs-on: ubuntu-latest
     if: always()
     steps:
