@@ -40,7 +40,7 @@ func main() {
 	// On Windows GUI builds, set up file logging immediately so that any
 	// startup failure is recorded even before the config is read.
 	if closer := logging.SetupWindowsFileLogger(slog.LevelDebug); closer != nil {
-		defer closer.Close()
+		defer func() { _ = closer.Close() }()
 	}
 	slog.Info("IPTW starting", "version", Version)
 
