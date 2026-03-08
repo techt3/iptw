@@ -23,8 +23,10 @@ var (
 func main() {
 	var forceStart bool
 	var showVersion bool
+	var foreground bool
 	flag.BoolVar(&forceStart, "force", false, "Force start even if another instance appears to be running")
 	flag.BoolVar(&showVersion, "version", false, "Show version information")
+	flag.BoolVar(&foreground, "foreground", false, "Run in the foreground (keep terminal attached)")
 	flag.Parse()
 
 	// Handle version request
@@ -34,6 +36,11 @@ func main() {
 		fmt.Printf("Git Commit: %s\n", GitCommit)
 		return
 	}
+
+	// On macOS/Linux: detach from the terminal so the user can close the
+	// launching shell.  The process re-execs itself with --foreground and
+	// the parent exits immediately.  This is a no-op on Windows.
+	maybeDaemonize(foreground)
 
 	// On Windows GUI builds, set up file logging immediately so that any
 	// startup failure is recorded even before the config is read.
