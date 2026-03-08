@@ -53,7 +53,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/getlantern/systray"
+	"fyne.io/systray"
 	"github.com/skratchdot/open-golang/open"
 
 	"iptw/internal/achievements"
@@ -215,16 +215,6 @@ func (gs *GameState) GetCountries() map[string]*CountryGameState {
 	return countries
 }
 
-// RLock provides read access to the mutex for server operations
-func (gs *GameState) RLock() {
-	gs.mutex.RLock()
-}
-
-// RUnlock provides read unlock for the mutex
-func (gs *GameState) RUnlock() {
-	gs.mutex.RUnlock()
-}
-
 // GetCountryColor returns the color for a country based on its hit count
 func (gs *GameState) GetCountryColor(country string) color.RGBA {
 	state := gs.GetCountryState(country)
@@ -256,7 +246,6 @@ type App struct {
 	configMu               sync.RWMutex // protects concurrent access to config fields
 	geoip                  *geoip.Database
 	monitor                *network.Monitor
-	worldMap               image.Image
 	running                bool
 	outputDir              string
 	gameState              *GameState
@@ -353,8 +342,16 @@ func (a *App) Run() error {
 }
 
 func (a *App) onReady() {
+	// Catch any panic inside onReady so it appears in the log file rather than
+	// silently terminating the systray message pump.
+	defer func() {
+		if r := recover(); r != nil {
+			slog.Error("panic in onReady", "recover", r)
+		}
+	}()
+
 	// Log startup information
-	slog.Info("IP Travel Wallpaper started",
+	slog.Info("onReady called – systray pump is live",
 		"screen_auto_detection", a.config.AutoDetectScreen,
 		"log_level", a.config.LogLevel,
 		"target_interval_minutes", a.config.TargetInterval,
@@ -369,23 +366,14 @@ func (a *App) onReady() {
 	}
 
 	// Setup Systray
+	setTrayIcon()
 	setTrayTitleAndTooltip("IPTW", "IP Travel Map")
-	// TODO: set an actual icon bytes array, for now using a placeholder text if no icon
 
 	mShowMap := systray.AddMenuItem("Show Map", "Open the interactive travel map")
 	mToggleWallpaper := systray.AddMenuItemCheckbox("Update OS Wallpaper", "Automatically update desktop wallpaper", a.config.UpdateWallpaper)
 	mStartOnLogin := systray.AddMenuItemCheckbox("Start on Login", "Automatically start IP Travel Map on system login", a.config.StartOnLogin)
 	systray.AddSeparator()
 	mQuit := systray.AddMenuItem("Quit", "Quit the whole app")
-
-	// Load world map
-	if err := a.loadWorldMap(); err != nil {
-		slog.Error("failed to load world map", "error", err)
-		systray.Quit()
-		return
-	}
-
-	slog.Info("World map loaded successfully")
 
 	// Start connection monitoring
 	go a.connectionMonitorLoop()
@@ -637,7 +625,11 @@ func (a *App) startLocalServer() {
 			}
 			topCountries = append(topCountries, summaryItem{Country: country, Hits: state.HitCount})
 		}
-		targetCountry, _ := a.gameState.GetTargetCountry()
+		// Read targetCountry directly — we already hold the read lock.
+		// Calling GetTargetCountry() here would attempt a second RLock on the same
+		// mutex; if a writer (targetSelectionLoop) is queued, Go's RWMutex blocks
+		// all new RLock calls, causing both goroutines to wait on each other forever.
+		targetCountry := a.gameState.targetCountry
 		a.gameState.mutex.RUnlock()
 
 		// Sort top countries by hits descending
@@ -691,51 +683,6 @@ func (a *App) showMapWindow() {
 	if err := open.Run(a.serverURL); err != nil {
 		slog.Error("Failed to open browser", "error", err)
 	}
-}
-
-// loadWorldMap loads the world map image from Natural Earth data
-func (a *App) loadWorldMap() error {
-	var width, height int
-
-	// Use screen auto-detection if enabled
-	if a.config.AutoDetectScreen {
-		var err error
-		width, height, err = screen.AutoDetectMapSize()
-		if err != nil {
-			slog.Warn("Screen auto-detection failed, falling back to configured size", "error", err)
-			slog.Debug("Using fallback map dimensions")
-			width = a.config.MapWidth
-			if width <= 0 {
-				width = 1000
-			}
-			height = width / 2
-		}
-	} else {
-		// Use configured map width
-		width = a.config.MapWidth
-		if width <= 0 {
-			width = 1000
-		}
-		height = width / 2
-	}
-
-	// Natural Earth data is required
-	if a.naturalEarth == nil {
-		return fmt.Errorf("natural Earth data not available")
-	}
-
-	// Create initial empty hit map for rendering
-	hitCountries := make(map[string]int)
-	boringCountries := a.getBoringCountries()
-
-	img, err := resources.RenderNaturalEarthMap(a.naturalEarth, width, height, a.config.Black, hitCountries, "", a.flagManager, a.fontManager, boringCountries, nil)
-	if err != nil {
-		return fmt.Errorf("failed to render Natural Earth map: %w", err)
-	}
-
-	a.worldMap = img
-	logging.LogMapRender(width, height, "Natural Earth")
-	return nil
 }
 
 // connectionMonitorLoop periodically updates network connections
@@ -904,41 +851,23 @@ func (a *App) generateAndDisplayMap() error {
 	var err error
 
 	// Generate map with Natural Earth data if available
-	if a.naturalEarth != nil {
-		// Get current hit counts for all countries
-		hitCountries := make(map[string]int)
-		a.gameState.mutex.RLock()
-		for country, state := range a.gameState.countries {
-			hitCountries[country] = state.HitCount
-		}
-		targetCountry, _ := a.gameState.GetTargetCountry()
-		a.gameState.mutex.RUnlock()
+	// Get current hit counts for all countries
+	hitCountries := make(map[string]int)
+	a.gameState.mutex.RLock()
+	for country, state := range a.gameState.countries {
+		hitCountries[country] = state.HitCount
+	}
+	targetCountry, _ := a.gameState.GetTargetCountry()
+	a.gameState.mutex.RUnlock()
 
-		// Get boring countries for flag backgrounds
-		boringCountries := a.getBoringCountries()
+	// Get boring countries for flag backgrounds
+	boringCountries := a.getBoringCountries()
 
-		// Render map with Natural Earth data
-		outputImg, err = resources.RenderNaturalEarthMap(a.naturalEarth, width, height, a.config.Black, hitCountries, targetCountry, a.flagManager, a.fontManager, boringCountries, recentCountries)
-		if err != nil {
-			logging.LogError("render Natural Earth map", err)
-			return err
-		}
-	} else {
-		// Fall back to drawing on the pre-loaded world map
-		if a.worldMap == nil {
-			return fmt.Errorf("world map not loaded")
-		}
-
-		bounds := a.worldMap.Bounds()
-		mapWidth := bounds.Dx()
-		mapHeight := bounds.Dy()
-
-		// Create output image
-		outputImg = image.NewRGBA(image.Rect(0, 0, mapWidth, mapHeight))
-		draw.Draw(outputImg.(*image.RGBA), outputImg.Bounds(), a.worldMap, image.Point{}, draw.Src)
-
-		// Draw country fills based on hit counts (legacy method)
-		a.drawCountryFills(outputImg.(*image.RGBA), mapWidth, mapHeight)
+	// Render map with Natural Earth data
+	outputImg, err = resources.RenderNaturalEarthMap(a.naturalEarth, width, height, a.config.Black, hitCountries, targetCountry, a.flagManager, a.fontManager, boringCountries, recentCountries)
+	if err != nil {
+		logging.LogError("render Natural Earth map", err)
+		return err
 	}
 
 	// Draw connection points for active connections
@@ -983,16 +912,6 @@ func (a *App) generateAndDisplayMap() error {
 	a.mapPNGMu.Lock()
 	a.lastMapPNG = pngBytes
 	a.mapPNGMu.Unlock()
-
-	// Diagnostic: Save periodic snapshots (every 10 seconds for verification)
-	if time.Now().Unix()%10 == 0 {
-		diagDir := filepath.Join(a.outputDir, "..", "diagnostics")
-		_ = os.MkdirAll(diagDir, 0755)
-		diagPath := filepath.Join(diagDir, fmt.Sprintf("map_%s.png", time.Now().Format("20060102_150405")))
-		if err := os.WriteFile(diagPath, pngBytes, 0644); err == nil {
-			slog.Debug("Diagnostic snapshot saved", "path", diagPath)
-		}
-	}
 
 	a.configMu.RLock()
 	updateWallpaper := a.config.UpdateWallpaper
@@ -1167,131 +1086,6 @@ func (a *App) getGameInfoConfig(darkTheme bool, fontSize float64, padding int) r
 	}
 }
 
-// drawCountryFills draws country fills based on hit counts
-func (a *App) drawCountryFills(img *image.RGBA, mapWidth, mapHeight int) {
-	// Get all connections to determine country locations
-	connections := a.monitor.GetConnections()
-	countryLocations := make(map[string][]image.Point)
-
-	// Group connection points by country
-	for _, conn := range connections {
-		location, err := a.geoip.Lookup(conn.RemoteIP)
-		if err != nil || location.Country == "" {
-			continue
-		}
-
-		x, y := a.latLngToMapCoords(location.Latitude, location.Longitude, mapWidth, mapHeight)
-		point := image.Point{X: int(x), Y: int(y)}
-		countryLocations[location.Country] = append(countryLocations[location.Country], point)
-	}
-
-	// Draw fills for countries with hits
-	for country, points := range countryLocations {
-		fillColor := a.gameState.GetCountryColor(country)
-		if fillColor.A == 0 {
-			continue // Skip transparent (no hits)
-		}
-
-		// Create a region around the country's connection points
-		a.fillCountryRegion(img, points, fillColor, mapWidth, mapHeight)
-	}
-}
-
-// fillCountryRegion fills a region around the given points with the specified color
-func (a *App) fillCountryRegion(img *image.RGBA, points []image.Point, fillColor color.RGBA, mapWidth, mapHeight int) {
-	if len(points) == 0 {
-		return
-	}
-
-	// Calculate bounding box of all points
-	minX, maxX := points[0].X, points[0].X
-	minY, maxY := points[0].Y, points[0].Y
-
-	for _, p := range points {
-		if p.X < minX {
-			minX = p.X
-		}
-		if p.X > maxX {
-			maxX = p.X
-		}
-		if p.Y < minY {
-			minY = p.Y
-		}
-		if p.Y > maxY {
-			maxY = p.Y
-		}
-	}
-
-	// Expand the region a bit
-	radius := 30 // Adjust this to control fill area size
-	minX = maxInt(0, minX-radius)
-	maxX = minInt(mapWidth-1, maxX+radius)
-	minY = maxInt(0, minY-radius)
-	maxY = minInt(mapHeight-1, maxY+radius)
-
-	// Fill the region using a simple flood fill approach
-	centerX := (minX + maxX) / 2
-	centerY := (minY + maxY) / 2
-
-	a.floodFill(img, centerX, centerY, fillColor, mapWidth, mapHeight, 50)
-}
-
-// floodFill performs a bounded flood fill
-func (a *App) floodFill(img *image.RGBA, startX, startY int, fillColor color.RGBA, mapWidth, mapHeight, maxRadius int) {
-	// Simple circular fill instead of complex flood fill for performance
-	for y := startY - maxRadius; y <= startY+maxRadius; y++ {
-		for x := startX - maxRadius; x <= startX+maxRadius; x++ {
-			if x >= 0 && x < mapWidth && y >= 0 && y < mapHeight {
-				dx := x - startX
-				dy := y - startY
-				distance := math.Sqrt(float64(dx*dx + dy*dy))
-
-				if distance <= float64(maxRadius) {
-					// Blend with existing pixel
-					existing := img.RGBAAt(x, y)
-					blended := a.blendColors(existing, fillColor)
-					img.Set(x, y, blended)
-				}
-			}
-		}
-	}
-}
-
-// blendColors blends two RGBA colors
-func (a *App) blendColors(base, overlay color.RGBA) color.RGBA {
-	if overlay.A == 0 {
-		return base
-	}
-	if overlay.A == 255 {
-		return overlay
-	}
-
-	alpha := float64(overlay.A) / 255.0
-	invAlpha := 1.0 - alpha
-
-	return color.RGBA{
-		R: uint8(float64(base.R)*invAlpha + float64(overlay.R)*alpha),
-		G: uint8(float64(base.G)*invAlpha + float64(overlay.G)*alpha),
-		B: uint8(float64(base.B)*invAlpha + float64(overlay.B)*alpha),
-		A: uint8(math.Max(float64(base.A), float64(overlay.A))),
-	}
-}
-
-// Helper functions
-func maxInt(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
-}
-
-func minInt(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
 // logGameStats logs current game statistics
 func (a *App) logGameStats() {
 	a.gameState.mutex.RLock()
@@ -1353,29 +1147,6 @@ func (a *App) logGameStats() {
 	}
 
 	slog.Debug("=== END STATISTICS ===")
-}
-
-// ResetGame resets the game state
-func (a *App) ResetGame() {
-	a.gameState.mutex.Lock()
-	defer a.gameState.mutex.Unlock()
-
-	a.gameState.countries = make(map[string]*CountryGameState)
-	slog.Info("Game state reset")
-}
-
-// FetchBoringCountries returns a list of boring countries
-func (a *App) FetchBoringCountries() []string {
-	a.gameState.mutex.RLock()
-	defer a.gameState.mutex.RUnlock()
-
-	var boring []string
-	for country, state := range a.gameState.countries {
-		if state.Boring {
-			boring = append(boring, country)
-		}
-	}
-	return boring
 }
 
 // SetTargetCountry sets a new target country
@@ -1501,16 +1272,6 @@ func (a *App) logHit(conn network.Connection, location *geoip.Location, mapWidth
 	}
 }
 
-// GetGameState returns a pointer to the game state for server access
-func (a *App) GetGameState() *GameState {
-	return a.gameState
-}
-
-// GetAchievementManager returns a pointer to the achievement manager for server access
-func (a *App) GetAchievementManager() *achievements.AchievementManager {
-	return a.achievements
-}
-
 // getBoringCountries returns a map of countries that are marked as boring
 func (a *App) getBoringCountries() map[string]bool {
 	a.gameState.mutex.RLock()
@@ -1523,36 +1284,6 @@ func (a *App) getBoringCountries() map[string]bool {
 		}
 	}
 	return boringCountries
-}
-
-// HandleFastestTravelerAchievement handles the logic for fastest traveler achievements
-// This should be called when a user marks a country as boring
-func (a *App) HandleFastestTravelerAchievement(countryName string) {
-	// Check if this country was the target and mark it as boring
-	wasTarget, _ := a.gameState.MarkCountryAsBoring(countryName)
-
-	if wasTarget {
-		// Unlock the fastest traveler achievement for this country
-		achievementID := a.achievements.UnlockFastestTravelerAchievement(countryName)
-
-		if achievementID != "" {
-			slog.Info("🚀 Fastest Traveler Achievement earned!",
-				"country", countryName,
-				"achievement_id", achievementID,
-			)
-		}
-
-		// Immediately select a new target country
-		a.SelectRandomTargetCountry()
-
-		newTarget, _ := a.gameState.GetTargetCountry()
-		if newTarget != "" {
-			slog.Info("🎯 New target selected after fastest traveler achievement",
-				"new_target", newTarget,
-				"previous_target", countryName,
-			)
-		}
-	}
 }
 
 // Stop stops the application gracefully

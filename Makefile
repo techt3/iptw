@@ -9,6 +9,7 @@ GIT_COMMIT = $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 
 # Go build flags
 LDFLAGS = -ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME) -X main.GitCommit=$(GIT_COMMIT) -w -s"
+LDFLAGS_WINDOWS = -ldflags "-H windowsgui -X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME) -X main.GitCommit=$(GIT_COMMIT) -w -s"
 BUILD_FLAGS = $(LDFLAGS) -trimpath
 
 # Build directory
@@ -19,6 +20,7 @@ DIST_DIR = dist
 PLATFORMS = \
 	darwin/arm64 \
 	linux/amd64 \
+	linux/arm64 \
 	windows/amd64 
 # Main entry point
 MAIN_PACKAGE = ./cmd/iptw
@@ -61,14 +63,18 @@ define build_platform
 	$(eval GOARCH := $(word 2,$(subst /, ,$(1))))
 	$(eval BINARY_NAME := $(APP_NAME)$(if $(filter windows,$(GOOS)),.exe))
 	$(eval OUTPUT_DIR := $(BUILD_DIR)/$(APP_NAME)-$(VERSION)-$(GOOS)-$(GOARCH))
+	$(eval PLATFORM_BUILD_FLAGS := $(if $(filter windows,$(GOOS)),$(LDFLAGS_WINDOWS) -trimpath,$(BUILD_FLAGS)))
+	$(eval CGO_FLAG := $(if $(filter darwin,$(GOOS)),CGO_ENABLED=1,CGO_ENABLED=0))
 	@echo "  📦 Building for $(GOOS)/$(GOARCH)..."
 	@mkdir -p $(OUTPUT_DIR)
-	@GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go build $(BUILD_FLAGS) -o $(OUTPUT_DIR)/$(BINARY_NAME) $(MAIN_PACKAGE) || \
-	 (echo "    ⚠️  CGO build failed for $(GOOS)/$(GOARCH), trying without CGO..." && \
-	  GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=0 go build $(BUILD_FLAGS) -o $(OUTPUT_DIR)/$(BINARY_NAME) $(MAIN_PACKAGE))
+	@if GOOS=$(GOOS) GOARCH=$(GOARCH) $(CGO_FLAG) go build $(PLATFORM_BUILD_FLAGS) -o $(OUTPUT_DIR)/$(BINARY_NAME) $(MAIN_PACKAGE) 2>/dev/null; then \
+		echo "    ✅ $(GOOS)/$(GOARCH) build complete"; \
+	else \
+		echo "    ⚠️  $(GOOS)/$(GOARCH) cross-compilation failed"; \
+		rm -rf $(OUTPUT_DIR); \
+	fi
 	@cp README.md $(OUTPUT_DIR)/ 2>/dev/null || true
 	@cp -r config $(OUTPUT_DIR)/ 2>/dev/null || true
-	@echo "    ✅ $(GOOS)/$(GOARCH) build complete"
 endef
 
 # Create release archives

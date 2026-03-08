@@ -38,22 +38,6 @@ func (m *Monitor) GetConnections() []Connection {
 	return m.connections
 }
 
-// GetSupportedPlatforms returns a list of supported operating systems
-func GetSupportedPlatforms() []string {
-	return []string{"darwin", "linux", "windows"}
-}
-
-// IsSupported checks if the current platform is supported
-func IsSupported() bool {
-	supportedPlatforms := GetSupportedPlatforms()
-	for _, platform := range supportedPlatforms {
-		if runtime.GOOS == platform {
-			return true
-		}
-	}
-	return false
-}
-
 // RefreshConnections updates the list of active connections (cross-platform)
 func (m *Monitor) RefreshConnections() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -124,8 +108,10 @@ func (m *Monitor) getConnectionsMacOS(ctx context.Context) ([]Connection, error)
 
 // getConnectionsLinux gets connections using ss on Linux
 func (m *Monitor) getConnectionsLinux(ctx context.Context) ([]Connection, error) {
-	// Try ss first (preferred on modern Linux)
-	cmd := exec.CommandContext(ctx, "ss", "-tuln", "state", "established")
+	// Try ss first (preferred on modern Linux).
+	// Flags: -t TCP, -u UDP, -n numeric (no DNS). No -l so we get connected
+	// sockets, not listening ones. The ESTAB regex below filters the output.
+	cmd := exec.CommandContext(ctx, "ss", "-tun")
 	output, err := cmd.Output()
 	if err != nil {
 		// Fall back to netstat if ss is not available
@@ -135,8 +121,9 @@ func (m *Monitor) getConnectionsLinux(ctx context.Context) ([]Connection, error)
 	connections := make([]Connection, 0)
 	scanner := bufio.NewScanner(strings.NewReader(string(output)))
 
-	// Regex to parse ss output
-	// Example: tcp   ESTAB  0      0      192.168.1.100:50123   93.184.216.34:80
+	// Regex to parse ss output.
+	// With -tun (no state filter) the State column is present:
+	// tcp   ESTAB  0  0  192.168.1.100:50123  93.184.216.34:80
 	connRegex := regexp.MustCompile(`^(tcp|udp)\s+ESTAB\s+\d+\s+\d+\s+(\S+):(\d+)\s+(\S+):(\d+)`)
 
 	for scanner.Scan() {
@@ -209,6 +196,7 @@ func (m *Monitor) getConnectionsLinuxNetstat(ctx context.Context) ([]Connection,
 // getConnectionsWindows gets connections using netstat on Windows
 func (m *Monitor) getConnectionsWindows(ctx context.Context) ([]Connection, error) {
 	cmd := exec.CommandContext(ctx, "netstat", "-an", "-p", "TCP")
+	hideWindow(cmd) // prevent a CMD flash on every poll when built with -H windowsgui
 	output, err := cmd.Output()
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute netstat on Windows: %w", err)

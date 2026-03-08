@@ -15,8 +15,10 @@ var (
 )
 
 const (
-	lockfileExclusiveLock   = 0x00000002
-	lockfileFailImmediately = 0x00000001
+	lockfileExclusiveLock          = 0x00000002
+	lockfileFailImmediately        = 0x00000001
+	processQueryLimitedInformation = 0x1000
+	stillActive                    = 259 // STILL_ACTIVE / STATUS_PENDING
 )
 
 // acquireFileLock applies an exclusive lock to the file on Windows
@@ -42,20 +44,23 @@ func (l *Lock) acquireFileLock(file *os.File) error {
 	return nil
 }
 
-// isProcessRunning checks if a process with the given PID is running on Windows
+// isProcessRunning checks if a process with the given PID is running on Windows.
+// os.Process.Wait() cannot be used here because it only works for child processes
+// spawned by this process; calling it on an unrelated PID always returns an error,
+// which would make every stale lock look like a live process.
+// Instead we use OpenProcess + GetExitCodeProcess: if the exit code is STILL_ACTIVE
+// (259 / STATUS_PENDING) the process is genuinely alive.
 func (l *Lock) isProcessRunning(pid int) bool {
-	// On Windows, we need to use a different approach
-	process, err := os.FindProcess(pid)
+	handle, err := syscall.OpenProcess(processQueryLimitedInformation, false, uint32(pid))
 	if err != nil {
+		// Process does not exist or we lack permission to query it.
 		return false
 	}
+	defer syscall.CloseHandle(handle)
 
-	// Try to get the process state (this will fail if process doesn't exist)
-	_, err = process.Wait()
-	if err != nil {
-		// If Wait() returns an error, the process might still be running
-		// This is a simplified check
-		return true
+	var exitCode uint32
+	if err := syscall.GetExitCodeProcess(handle, &exitCode); err != nil {
+		return false
 	}
-	return false
+	return exitCode == stillActive
 }

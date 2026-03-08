@@ -111,46 +111,6 @@ func setLinuxBackground(imagePath string) error {
 	return fmt.Errorf("failed to set Linux background: no supported desktop environment found")
 }
 
-// setWindowsBackground sets the background on Windows
-func setWindowsBackground(imagePath string) error {
-	slog.Debug("🖼️  Setting Windows desktop background", "image", imagePath)
-
-	// Regular user mode implementation
-	return setWindowsBackgroundUser(imagePath)
-}
-
-// setWindowsBackgroundUser sets wallpaper for regular user mode
-func setWindowsBackgroundUser(imagePath string) error {
-	// Use PowerShell to set the background with proper escaping
-	// Split into multiple parts to avoid complex escaping issues
-	typeDefinition := `Add-Type -TypeDefinition @'
-using System;
-using System.Runtime.InteropServices;
-public class Wallpaper {
-	[DllImport("user32.dll", CharSet = CharSet.Auto)]
-	public static extern int SystemParametersInfo(int uAction, int uParam, string lpvParam, int fuWinIni);
-	public static void SetWallpaper(string path) {
-		SystemParametersInfo(20, 0, path, 3);
-	}
-}
-'@`
-
-	// Execute the wallpaper setting command
-	setWallpaperCmd := fmt.Sprintf(`[Wallpaper]::SetWallpaper('%s')`, imagePath)
-
-	// Combine both commands
-	script := typeDefinition + "; " + setWallpaperCmd
-
-	cmd := exec.Command("powershell", "-Command", script)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("failed to set Windows background: %w (output: %s)", err, string(output))
-	}
-
-	slog.Debug("✅ Windows desktop background set successfully")
-	return nil
-}
-
 // copyFile copies a file from src to dst
 func copyFile(src, dst string) error {
 	input, err := os.ReadFile(src)
@@ -250,22 +210,6 @@ func BackupCurrentWallpaper(backupDir string) (string, error) {
 	return backupPath, nil
 }
 
-// RestoreWallpaper restores the wallpaper from a backup file
-func RestoreWallpaper(backupPath string) error {
-	// Check if backup file exists
-	if _, err := os.Stat(backupPath); os.IsNotExist(err) {
-		return fmt.Errorf("backup wallpaper file does not exist: %s", backupPath)
-	}
-
-	// Set the backup as the current wallpaper
-	if err := SetDesktopBackground(backupPath); err != nil {
-		return fmt.Errorf("failed to restore wallpaper: %w", err)
-	}
-
-	slog.Info("🔄 Original wallpaper restored", "from", backupPath)
-	return nil
-}
-
 // getMacOSCurrentWallpaper gets the current wallpaper path on macOS
 func getMacOSCurrentWallpaper() (string, error) {
 	script := `tell application "System Events"
@@ -320,18 +264,4 @@ func getLinuxCurrentWallpaper() (string, error) {
 	}
 
 	return "", fmt.Errorf("could not detect current wallpaper on this Linux desktop environment")
-}
-
-// getWindowsCurrentWallpaper gets the current wallpaper path on Windows
-func getWindowsCurrentWallpaper() (string, error) {
-	script := `Get-ItemProperty -Path "HKCU:\Control Panel\Desktop" -Name Wallpaper | Select-Object -ExpandProperty Wallpaper`
-
-	cmd := exec.Command("powershell", "-Command", script)
-	output, err := cmd.Output()
-	if err != nil {
-		return "", fmt.Errorf("failed to get Windows wallpaper: %w", err)
-	}
-
-	wallpaperPath := strings.TrimSpace(string(output))
-	return wallpaperPath, nil
 }

@@ -151,11 +151,6 @@ func (am *AchievementManager) UpdateProgress(countryName string, totalCountriesV
 	return newUnlocks
 }
 
-// GetAllAchievements returns all achievements
-func (am *AchievementManager) GetAllAchievements() map[string]*Achievement {
-	return am.achievements
-}
-
 // GetUnlockedAchievements returns only unlocked achievements
 func (am *AchievementManager) GetUnlockedAchievements() []*Achievement {
 	var unlocked []*Achievement

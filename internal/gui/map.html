@@ -13,6 +13,8 @@
             --glass-border: rgba(255, 255, 255, 0.3);
             --accent-color: #3498db;
             --text-main: #2d3436;
+            /* Font fallbacks in case Google Fonts is unreachable (offline / local install) */
+            font-family: 'Outfit', system-ui, -apple-system, 'Segoe UI', Roboto, Ubuntu, sans-serif;
             --text-secondary: #636e72;
             --sidebar-width: 350px;
         }
@@ -26,7 +28,7 @@
             background-color: #e0e0e0;
             overflow: hidden;
             display: flex;
-            font-family: 'Outfit', sans-serif;
+            font-family: 'Outfit', system-ui, -apple-system, 'Segoe UI', Roboto, Ubuntu, sans-serif;
             color: var(--text-main);
         }
 
@@ -143,7 +145,7 @@
         }
 
         .hit-domain {
-            font-family: 'JetBrains Mono', monospace;
+            font-family: 'JetBrains Mono', ui-monospace, 'Cascadia Code', 'Fira Mono', Consolas, monospace;
             font-size: 0.8rem;
             font-weight: 500;
             color: var(--text-main);
@@ -317,6 +319,122 @@
             color: var(--accent-color);
             font-weight: 700;
         }
+
+        .lore-hook {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin: 0 0 10px 0;
+        }
+
+        .lore-hook em {
+            color: var(--text-main);
+            font-style: italic;
+        }
+
+        .lore-pill {
+            background: #111;
+            color: #00ff41;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+            line-height: 1.55;
+            border: 1px solid rgba(0, 255, 65, 0.25);
+        }
+
+        .lore-pill .pill-label {
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            opacity: 0.6;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .lore-examples {
+            list-style: none;
+            padding: 0;
+            margin: 8px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .lore-examples li {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            padding-left: 16px;
+            position: relative;
+            line-height: 1.45;
+        }
+
+        .lore-examples li::before {
+            content: '📡';
+            position: absolute;
+            left: 0;
+            font-size: 0.65rem;
+            top: 2px;
+        }
+
+        .lore-section-label {
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--accent-color);
+            font-weight: 700;
+            margin: 14px 0 6px 0;
+        }
+
+        .field-ops {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin: 4px 0;
+        }
+
+        .field-op {
+            font-size: 0.76rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        .field-op strong {
+            color: var(--text-main);
+        }
+
+        .matrix-warning {
+            background: #000;
+            border: 1px solid rgba(0, 255, 65, 0.3);
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin-top: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            color: #00ff41;
+            line-height: 1.55;
+        }
+
+        .matrix-warning .warn-label {
+            color: #ff4444;
+            font-weight: 700;
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .matrix-warning blockquote {
+            margin: 6px 0 0 0;
+            padding-left: 8px;
+            border-left: 2px solid rgba(0, 255, 65, 0.4);
+            color: rgba(0, 255, 65, 0.75);
+            font-style: italic;
+        }
     </style>
 </head>
 
@@ -332,35 +450,87 @@
                 <span class="chevron">▼</span>
             </div>
             <div class="about-body" id="about-body">
-                <p class="about-desc">
-                    IP Travel Wallpaper turns every website visit into a world adventure. Each outbound connection
-                    you make is a "visit" to that country — explore the globe just by browsing the web.
+
+                <p class="lore-hook">
+                    You open your laptop. News apps. Social feeds. Streaming. Fifty tabs —
+                    and somehow it all feels like the <em>same story</em>, told by the same voices,
+                    hosted on the same three clouds.
                 </p>
+
+                <div class="lore-pill">
+                    <span class="pill-label">// system message</span>
+                    You are already inside the Matrix.
+                </div>
+
+                <p class="lore-hook">
+                    Ninety percent of global web traffic flows through fewer than ten corporations.
+                    What looks like a global internet is a tightly controlled system optimised for
+                    engagement and profit — not truth, diversity, or authenticity.
+                    <br><br>
+                    Right now, somewhere out there:
+                </p>
+
+                <ul class="lore-examples">
+                    <li>A community newspaper in rural Mozambique is reporting on events that will never reach a Western feed</li>
+                    <li>A university in Kazakhstan is publishing research that doesn't fit the mainstream narrative</li>
+                    <li>A local radio station in the Faroe Islands is streaming music no algorithm has ever surfaced to you</li>
+                    <li>A neighbourhood blog in Myanmar is the only honest record of what's happening in that village today</li>
+                </ul>
+
+                <p class="lore-hook">
+                    They are real. They are online. Your computer could reach them right now.
+                    <br><br>
+                    <strong>IPTW is the red pill.</strong> It makes the Matrix <em>visible</em>.
+                    Countries you revisit obsessively bleed into Matrix Rain — cascading green code
+                    washing over the regions where you are most imprisoned.
+                    Every local voice you find is a crack in the wall.
+                </p>
+
+                <div class="lore-section-label">⚙ Mapping Your Escape</div>
                 <div class="about-mechanics">
                     <div class="mechanic-row">
                         <span class="mechanic-icon">🌍</span>
-                        <div class="mechanic-text"><strong>Virtual Travel</strong> — connections to foreign IPs count as visits to that country.</div>
+                        <div class="mechanic-text"><strong>Virtual Travel</strong> — every outbound connection to a foreign IP is a visit to that country.</div>
                     </div>
                     <div class="mechanic-row">
                         <span class="mechanic-icon">🏳️</span>
-                        <div class="mechanic-text"><strong>1–9 visits</strong> — the country shows its national flag: a fresh destination worth exploring.</div>
+                        <div class="mechanic-text"><strong>1–9 visits</strong> — national flag displayed: a fresh destination, still worth exploring.</div>
                     </div>
                     <div class="mechanic-row">
-                        <span class="mechanic-icon">😴</span>
-                        <div class="mechanic-text"><strong>10+ visits</strong> — the country goes "boring." Keep visiting and you'll trigger the <em>Matrix Prison</em> effect.</div>
+                        <span class="mechanic-icon">🟩</span>
+                        <div class="mechanic-text"><strong>10+ visits</strong> — country enters <em>Matrix Prison</em>. Green rain bleeds across it. Break free.</div>
                     </div>
                     <div class="mechanic-row">
                         <span class="mechanic-icon">🎯</span>
-                        <div class="mechanic-text"><strong>Target Countries</strong> — a random unvisited country is highlighted. Race to make it boring and earn the <em>Fastest Traveler</em> achievement!</div>
+                        <div class="mechanic-text"><strong>Target Countries</strong> — red-bordered escape objective. Hit it 10 times to earn the <em>Fastest Traveler</em> achievement.</div>
                     </div>
                 </div>
+
+                <div class="lore-section-label">🎯 Primary Objectives</div>
                 <ul class="goals-list">
-                    <li>Visit every country on the map</li>
-                    <li>Complete entire continents</li>
-                    <li>Discover local news &amp; authentic voices</li>
-                    <li>Escape the US / EU / China hosting bubble</li>
-                    <li>Find websites in microstates &amp; island nations</li>
+                    <li><strong>Full Liberation</strong> — visit all 195 countries</li>
+                    <li><strong>Continental Breakout</strong> — complete entire continents</li>
+                    <li><strong>Rare Signal Hunter</strong> — find sites in countries the algorithm forgot</li>
+                    <li><strong>News Underground</strong> — discover authentic local newspapers &amp; community voices</li>
+                    <li><strong>Escape the Triad</strong> — minimise US / EU / Chinese mega-platform dependency</li>
                 </ul>
+
+                <div class="lore-section-label">🌍 Field Operations</div>
+                <div class="field-ops">
+                    <div class="field-op"><strong>Micro-Nation Signals</strong> — microstates &amp; island nations the CDN empire never reached</div>
+                    <div class="field-op"><strong>Minority Frequencies</strong> — servers hosting content in endangered &amp; minority languages</div>
+                    <div class="field-op"><strong>Community Transmissions</strong> — local radio streams, indie newspapers, neighbourhood blogs</div>
+                    <div class="field-op"><strong>Academic Resistance</strong> — university servers: knowledge outside the paywall</div>
+                    <div class="field-op"><strong>Memory Keepers</strong> — local history, oral tradition, cultural preservation</div>
+                </div>
+
+                <div class="matrix-warning">
+                    <span class="warn-label">⚠ Matrix Prison Warning</span>
+                    When your map goes green — the system is sending you a message:
+                    <blockquote>You are stuck. Same platforms. Same voices. Same bubble.</blockquote>
+                    There is only one way out: go further. Find something real.
+                </div>
+
             </div>
         </div>
 

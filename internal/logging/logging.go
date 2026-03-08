@@ -2,11 +2,22 @@
 package logging
 
 import (
-	"context"
+	"io"
 	"log/slog"
 	"os"
 	"strings"
 )
+
+// extraWriter is an optional additional writer set by platform-specific code
+// (e.g. a log file on Windows where stdout is detached). SetupLogger preserves
+// it so that reconfiguring the log level does not lose file output.
+var extraWriter io.Writer
+
+// SetExtraWriter registers an additional writer to be included in all future
+// SetupLogger calls. Must be called before SetupLogger.
+func SetExtraWriter(w io.Writer) {
+	extraWriter = w
+}
 
 // SetupLogger configures the global slog logger with the specified level
 func SetupLogger(levelStr string) {
@@ -37,22 +48,18 @@ func SetupLogger(levelStr string) {
 		},
 	}
 
-	handler := slog.NewTextHandler(os.Stdout, opts)
+	var dest io.Writer = os.Stdout
+	if extraWriter != nil {
+		// Use the extra writer (e.g. log file on Windows GUI builds) as the
+		// sole destination — do NOT include os.Stdout in the chain. In a
+		// -H windowsgui process os.Stdout.Write returns an error, and
+		// io.MultiWriter aborts on the first writer error, which would silently
+		// drop every line to the file.
+		dest = extraWriter
+	}
+	handler := slog.NewTextHandler(dest, opts)
 	logger := slog.New(handler)
 	slog.SetDefault(logger)
-}
-
-// LogStartup logs application startup information
-func LogStartup(appName, version string) {
-	slog.Info("Application starting",
-		"app", appName,
-		"version", version,
-	)
-}
-
-// LogConfig logs configuration information
-func LogConfig(config interface{}) {
-	slog.Debug("Configuration loaded", "config", config)
 }
 
 // LogVisit logs a network connection visit with detailed information
@@ -145,36 +152,10 @@ func LogNaturalEarth(countryCount int) {
 	slog.Info("Natural Earth data loaded", "countries", countryCount)
 }
 
-// LogMapRender logs map rendering information
-func LogMapRender(width, height int, renderer string) {
-	slog.Debug("Map rendered",
-		"width", width,
-		"height", height,
-		"renderer", renderer,
-	)
-}
-
-// LogWallpaper logs wallpaper operations
-func LogWallpaper(action, path string) {
-	slog.Info("Wallpaper operation",
-		"action", action,
-		"path", path,
-	)
-}
-
 // LogError logs errors with context
 func LogError(operation string, err error) {
 	slog.Error("Operation failed",
 		"operation", operation,
 		"error", err.Error(),
 	)
-}
-
-// LogWarning logs warnings with context
-func LogWarning(message string, contextData map[string]interface{}) {
-	attrs := make([]slog.Attr, 0, len(contextData))
-	for k, v := range contextData {
-		attrs = append(attrs, slog.Any(k, v))
-	}
-	slog.LogAttrs(context.Background(), slog.LevelWarn, message, attrs...)
 }
