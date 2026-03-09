@@ -59,6 +59,7 @@ import (
 	"iptw/internal/achievements"
 	"iptw/internal/background"
 	"iptw/internal/config"
+	"iptw/internal/factdb"
 	"iptw/internal/geoip"
 	"iptw/internal/logging"
 	"iptw/internal/network"
@@ -251,6 +252,7 @@ type App struct {
 	gameState              *GameState
 	naturalEarth           *resources.NaturalEarthData
 	achievements           *achievements.AchievementManager
+	factDB                 *factdb.DB
 	fontManager            *resources.FontManager
 	flagManager            *resources.FlagManager
 	originalWallpaper      string // Path to the backed up original wallpaper
@@ -317,6 +319,11 @@ func NewApp(cfg *config.Config, geoipDB *geoip.Database, monitor *network.Monito
 		slog.Info("🔍 Found existing wallpaper backup", "path", firstBackup)
 	}
 
+	fdb, err := factdb.New()
+	if err != nil {
+		slog.Warn("Failed to load fact database, Did-you-know will be unavailable", "error", err)
+	}
+
 	return &App{
 		config:            cfg,
 		geoip:             geoipDB,
@@ -326,6 +333,7 @@ func NewApp(cfg *config.Config, geoipDB *geoip.Database, monitor *network.Monito
 		gameState:         gameState,
 		naturalEarth:      naturalEarth,
 		achievements:      achievements.NewAchievementManager(),
+		factDB:            fdb,
 		fontManager:       fontManager,
 		flagManager:       flagManager,
 		originalWallpaper: firstBackup,
@@ -665,6 +673,45 @@ func (a *App) startLocalServer() {
 		}
 	})
 
+	// Return a "Did you know?" fact for a country (and optionally a city).
+	// Query params: ?country=Germany&city=Berlin (city is optional)
+	// No authentication required — the data is static and not user-specific.
+	mux.HandleFunc("/api/country-fact", func(w http.ResponseWriter, r *http.Request) {
+		country := r.URL.Query().Get("country")
+		city := r.URL.Query().Get("city")
+		var fact factdb.Fact
+		if a.factDB != nil {
+			fact = a.factDB.GetFact(country, city)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(fact); err != nil {
+			slog.Error("Failed to encode country-fact response", "error", err)
+		}
+	})
+
+	// Return a random "Did you know?" fact drawn from the user's visited countries.
+	// The UI calls this on a random timer (only after 10+ boring countries).
+	mux.HandleFunc("/api/random-fact", func(w http.ResponseWriter, r *http.Request) {
+		var fact factdb.Fact
+		if a.factDB != nil {
+			a.gameState.mutex.RLock()
+			visited := make([]string, 0, len(a.gameState.countries))
+			for country := range a.gameState.countries {
+				visited = append(visited, country)
+			}
+			a.gameState.mutex.RUnlock()
+
+			if len(visited) > 0 {
+				choice := visited[mathrand.Intn(len(visited))] //nolint:gosec
+				fact = a.factDB.GetCountryFact(choice)
+			}
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(fact); err != nil {
+			slog.Error("Failed to encode random-fact response", "error", err)
+		}
+	})
+
 	// Redirect root to map.html
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/map.html", http.StatusSeeOther)
@@ -842,6 +889,18 @@ func (a *App) generateAndDisplayMap() error {
 				// Log any new achievement unlocks
 				for _, achievementID := range newUnlocks {
 					slog.Info("🏆 Achievement unlocked!", "achievement_id", achievementID)
+				}
+
+				// Log a "Did you know?" fact for this newly discovered country/city
+				if a.factDB != nil {
+					if fact := a.factDB.GetFact(countryName, location.City); !fact.IsZero() {
+						slog.Info("🌍 Did you know?",
+							"country", countryName,
+							"city", location.City,
+							"level", fact.Level,
+							"fact", fact.Text,
+						)
+					}
 				}
 			}
 		}
