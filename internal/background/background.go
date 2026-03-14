@@ -81,31 +81,42 @@ func setMacOSBackground(imagePath string) error {
 func setLinuxBackground(imagePath string) error {
 	slog.Debug("🖼️  Setting Linux desktop background:", "imagePath", imagePath)
 
-	// Try different desktop environments
-	commands := [][]string{
-		// GNOME/Ubuntu
-		{"gsettings", "set", "org.gnome.desktop.background", "picture-uri", "file://" + imagePath},
-		// KDE
-		{"qdbus", "org.kde.plasmashell", "/PlasmaShell", "org.kde.PlasmaShell.evaluateScript",
-			fmt.Sprintf(`
-			var allDesktops = desktops();
-			for (i=0;i<allDesktops.length;i++) {
-				d = allDesktops[i];
-				d.wallpaperPlugin = "org.kde.image";
-				d.currentConfigGroup = Array("Wallpaper", "org.kde.image", "General");
-				d.writeConfig("Image", "file://%s");
-			}`, imagePath)},
-		// XFCE
-		{"xfconf-query", "-c", "xfce4-desktop", "-p", "/backdrop/screen0/monitor0/workspace0/last-image", "-s", imagePath},
-		// Fallback: feh (works with many window managers)
-		{"feh", "--bg-scale", imagePath},
+	uri := "file://" + imagePath
+
+	// GNOME / Ubuntu: gsettings sets both light and dark wallpaper URIs.
+	// GNOME 42+ requires picture-uri-dark for dark-mode desktops; the key is
+	// silently ignored on older releases where it does not exist.
+	if err := exec.Command("gsettings", "set", "org.gnome.desktop.background", "picture-uri", uri).Run(); err == nil {
+		// picture-uri succeeded — we're on GNOME.  Also update the dark variant.
+		_ = exec.Command("gsettings", "set", "org.gnome.desktop.background", "picture-uri-dark", uri).Run()
+		log.Printf("✅ Linux desktop background set successfully using gsettings")
+		return nil
 	}
 
-	for _, cmd := range commands {
-		if err := exec.Command(cmd[0], cmd[1:]...).Run(); err == nil {
-			log.Printf("✅ Linux desktop background set successfully using %s", cmd[0])
-			return nil
-		}
+	// KDE Plasma
+	kdeScript := fmt.Sprintf(`
+		var allDesktops = desktops();
+		for (i=0;i<allDesktops.length;i++) {
+			d = allDesktops[i];
+			d.wallpaperPlugin = "org.kde.image";
+			d.currentConfigGroup = Array("Wallpaper", "org.kde.image", "General");
+			d.writeConfig("Image", "file://%s");
+		}`, imagePath)
+	if err := exec.Command("qdbus", "org.kde.plasmashell", "/PlasmaShell", "org.kde.PlasmaShell.evaluateScript", kdeScript).Run(); err == nil {
+		log.Printf("✅ Linux desktop background set successfully using qdbus")
+		return nil
+	}
+
+	// XFCE
+	if err := exec.Command("xfconf-query", "-c", "xfce4-desktop", "-p", "/backdrop/screen0/monitor0/workspace0/last-image", "-s", imagePath).Run(); err == nil {
+		log.Printf("✅ Linux desktop background set successfully using xfconf-query")
+		return nil
+	}
+
+	// Fallback: feh (works with many lightweight window managers)
+	if err := exec.Command("feh", "--bg-scale", imagePath).Run(); err == nil {
+		log.Printf("✅ Linux desktop background set successfully using feh")
+		return nil
 	}
 
 	return fmt.Errorf("failed to set Linux background: no supported desktop environment found")
