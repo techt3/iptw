@@ -272,6 +272,7 @@ type App struct {
 	mapDirty               bool         // true when the map must be re-rendered and re-encoded
 	mapDirtyMu             sync.Mutex   // protects mapDirty
 	mapEncBuf              bytes.Buffer // reused encode buffer to avoid per-tick allocation
+	lastConnIPs            string       // fingerprint of last seen connections; dirty when changed
 }
 
 // NewApp creates a new application instance
@@ -738,7 +739,7 @@ func (a *App) startLocalServer() {
 
 		type hintResponse struct {
 			Active bool        `json:"active"`
-			Target string      `json:"target,omitempty"`
+			Target string      `json:"target"`
 			Fact   factdb.Fact `json:"fact,omitempty"`
 		}
 
@@ -860,6 +861,22 @@ func (a *App) generateAndDisplayMap() error {
 
 	// Process connections and update country hit counts
 	connections := a.monitor.GetConnections()
+
+	// Mark dirty when the active connection set changes so that connection
+	// dots on the map are always reflected in the encoded PNG.
+	{
+		ips := make([]string, len(connections))
+		for i, c := range connections {
+			ips[i] = c.RemoteIP
+		}
+		sort.Strings(ips)
+		connKey := strings.Join(ips, ",")
+		if connKey != a.lastConnIPs {
+			a.lastConnIPs = connKey
+			a.markMapDirty()
+		}
+	}
+
 	recentCountries := make(map[string]bool)
 
 	for _, conn := range connections {

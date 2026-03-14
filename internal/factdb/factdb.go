@@ -1,10 +1,10 @@
 // Package factdb provides a "Did you know?" fact database of obscure,
-// genuinely interesting facts about countries, cities, and regions.
+// genuinely interesting facts about countries and cities.
 //
 // Facts are stored at two levels:
 //   - Country-level: unusual records, historical quirks, counterintuitive
 //     geography, cultural inversions, little-known firsts.
-//   - City/region-level: facts specific to a city or sub-national region.
+//   - City-level: facts specific to a city or sub-national location.
 //
 // The seed database is embedded in the binary (seed_facts.json), so facts
 // are always available offline with zero network activity. City-level facts
@@ -17,7 +17,6 @@ import (
 	"fmt"
 	"math/rand"
 	"sync"
-	"time"
 )
 
 //go:embed seed_facts.json
@@ -43,13 +42,12 @@ type Fact struct {
 // IsZero returns true when the Fact has no content.
 func (f Fact) IsZero() bool { return f.Text == "" }
 
-// DB is a fact database that returns random obscure facts for countries,
-// cities, and regions. All data is loaded from the embedded seed JSON at
-// construction time and is safe for concurrent use.
+// DB is a fact database that returns random obscure facts for countries
+// and cities. All data is loaded from the embedded seed JSON at construction
+// time and is safe for concurrent use.
 type DB struct {
 	mu   sync.RWMutex
 	data seedData
-	rng  *rand.Rand
 }
 
 // New creates a DB loaded from the embedded seed_facts.json.
@@ -69,12 +67,11 @@ func New() (*DB, error) {
 	}
 	return &DB{
 		data: data,
-		rng:  rand.New(rand.NewSource(time.Now().UnixNano())), //nolint:gosec
 	}, nil
 }
 
 // GetFact returns a random interesting fact for the given country and,
-// optionally, city. The lookup order is: city → region → country.
+// optionally, city. The lookup order is: city → country.
 // Returns a zero Fact{} if no entry is found.
 func (db *DB) GetFact(country, city string) Fact {
 	db.mu.RLock()
@@ -86,9 +83,6 @@ func (db *DB) GetFact(country, city string) Fact {
 		}
 	}
 	if country != "" {
-		if f, ok := db.pick(db.data.Regions, country); ok {
-			return Fact{Text: f, Level: "region", Place: country}
-		}
 		if f, ok := db.pick(db.data.Countries, country); ok {
 			return Fact{Text: f, Level: "country", Place: country}
 		}
@@ -109,11 +103,12 @@ func (db *DB) CountryCount() int {
 }
 
 // pick selects a uniformly random entry from m[key], returning ("", false)
-// if the key does not exist or its slice is empty.
+// if the key does not exist or its slice is empty. The global rand source is
+// used because it is concurrency-safe (locked internally since Go 1).
 func (db *DB) pick(m map[string][]string, key string) (string, bool) {
 	facts, ok := m[key]
 	if !ok || len(facts) == 0 {
 		return "", false
 	}
-	return facts[db.rng.Intn(len(facts))], true
+	return facts[rand.Intn(len(facts))], true //nolint:gosec
 }

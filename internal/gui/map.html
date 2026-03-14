@@ -129,40 +129,7 @@
             margin-top: 4px;
         }
 
-        .fact-box {
-            background: linear-gradient(135deg, rgba(241, 196, 15, 0.15), rgba(230, 126, 34, 0.12));
-            border: 1px solid rgba(241, 196, 15, 0.35);
-            color: var(--text-primary);
-            padding: 14px 16px;
-            border-radius: 14px;
-            margin-top: 8px;
-            display: none;
-        }
-
-        .fact-box.visible {
-            display: block;
-        }
-
-        .fact-box-label {
-            font-size: 0.65rem;
-            opacity: 0.6;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 6px;
-        }
-
-        .fact-place {
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: #d68910;
-            margin-bottom: 4px;
-        }
-
-        .fact-text {
-            font-size: 0.82rem;
-            line-height: 1.45;
-            color: var(--text-primary);
-        }
+        .fact-box-unused { display: none; } /* reserved for future use */
 
         /* Random "Did you know?" toast */
         #fact-toast {
@@ -894,8 +861,8 @@
                     banner.style.display = 'block';
                 } else if (!data.active) {
                     banner.style.display = 'none';
-                    // Reset dismissal when target changes
-                    if (_challengeDismissedFor && _challengeDismissedFor !== data.target) {
+                    // Reset dismissal only when we can confirm the target changed to something new
+                    if (_challengeDismissedFor && data.target && _challengeDismissedFor !== data.target) {
                         _challengeDismissedFor = null;
                     }
                 }
