@@ -267,6 +267,8 @@ type App struct {
 	lastAutoHeight         int          // Memoized screen detection height
 	recentHits             []RecentHit  // Store the last few hits for the UI
 	recentHitsMu           sync.RWMutex // protects recentHits
+	targetChallengeFact    factdb.Fact  // Cached fact for the current target country
+	targetChallengeFactMu  sync.Mutex   // protects targetChallengeFact
 }
 
 // NewApp creates a new application instance
@@ -712,6 +714,46 @@ func (a *App) startLocalServer() {
 		}
 	})
 
+	// Return the active research challenge hint.
+	// Responds with { active: false } when the hint is not yet due, or
+	// { active: true, target: "...", fact: {...} } after 1 minute without a
+	// hit on the target country.
+	mux.HandleFunc("/api/challenge-hint", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		a.gameState.mutex.RLock()
+		target := a.gameState.targetCountry
+		setAt := a.gameState.targetSetAt
+		hitSinceSet := false
+		if target != "" {
+			if state, exists := a.gameState.countries[target]; exists {
+				hitSinceSet = state.LastHit.After(setAt)
+			}
+		}
+		a.gameState.mutex.RUnlock()
+
+		type hintResponse struct {
+			Active bool        `json:"active"`
+			Target string      `json:"target,omitempty"`
+			Fact   factdb.Fact `json:"fact,omitempty"`
+		}
+
+		if target == "" || hitSinceSet || time.Since(setAt) < time.Minute {
+			if err := json.NewEncoder(w).Encode(hintResponse{Active: false}); err != nil {
+				slog.Error("Failed to encode challenge-hint response", "error", err)
+			}
+			return
+		}
+
+		a.targetChallengeFactMu.Lock()
+		fact := a.targetChallengeFact
+		a.targetChallengeFactMu.Unlock()
+
+		if err := json.NewEncoder(w).Encode(hintResponse{Active: !fact.IsZero(), Target: target, Fact: fact}); err != nil {
+			slog.Error("Failed to encode challenge-hint response", "error", err)
+		}
+	})
+
 	// Redirect root to map.html
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/map.html", http.StatusSeeOther)
@@ -916,7 +958,8 @@ func (a *App) generateAndDisplayMap() error {
 	for country, state := range a.gameState.countries {
 		hitCountries[country] = state.HitCount
 	}
-	targetCountry, _ := a.gameState.GetTargetCountry()
+	// Access target fields directly (same lock) to avoid nested RLock.
+	targetCountry := a.gameState.targetCountry
 	a.gameState.mutex.RUnlock()
 
 	// Get boring countries for flag backgrounds
@@ -1261,6 +1304,15 @@ func (a *App) SelectRandomTargetCountry() {
 
 	a.gameState.SetTargetCountry(newTarget)
 	logging.LogTarget(newTarget, len(unhitCountries))
+
+	// Pre-fetch and cache a challenge fact for the new target so the banner
+	// has content ready without taking locks inside the render loop.
+	if a.factDB != nil {
+		fact := a.factDB.GetCountryFact(newTarget)
+		a.targetChallengeFactMu.Lock()
+		a.targetChallengeFact = fact
+		a.targetChallengeFactMu.Unlock()
+	}
 }
 
 // logHit logs detailed information about a network hit

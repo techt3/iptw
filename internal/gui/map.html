@@ -509,6 +509,89 @@
             color: rgba(0, 255, 65, 0.75);
             font-style: italic;
         }
+
+        /* Research challenge banner */
+        #challenge-banner {
+            display: none;
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: min(560px, 88%);
+            background: linear-gradient(135deg, rgba(255, 248, 215, 0.97), rgba(255, 237, 170, 0.97));
+            border: 1.5px solid rgba(210, 140, 0, 0.55);
+            border-radius: 16px;
+            box-shadow: 0 8px 28px rgba(180, 110, 0, 0.18);
+            padding: 16px 20px;
+            z-index: 500;
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            animation: bannerSlideIn 0.4s ease;
+        }
+
+        #challenge-banner.dark {
+            background: linear-gradient(135deg, rgba(45, 25, 0, 0.97), rgba(65, 38, 0, 0.97));
+            border-color: rgba(255, 165, 0, 0.4);
+            color: #ffd84a;
+        }
+
+        @keyframes bannerSlideIn {
+            from { opacity: 0; transform: translateX(-50%) translateY(-12px); }
+            to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+
+        .challenge-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .challenge-title {
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #b07800;
+        }
+
+        #challenge-banner.dark .challenge-title {
+            color: #ffb84a;
+        }
+
+        .challenge-dismiss {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+            opacity: 0.45;
+            color: inherit;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .challenge-dismiss:hover { opacity: 0.8; }
+
+        .challenge-country {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #8a5a00;
+            margin-bottom: 5px;
+        }
+
+        #challenge-banner.dark .challenge-country {
+            color: #ffcc66;
+        }
+
+        .challenge-fact {
+            font-size: 0.85rem;
+            line-height: 1.5;
+            color: #3d2800;
+        }
+
+        #challenge-banner.dark .challenge-fact {
+            color: #ffe8a0;
+        }
     </style>
 </head>
 
@@ -645,6 +728,14 @@
     </div>
 
     <div id="main-content">
+        <div id="challenge-banner">
+            <div class="challenge-header">
+                <span class="challenge-title">🔍 Research Challenge</span>
+                <button class="challenge-dismiss" id="challenge-dismiss" title="Dismiss">✕</button>
+            </div>
+            <div class="challenge-country" id="challenge-country"></div>
+            <div class="challenge-fact" id="challenge-fact"></div>
+        </div>
         <div id="loading">
             <div
                 style="width: 20px; height: 20px; border: 3px solid var(--accent-color); border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;">
@@ -687,6 +778,8 @@
         // Cache of latest boring_count for the fact popup gate
         var _boringCount = 0;
         var _toastTimer = null;
+        // Whether the user manually dismissed the challenge banner for the current target
+        var _challengeDismissedFor = null;
 
         function showFactToast(fact) {
             if (!fact || !fact.text) return;
@@ -787,6 +880,36 @@
 
         // Poll every 2 seconds for updates
         setInterval(updateMapImage, 2000);
+
+        // Poll challenge hint every 10 seconds
+        async function updateChallengeHint() {
+            try {
+                const resp = await fetch('/api/challenge-hint');
+                const data = await resp.json();
+                const banner = document.getElementById('challenge-banner');
+                if (data.active && data.fact && data.fact.text && _challengeDismissedFor !== data.target) {
+                    document.getElementById('challenge-country').textContent =
+                        'Can you verify this about ' + data.target + '?';
+                    document.getElementById('challenge-fact').textContent = data.fact.text;
+                    banner.style.display = 'block';
+                } else if (!data.active) {
+                    banner.style.display = 'none';
+                    // Reset dismissal when target changes
+                    if (_challengeDismissedFor && _challengeDismissedFor !== data.target) {
+                        _challengeDismissedFor = null;
+                    }
+                }
+            } catch (e) { /* silent */ }
+        }
+        setInterval(updateChallengeHint, 10000);
+        updateChallengeHint();
+
+        document.getElementById('challenge-dismiss').addEventListener('click', function () {
+            var banner = document.getElementById('challenge-banner');
+            _challengeDismissedFor = document.getElementById('challenge-country')
+                .textContent.replace('Can you verify this about ', '').replace('?', '').trim();
+            banner.style.display = 'none';
+        });
 
         // Start the random "Did you know?" popup scheduler
         scheduleFactPopup();
