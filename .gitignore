@@ -7,3 +7,4 @@ coverage.out
 coverage.html
 results.sarif
 .DS_Store
+__debug_bin*
