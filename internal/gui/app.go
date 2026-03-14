@@ -4,9 +4,9 @@
 // - Each network connection to a foreign IP address represents a "visit" to that country
 // - Countries are colored based on the number of visits:
 //   - 1-9 visits: Display national flag background (fresh destinations worth exploring)
-//   - 10+ visits: Country becomes "boring" and displays sand/rocks gradient pattern
+//   - 10+ visits: Country enters Matrix Prison and displays Matrix rain
 //
-// - Countries visited too many times become boring and stop counting additional visits
+// - Countries in Matrix Prison stop counting additional visits
 // - The goal is to "travel" to different countries by generating network traffic to IPs in those countries
 // - Target countries are highlighted with red borders to encourage visiting new places
 //
@@ -20,7 +20,7 @@
 // - Country regions filled with colors/patterns based on visit counts
 // - White dots show active connection points
 // - National flags display for visited countries (1-9 hits)
-// - Sand/rocks gradient patterns show for boring countries (10+ hits)
+// - Matrix rain shows for Matrix Prison countries (10+ hits)
 // - Red borders highlight target countries for exploration
 //
 // Resources:
@@ -73,9 +73,10 @@ var mapHTMLContent []byte
 
 // CountryGameState represents the game state for a country
 type CountryGameState struct {
-	HitCount int
-	Boring   bool
-	LastHit  time.Time
+	HitCount     int
+	MatrixPrison bool // true when the country has been overvisited (10+ hits) and is imprisoned
+	LastHit      time.Time
+	Liberated    bool // true when the country was conquered while it was the active target
 }
 
 // RecentHit represents a recent network connection for the UI
@@ -105,19 +106,19 @@ func (gs *GameState) AddCountryHit(country string) {
 	}
 
 	countryState := gs.countries[country]
-	if !countryState.Boring {
+	if !countryState.MatrixPrison {
 		countryState.HitCount++
 		countryState.LastHit = time.Now()
 
-		// Mark as boring if hits >= 10
+		// Send to Matrix Prison if hits >= 10
 		if countryState.HitCount >= 10 {
-			countryState.Boring = true
+			countryState.MatrixPrison = true
 		}
 	}
 }
 
-// AddCountryHitWithTargetCheck adds a hit to a country and returns if it became boring and was the target
-func (gs *GameState) AddCountryHitWithTargetCheck(country string) (becameBoring bool, wasTarget bool) {
+// AddCountryHitWithTargetCheck adds a hit to a country and returns if it entered Matrix Prison and was the target
+func (gs *GameState) AddCountryHitWithTargetCheck(country string) (sentToPrison bool, wasTarget bool) {
 	gs.mutex.Lock()
 	defer gs.mutex.Unlock()
 
@@ -129,26 +130,28 @@ func (gs *GameState) AddCountryHitWithTargetCheck(country string) (becameBoring 
 	countryState.HitCount++
 	countryState.LastHit = time.Now()
 
-	if !countryState.Boring {
-		// Mark as boring if hits >= 10
+	if !countryState.MatrixPrison {
+		// Send to Matrix Prison if hits >= 10
 		if countryState.HitCount >= 10 {
-			countryState.Boring = true
-			becameBoring = true
+			countryState.MatrixPrison = true
+			sentToPrison = true
 			wasTarget = gs.targetCountry == country
 
 			if wasTarget {
-				// Clear the target since it's now boring
+				// Country liberated: it was the active target when conquered
+				countryState.Liberated = true
+				// Clear the target
 				gs.targetCountry = ""
 				gs.targetSetAt = time.Time{}
 			}
 		}
 	}
 
-	return becameBoring, wasTarget
+	return sentToPrison, wasTarget
 }
 
-// MarkCountryAsBoring marks a country as boring and returns whether it was the target country
-func (gs *GameState) MarkCountryAsBoring(country string) (wasTarget bool, targetCountry string) {
+// ImprisonCountry sends a country to Matrix Prison and returns whether it was the target country
+func (gs *GameState) ImprisonCountry(country string) (wasTarget bool, targetCountry string) {
 	gs.mutex.Lock()
 	defer gs.mutex.Unlock()
 
@@ -157,8 +160,8 @@ func (gs *GameState) MarkCountryAsBoring(country string) (wasTarget bool, target
 	}
 
 	countryState := gs.countries[country]
-	if !countryState.Boring {
-		countryState.Boring = true
+	if !countryState.MatrixPrison {
+		countryState.MatrixPrison = true
 		countryState.LastHit = time.Now()
 
 		// Check if this was the target country
@@ -166,7 +169,9 @@ func (gs *GameState) MarkCountryAsBoring(country string) (wasTarget bool, target
 		targetCountry = gs.targetCountry
 
 		if wasTarget {
-			// Clear the target since it's now boring
+			// Country liberated: it was the active target when conquered
+			countryState.Liberated = true
+			// Clear the target
 			gs.targetCountry = ""
 			gs.targetSetAt = time.Time{}
 		}
@@ -183,9 +188,10 @@ func (gs *GameState) GetCountryState(country string) *CountryGameState {
 	if state, exists := gs.countries[country]; exists {
 		// Return a copy to avoid race conditions
 		return &CountryGameState{
-			HitCount: state.HitCount,
-			Boring:   state.Boring,
-			LastHit:  state.LastHit,
+			HitCount:     state.HitCount,
+			MatrixPrison: state.MatrixPrison,
+			LastHit:      state.LastHit,
+			Liberated:    state.Liberated,
 		}
 	}
 	return nil
@@ -208,9 +214,10 @@ func (gs *GameState) GetCountries() map[string]*CountryGameState {
 	countries := make(map[string]*CountryGameState)
 	for name, state := range gs.countries {
 		countries[name] = &CountryGameState{
-			HitCount: state.HitCount,
-			Boring:   state.Boring,
-			LastHit:  state.LastHit,
+			HitCount:     state.HitCount,
+			MatrixPrison: state.MatrixPrison,
+			LastHit:      state.LastHit,
+			Liberated:    state.Liberated,
 		}
 	}
 	return countries
@@ -223,8 +230,8 @@ func (gs *GameState) GetCountryColor(country string) color.RGBA {
 		return color.RGBA{0, 0, 0, 0} // Transparent for no hits
 	}
 
-	if state.Boring {
-		// Bright red for boring countries
+	if state.MatrixPrison {
+		// Bright red for Matrix Prison countries
 		return color.RGBA{255, 50, 50, 200}
 	}
 
@@ -300,7 +307,7 @@ func NewApp(cfg *config.Config, geoipDB *geoip.Database, monitor *network.Monito
 		return nil, fmt.Errorf("failed to load fonts: %w", err)
 	}
 
-	// Load flag bitmaps (optional - if failed, flags won't be used for boring countries)
+	// Load flag bitmaps (optional - if failed, flags won't be used for Matrix Prison countries)
 	flagManager, err := resources.LoadFlags()
 	if err != nil {
 		slog.Warn("Failed to load flag bitmaps - flag backgrounds will not be available", "error", err)
@@ -545,8 +552,8 @@ func (a *App) startLocalServer() {
 		}
 	})
 
-	// Mark a country as boring manually
-	mux.HandleFunc("/countries/boring", a.requireSessionToken(func(w http.ResponseWriter, r *http.Request) {
+	// Send a country to Matrix Prison manually
+	mux.HandleFunc("/countries/imprison", a.requireSessionToken(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			return
@@ -565,16 +572,16 @@ func (a *App) startLocalServer() {
 			return
 		}
 
-		wasTarget, _ := a.gameState.MarkCountryAsBoring(data.Country)
+		wasTarget, _ := a.gameState.ImprisonCountry(data.Country)
 		if wasTarget {
 			a.achievements.UnlockFastestTravelerAchievement(data.Country)
 		}
 
 		if err := json.NewEncoder(w).Encode(map[string]interface{}{
 			"success": true,
-			"message": fmt.Sprintf("Country %s marked as boring", data.Country),
+			"message": fmt.Sprintf("Country %s sent to Matrix Prison", data.Country),
 		}); err != nil {
-			slog.Error("Failed to encode boring country response", "error", err)
+			slog.Error("Failed to encode imprison country response", "error", err)
 		}
 	}))
 
@@ -609,7 +616,7 @@ func (a *App) startLocalServer() {
 		// Get game statistics
 		a.gameState.mutex.RLock()
 		visitedCount := len(a.gameState.countries)
-		boringCount := 0
+		prisonCount := 0
 
 		// Identify inMatrixPrison state
 		inMatrixPrison := false
@@ -631,12 +638,16 @@ func (a *App) startLocalServer() {
 		}
 		var topCountries []summaryItem
 
+		liberatedCount := 0
 		for country, state := range a.gameState.countries {
-			if state.Boring {
-				boringCount++
+			if state.MatrixPrison && !state.Liberated {
+				prisonCount++
 				if recentCountries[country] {
 					inMatrixPrison = true
 				}
+			}
+			if state.Liberated {
+				liberatedCount++
 			}
 			topCountries = append(topCountries, summaryItem{Country: country, Hits: state.HitCount})
 		}
@@ -666,7 +677,8 @@ func (a *App) startLocalServer() {
 
 		data := map[string]interface{}{
 			"visited_count":     visitedCount,
-			"boring_count":      boringCount,
+			"prison_count":      prisonCount,
+			"liberated_count":   liberatedCount,
 			"achievement_count": achievementCount,
 			"target_country":    targetCountry,
 			"in_matrix_prison":  inMatrixPrison,
@@ -697,7 +709,7 @@ func (a *App) startLocalServer() {
 	})
 
 	// Return a random "Did you know?" fact drawn from the user's visited countries.
-	// The UI calls this on a random timer (only after 10+ boring countries).
+	// The UI calls this on a random timer (only after 10+ Matrix Prison countries).
 	mux.HandleFunc("/api/random-fact", func(w http.ResponseWriter, r *http.Request) {
 		var fact factdb.Fact
 		if a.factDB != nil {
@@ -743,7 +755,7 @@ func (a *App) startLocalServer() {
 			Fact   factdb.Fact `json:"fact,omitempty"`
 		}
 
-		if target == "" || hitSinceSet || time.Since(setAt) < time.Minute {
+		if target == "" || hitSinceSet {
 			if err := json.NewEncoder(w).Encode(hintResponse{Active: false}); err != nil {
 				slog.Error("Failed to encode challenge-hint response", "error", err)
 			}
@@ -758,6 +770,24 @@ func (a *App) startLocalServer() {
 			slog.Error("Failed to encode challenge-hint response", "error", err)
 		}
 	})
+
+	// Re-roll the target country on demand
+	mux.HandleFunc("/api/reroll-target", a.requireSessionToken(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		a.SelectRandomTargetCountry()
+		newTarget, _ := a.gameState.GetTargetCountry()
+		slog.Info("🎲 Target country re-rolled by user", "new_target", newTarget)
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": true,
+			"target":  newTarget,
+		}); err != nil {
+			slog.Error("Failed to encode reroll-target response", "error", err)
+		}
+	}))
 
 	// Redirect root to map.html
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -917,12 +947,12 @@ func (a *App) generateAndDisplayMap() error {
 			wasFirstVisit := !a.gameState.HasCountry(countryName)
 
 			// Use the new method that checks for target status
-			becameBoring, wasTarget := a.gameState.AddCountryHitWithTargetCheck(countryName)
+			sentToPrison, wasTarget := a.gameState.AddCountryHitWithTargetCheck(countryName)
 			recentCountries[countryName] = true
 			a.markMapDirty()
 
-			// Handle fastest traveler achievement if country became boring and was target
-			if becameBoring && wasTarget {
+			// Handle fastest traveler achievement if country entered Matrix Prison and was target
+			if sentToPrison && wasTarget {
 				achievementID := a.achievements.UnlockFastestTravelerAchievement(countryName)
 
 				if achievementID != "" {
@@ -984,11 +1014,14 @@ func (a *App) generateAndDisplayMap() error {
 	targetCountry := a.gameState.targetCountry
 	a.gameState.mutex.RUnlock()
 
-	// Get boring countries for flag backgrounds
-	boringCountries := a.getBoringCountries()
+	// Get Matrix Prison countries
+	matrixPrisonCountries := a.getMatrixPrisonCountries()
+
+	// Get liberated countries (were the active target when conquered)
+	liberatedCountries := a.getLiberatedCountries()
 
 	// Render map with Natural Earth data
-	outputImg, err = resources.RenderNaturalEarthMap(a.naturalEarth, width, height, a.config.Black, hitCountries, targetCountry, a.flagManager, a.fontManager, boringCountries, recentCountries)
+	outputImg, err = resources.RenderNaturalEarthMap(a.naturalEarth, width, height, a.config.Black, hitCountries, targetCountry, a.flagManager, a.fontManager, matrixPrisonCountries, recentCountries, liberatedCountries)
 	if err != nil {
 		logging.LogError("render Natural Earth map", err)
 		return err
@@ -1111,7 +1144,12 @@ func (a *App) drawGameStatusRectangle(img *image.RGBA, mapWidth, mapHeight int, 
 	// Get game statistics
 	a.gameState.mutex.RLock()
 	visitedCount := len(a.gameState.countries)
-	boringCount := 0
+	prisonCount := 0
+	for _, state := range a.gameState.countries {
+		if state.MatrixPrison && !state.Liberated {
+			prisonCount++
+		}
+	}
 	targetCountry, _ := a.gameState.GetTargetCountry()
 	a.gameState.mutex.RUnlock()
 
@@ -1140,7 +1178,7 @@ func (a *App) drawGameStatusRectangle(img *image.RGBA, mapWidth, mapHeight int, 
 	// Add status message
 	if visitedCount == 0 {
 		lines = append(lines, "Start browsing to begin!")
-	} else if boringCount > visitedCount/2 {
+	} else if prisonCount > visitedCount/2 {
 		lines = append(lines, "Explore new places!")
 	} else {
 		lines = append(lines, "Keep exploring!")
@@ -1264,15 +1302,15 @@ func (a *App) logGameStats() {
 		total++
 		totalHits += state.HitCount
 
-		if state.Boring {
+		if state.MatrixPrison {
 			occupied++
-			slog.Debug("Country boring",
+			slog.Debug("Country in Matrix Prison",
 				"country", country,
 				"hits", state.HitCount,
 				"last_hit", state.LastHit.Format("15:04:05"),
 			)
 		} else {
-			slog.Debug("Country interesting",
+			slog.Debug("Country active",
 				"country", country,
 				"hits", state.HitCount,
 				"last_hit", state.LastHit.Format("15:04:05"),
@@ -1415,7 +1453,7 @@ func (a *App) logHit(conn network.Connection, location *geoip.Location, mapWidth
 		conn.LocalIP, conn.LocalPort, currentHits, currentHits+1,
 		location.Latitude, location.Longitude, mapX, mapY, mapWidth, mapHeight)
 
-	// Check if country becomes too boring from too many visits
+	// Check if country is being absorbed into Matrix Prison
 	if currentHits+1 >= 10 {
 		logging.LogOvervisited(location.Country)
 	} else if currentHits+1 >= 7 {
@@ -1423,18 +1461,33 @@ func (a *App) logHit(conn network.Connection, location *geoip.Location, mapWidth
 	}
 }
 
-// getBoringCountries returns a map of countries that are marked as boring
-func (a *App) getBoringCountries() map[string]bool {
+// getMatrixPrisonCountries returns a map of countries that are in Matrix Prison
+func (a *App) getMatrixPrisonCountries() map[string]bool {
 	a.gameState.mutex.RLock()
 	defer a.gameState.mutex.RUnlock()
 
-	boringCountries := make(map[string]bool)
+	prisonCountries := make(map[string]bool)
 	for countryName, state := range a.gameState.countries {
-		if state.Boring {
-			boringCountries[countryName] = true
+		if state.MatrixPrison {
+			prisonCountries[countryName] = true
 		}
 	}
-	return boringCountries
+	return prisonCountries
+}
+
+// getLiberatedCountries returns a map of countries that were liberated
+// (conquered while they were the active target country).
+func (a *App) getLiberatedCountries() map[string]bool {
+	a.gameState.mutex.RLock()
+	defer a.gameState.mutex.RUnlock()
+
+	liberated := make(map[string]bool)
+	for countryName, state := range a.gameState.countries {
+		if state.Liberated {
+			liberated[countryName] = true
+		}
+	}
+	return liberated
 }
 
 // markMapDirty signals that the map image must be re-rendered and re-encoded
