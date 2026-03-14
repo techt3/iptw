@@ -4,6 +4,8 @@ import (
 	"flag"
 	"fmt"
 	"log/slog"
+	"net/http"
+	_ "net/http/pprof"
 
 	"iptw/internal/config"
 	"iptw/internal/geoip"
@@ -24,9 +26,11 @@ func main() {
 	var forceStart bool
 	var showVersion bool
 	var foreground bool
+	var pprofAddr string
 	flag.BoolVar(&forceStart, "force", false, "Force start even if another instance appears to be running")
 	flag.BoolVar(&showVersion, "version", false, "Show version information")
 	flag.BoolVar(&foreground, "foreground", false, "Run in the foreground (keep terminal attached)")
+	flag.StringVar(&pprofAddr, "pprof", "", "Enable pprof profiling server on the given address (e.g. 127.0.0.1:6060)")
 	flag.Parse()
 
 	// Handle version request
@@ -41,6 +45,17 @@ func main() {
 	// launching shell.  The process re-execs itself with --foreground and
 	// the parent exits immediately.  This is a no-op on Windows.
 	maybeDaemonize(foreground)
+
+	// Start pprof server if requested.
+	if pprofAddr != "" {
+		go func() {
+			slog.Info("pprof profiling server starting", "addr", pprofAddr,
+				"hint", "go tool pprof http://"+pprofAddr+"/debug/pprof/profile")
+			if err := http.ListenAndServe(pprofAddr, nil); err != nil { //nolint:gosec
+				slog.Error("pprof server stopped", "error", err)
+			}
+		}()
+	}
 
 	// On Windows GUI builds, set up file logging immediately so that any
 	// startup failure is recorded even before the config is read.

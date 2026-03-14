@@ -269,6 +269,9 @@ type App struct {
 	recentHitsMu           sync.RWMutex // protects recentHits
 	targetChallengeFact    factdb.Fact  // Cached fact for the current target country
 	targetChallengeFactMu  sync.Mutex   // protects targetChallengeFact
+	mapDirty               bool         // true when the map must be re-rendered and re-encoded
+	mapDirtyMu             sync.Mutex   // protects mapDirty
+	mapEncBuf              bytes.Buffer // reused encode buffer to avoid per-tick allocation
 }
 
 // NewApp creates a new application instance
@@ -341,6 +344,7 @@ func NewApp(cfg *config.Config, geoipDB *geoip.Database, monitor *network.Monito
 		originalWallpaper: firstBackup,
 		wallpaperBackedUp: firstBackup != "",
 		sessionToken:      generatedToken,
+		mapDirty:          true, // ensure first frame is always encoded
 	}, nil
 }
 
@@ -898,6 +902,7 @@ func (a *App) generateAndDisplayMap() error {
 			// Use the new method that checks for target status
 			becameBoring, wasTarget := a.gameState.AddCountryHitWithTargetCheck(countryName)
 			recentCountries[countryName] = true
+			a.markMapDirty()
 
 			// Handle fastest traveler achievement if country became boring and was target
 			if becameBoring && wasTarget {
@@ -997,12 +1002,29 @@ func (a *App) generateAndDisplayMap() error {
 	// Draw game status rectangle
 	a.drawGameStatusRectangle(rgbaImg, width, height, recentCountries)
 
+	// Only re-encode and re-save when something actually changed.
+	a.mapDirtyMu.Lock()
+	dirty := a.mapDirty
+	a.mapDirty = false
+	a.mapDirtyMu.Unlock()
+
+	if !dirty {
+		return nil
+	}
+
 	// Encode once to buffer, then write to disk and cache for the HTTP server
-	buf := new(bytes.Buffer)
-	if err := png.Encode(buf, rgbaImg); err != nil {
+	a.mapEncBuf.Reset()
+	encoder := &png.Encoder{CompressionLevel: png.BestSpeed}
+	if err := encoder.Encode(&a.mapEncBuf, rgbaImg); err != nil {
 		return fmt.Errorf("failed to encode map image: %w", err)
 	}
-	pngBytes := buf.Bytes()
+	// Copy the encoded bytes out of mapEncBuf so that the HTTP cache and disk write
+	// hold an independent slice. Without this copy, a.mapEncBuf.Reset() on the next
+	// dirty frame would overwrite the backing array that a.lastMapPNG still points into,
+	// serving a mix of new/old PNG data to the browser.
+	raw := a.mapEncBuf.Bytes()
+	pngBytes := make([]byte, len(raw))
+	copy(pngBytes, raw)
 
 	// Save the image to output path
 	outputPath := filepath.Join(a.outputDir, "iptw.png")
@@ -1304,6 +1326,7 @@ func (a *App) SelectRandomTargetCountry() {
 
 	a.gameState.SetTargetCountry(newTarget)
 	logging.LogTarget(newTarget, len(unhitCountries))
+	a.markMapDirty()
 
 	// Pre-fetch and cache a challenge fact for the new target so the banner
 	// has content ready without taking locks inside the render loop.
@@ -1395,6 +1418,14 @@ func (a *App) getBoringCountries() map[string]bool {
 		}
 	}
 	return boringCountries
+}
+
+// markMapDirty signals that the map image must be re-rendered and re-encoded
+// on the next display tick.
+func (a *App) markMapDirty() {
+	a.mapDirtyMu.Lock()
+	a.mapDirty = true
+	a.mapDirtyMu.Unlock()
 }
 
 // Stop stops the application gracefully

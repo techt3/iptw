@@ -16,6 +16,7 @@ import (
 	"math/rand"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/golang/freetype"
@@ -27,6 +28,33 @@ import (
 
 //go:embed *.json *.zip *.csv Matrix-Code.ttf
 var files embed.FS
+
+// oceanCacheEntry holds a pre-rendered ocean background pixel buffer.
+type oceanCacheEntry struct {
+	pix    []uint8
+	width  int
+	height int
+	dark   bool
+}
+
+var (
+	oceanCacheMu sync.Mutex
+	oceanCached  *oceanCacheEntry
+)
+
+// spanRun represents a horizontal span of pixels belonging to a country's rasterized shape.
+type spanRun struct{ y, x1, x2 int }
+
+// countryMaskEntry caches the rasterized pixel spans for one country at a specific resolution.
+type countryMaskEntry struct {
+	spans         []spanRun
+	width, height int
+}
+
+var (
+	countryMaskCacheMu sync.Mutex
+	countryMaskCache   map[string]*countryMaskEntry
+)
 
 // CountryData represents a country with its geometry and metadata
 type CountryData struct {
@@ -614,17 +642,17 @@ func RenderNaturalEarthMap(ne *NaturalEarthData, width, height int, black bool, 
 				applyGammaCorrection := recentHitCountries != nil && recentHitCountries[country.Name]
 
 				// Draw country with flag background
-				drawCountryWithFlagBackground(img, country.Geometry, flag, width, height, applyGammaCorrection)
+				drawCountryWithFlagBackground(img, country.Name, country.Geometry, flag, width, height, applyGammaCorrection)
 			} else {
 				// Fallback to regular color if no flag found
 				fillColor := getCountryHitColor(hitCount)
-				drawCountryGeometry(img, country.Geometry, fillColor, width, height)
+				drawCountryGeometry(img, country.Name, country.Geometry, fillColor, width, height)
 			}
 		} else if isBoring && hitCount >= 10 {
 			// Show Matrix rain for boring countries (10+ hits)
 			if fontManager != nil {
 				// Fill country with black first to provide the background for Matrix rain
-				drawCountryGeometry(img, country.Geometry, color.RGBA{0, 0, 0, 255}, width, height)
+				drawCountryGeometry(img, country.Name, country.Geometry, color.RGBA{0, 0, 0, 255}, width, height)
 
 				// Use current time plus a stable seed per country for pseudo-random movement
 				countrySeed := int64(0)
@@ -632,10 +660,10 @@ func RenderNaturalEarthMap(ne *NaturalEarthData, width, height int, black bool, 
 					countrySeed += int64(char)
 				}
 				seed := time.Now().UnixNano()/50000000 + countrySeed
-				DrawMatrixRain(img, country.Geometry, fontManager, width, height, seed)
+				DrawMatrixRain(img, country.Name, country.Geometry, fontManager, width, height, seed)
 			} else {
 				// Fallback to sand/rocks gradient if font manager not available
-				drawCountryWithSandRocksGradient(img, country.Geometry, hitCount, width, height)
+				drawCountryWithSandRocksGradient(img, country.Name, country.Geometry, hitCount, width, height)
 			}
 		} else {
 			// Regular country drawing logic for unvisited countries or as fallback
@@ -650,7 +678,7 @@ func RenderNaturalEarthMap(ne *NaturalEarthData, width, height int, black bool, 
 					fillColor = color.RGBA{200, 200, 200, 255} // Light gray for light theme
 				}
 			}
-			drawCountryGeometry(img, country.Geometry, fillColor, width, height)
+			drawCountryGeometry(img, country.Name, country.Geometry, fillColor, width, height)
 		}
 
 		// Draw red border if this is the target country
@@ -662,8 +690,89 @@ func RenderNaturalEarthMap(ne *NaturalEarthData, width, height int, black bool, 
 	return img, nil
 }
 
-// fillOceanBackground fills the background with ocean gradient waves
+// getCountrySpans returns the cached rasterized span list for a country, computing it on the
+// first call for a given (name, width, height). The spans exclude interior ring holes and
+// are safe for concurrent readers once stored in the cache.
+func getCountrySpans(name string, geom orb.MultiPolygon, width, height int) []spanRun {
+	countryMaskCacheMu.Lock()
+	if countryMaskCache != nil {
+		if e, ok := countryMaskCache[name]; ok && e.width == width && e.height == height {
+			countryMaskCacheMu.Unlock()
+			return e.spans
+		}
+	}
+	countryMaskCacheMu.Unlock()
+
+	// Compute mask via the existing scanline algorithm (runs once per country per resolution).
+	mask := image.NewAlpha(image.Rect(0, 0, width, height))
+	for _, polygon := range geom {
+		if len(polygon) > 0 {
+			fillPolygonAlpha(mask, polygon[0], 255, width, height)
+		}
+		for i := 1; i < len(polygon); i++ {
+			fillPolygonAlpha(mask, polygon[i], 0, width, height)
+		}
+	}
+
+	// Extract compact horizontal span runs directly from the alpha pixel buffer.
+	var spans []spanRun
+	pix := mask.Pix
+	for y := 0; y < height; y++ {
+		row := pix[y*mask.Stride : y*mask.Stride+width]
+		x := 0
+		for x < width {
+			for x < width && row[x] == 0 {
+				x++
+			}
+			if x >= width {
+				break
+			}
+			x1 := x
+			for x < width && row[x] > 0 {
+				x++
+			}
+			spans = append(spans, spanRun{y, x1, x - 1})
+		}
+	}
+
+	entry := &countryMaskEntry{spans: spans, width: width, height: height}
+	countryMaskCacheMu.Lock()
+	if countryMaskCache == nil {
+		countryMaskCache = make(map[string]*countryMaskEntry)
+	}
+	countryMaskCache[name] = entry
+	countryMaskCacheMu.Unlock()
+	return spans
+}
+
+// spansToAlpha reconstructs an *image.Alpha from cached spans without re-running the
+// scanline algorithm. Used by DrawMatrixRain which needs an alpha mask for character clipping.
+func spansToAlpha(spans []spanRun, width, height int) *image.Alpha {
+	mask := image.NewAlpha(image.Rect(0, 0, width, height))
+	for _, s := range spans {
+		row := mask.Pix[s.y*mask.Stride:]
+		for x := s.x1; x <= s.x2; x++ {
+			row[x] = 255
+		}
+	}
+	return mask
+}
+
+// fillOceanBackground fills the background with ocean gradient waves.
+// The computed pixel buffer is cached and reused when the dimensions and theme
+// are unchanged, avoiding O(width×height) math.Sin calls on every frame.
 func fillOceanBackground(img *image.RGBA, width, height int, dark bool) {
+	oceanCacheMu.Lock()
+	if oceanCached != nil &&
+		oceanCached.width == width &&
+		oceanCached.height == height &&
+		oceanCached.dark == dark {
+		copy(img.Pix, oceanCached.pix)
+		oceanCacheMu.Unlock()
+		return
+	}
+	oceanCacheMu.Unlock()
+
 	// Define ocean colors based on theme
 	var deepOcean, shallowOcean, waveHighlight color.RGBA
 
@@ -718,9 +827,16 @@ func fillOceanBackground(img *image.RGBA, width, height int, dark bool) {
 				finalColor = interpolateColor(waveHighlight, brighterHighlight, t)
 			}
 
-			img.Set(x, y, finalColor)
+			img.SetRGBA(x, y, finalColor)
 		}
 	}
+
+	// Store a copy of the freshly computed pixels in the cache.
+	oceanCacheMu.Lock()
+	cached := make([]uint8, len(img.Pix))
+	copy(cached, img.Pix)
+	oceanCached = &oceanCacheEntry{pix: cached, width: width, height: height, dark: dark}
+	oceanCacheMu.Unlock()
 }
 
 // interpolateColor linearly interpolates between two colors
@@ -802,51 +918,30 @@ func getSandRocksGradientColor(hitCount int, x, y, width, height int) color.RGBA
 	return baseColor
 }
 
-// drawCountryGeometry draws a country's geometry on the image with solid fill
-func drawCountryGeometry(img *image.RGBA, geom orb.MultiPolygon, fillColor color.RGBA, width, height int) {
-	for _, polygon := range geom {
-		// Fill the main polygon (exterior ring)
-		if len(polygon) > 0 {
-			fillPolygon(img, polygon[0], fillColor, width, height)
-		}
-
-		// Draw holes (interior rings) in background color
-		// This creates the proper polygon with holes
-		for i := 1; i < len(polygon); i++ {
-			// Use transparent color for holes
-			holeColor := color.RGBA{0, 0, 0, 0} // Transparent
-			fillPolygon(img, polygon[i], holeColor, width, height)
+// drawCountryGeometry draws a country's geometry on the image with solid fill.
+// It uses the cached span list for the country, avoiding repeated scanline rasterisation.
+func drawCountryGeometry(img *image.RGBA, name string, geom orb.MultiPolygon, fillColor color.RGBA, width, height int) {
+	spans := getCountrySpans(name, geom, width, height)
+	for _, s := range spans {
+		row := img.Pix[s.y*img.Stride:]
+		for x := s.x1; x <= s.x2; x++ {
+			off := x * 4
+			row[off] = fillColor.R
+			row[off+1] = fillColor.G
+			row[off+2] = fillColor.B
+			row[off+3] = fillColor.A
 		}
 	}
 }
 
-// drawCountryWithSandRocksGradient draws a country's geometry with sand/rocks gradient pattern
-func drawCountryWithSandRocksGradient(img *image.RGBA, geom orb.MultiPolygon, hitCount, width, height int) {
-	// Create a temporary mask to determine which pixels belong to the country
-	mask := image.NewAlpha(image.Rect(0, 0, width, height))
-
-	// Fill the mask with country geometry
-	for _, polygon := range geom {
-		// Fill the main polygon (exterior ring)
-		if len(polygon) > 0 {
-			fillPolygonAlpha(mask, polygon[0], 255, width, height)
-		}
-
-		// Draw holes (interior rings) as transparent
-		for i := 1; i < len(polygon); i++ {
-			fillPolygonAlpha(mask, polygon[i], 0, width, height)
-		}
-	}
-
-	// Apply gradient pattern to country pixels
-	for y := 0; y < height; y++ {
-		for x := 0; x < width; x++ {
-			alpha := mask.AlphaAt(x, y).A
-			if alpha > 0 {
-				// Get sand/rocks gradient color for this pixel
-				gradientColor := getSandRocksGradientColor(hitCount, x, y, width, height)
-				img.Set(x, y, gradientColor)
-			}
+// drawCountryWithSandRocksGradient draws a country's geometry with sand/rocks gradient pattern.
+// Uses the cached span list to avoid repeated scanline rasterisation.
+func drawCountryWithSandRocksGradient(img *image.RGBA, name string, geom orb.MultiPolygon, hitCount, width, height int) {
+	spans := getCountrySpans(name, geom, width, height)
+	for _, s := range spans {
+		for x := s.x1; x <= s.x2; x++ {
+			gradientColor := getSandRocksGradientColor(hitCount, x, s.y, width, height)
+			img.SetRGBA(x, s.y, gradientColor)
 		}
 	}
 }
@@ -880,24 +975,11 @@ func applyRandomGammaCorrection(c color.Color) color.Color {
 	return color.RGBA{rFinal, gFinal, bFinal, aFinal}
 }
 
-// drawCountryWithFlagBackground draws a country's geometry with a flag image as background
-// If applyGammaCorrection is true, applies random gamma correction to indicate recent activity on boring countries
-func drawCountryWithFlagBackground(img *image.RGBA, geom orb.MultiPolygon, flag image.Image, width, height int, applyGammaCorrection bool) {
-	// Create a temporary mask to determine which pixels belong to the country
-	mask := image.NewAlpha(image.Rect(0, 0, width, height))
-
-	// Fill the mask with country geometry
-	for _, polygon := range geom {
-		// Fill the main polygon (exterior ring)
-		if len(polygon) > 0 {
-			fillPolygonAlpha(mask, polygon[0], 255, width, height)
-		}
-
-		// Draw holes (interior rings) as transparent
-		for i := 1; i < len(polygon); i++ {
-			fillPolygonAlpha(mask, polygon[i], 0, width, height)
-		}
-	}
+// drawCountryWithFlagBackground draws a country's geometry with a flag image as background.
+// If applyGammaCorrection is true, applies random gamma correction to indicate recent activity.
+// Uses the cached span list to avoid repeated scanline rasterisation.
+func drawCountryWithFlagBackground(img *image.RGBA, name string, geom orb.MultiPolygon, flag image.Image, width, height int, applyGammaCorrection bool) {
+	spans := getCountrySpans(name, geom, width, height)
 
 	// Get flag dimensions
 	flagBounds := flag.Bounds()
@@ -909,66 +991,47 @@ func drawCountryWithFlagBackground(img *image.RGBA, geom orb.MultiPolygon, flag 
 	minX, minY := geoToPixel(countryBound.Max[1], countryBound.Min[1], width, height)
 	_, maxY := geoToPixel(countryBound.Min[1], countryBound.Max[0], width, height)
 
-	// Ensure proper bounds ordering (min should be less than max)
 	if minY > maxY {
 		minY, maxY = maxY, minY
 	}
 
-	// Calculate country dimensions in pixels
 	countryPixelHeight := int(maxY - minY)
-
-	// Avoid division by zero or invalid dimensions
 	if countryPixelHeight <= 0 || originalFlagHeight <= 0 {
 		return
 	}
 
-	// Calculate scaling factor to resize flag to match country height
 	scaleFactor := float64(countryPixelHeight) / float64(originalFlagHeight)
 	scaledFlagWidth := int(float64(originalFlagWidth) * scaleFactor)
 	scaledFlagHeight := countryPixelHeight
+	if scaledFlagWidth <= 0 || scaledFlagHeight <= 0 {
+		return
+	}
 
-	// Apply flag to country pixels
-	for y := 0; y < height; y++ {
-		for x := 0; x < width; x++ {
-			alpha := mask.AlphaAt(x, y).A
-			if alpha > 0 {
-				// Calculate relative position within country bounds
-				relX := x - int(minX)
-				relY := y - int(minY)
-
-				// Calculate flag coordinates with scaling
-				var flagX, flagY int
-				if scaledFlagWidth > 0 && scaledFlagHeight > 0 {
-					// Use modulo for repeating pattern if flag is smaller than country
-					flagX = (relX % scaledFlagWidth) * originalFlagWidth / scaledFlagWidth
-					flagY = (relY % scaledFlagHeight) * originalFlagHeight / scaledFlagHeight
-
-					// Clamp flag coordinates to valid bounds
-					if flagX >= originalFlagWidth {
-						flagX = originalFlagWidth - 1
-					}
-					if flagY >= originalFlagHeight {
-						flagY = originalFlagHeight - 1
-					}
-					if flagX < 0 {
-						flagX = 0
-					}
-					if flagY < 0 {
-						flagY = 0
-					}
-
-					// Get flag color at this position
-					flagColor := flag.At(flagX, flagY)
-
-					// Apply random gamma correction if this boring country was recently hit
-					if applyGammaCorrection {
-						flagColor = applyRandomGammaCorrection(flagColor)
-					}
-
-					// Apply flag color to the pixel
-					img.Set(x, y, flagColor)
-				}
+	minXi := int(minX)
+	minYi := int(minY)
+	for _, s := range spans {
+		relY := s.y - minYi
+		flagY := (relY % scaledFlagHeight) * originalFlagHeight / scaledFlagHeight
+		if flagY >= originalFlagHeight {
+			flagY = originalFlagHeight - 1
+		}
+		if flagY < 0 {
+			flagY = 0
+		}
+		for x := s.x1; x <= s.x2; x++ {
+			relX := x - minXi
+			flagX := (relX % scaledFlagWidth) * originalFlagWidth / scaledFlagWidth
+			if flagX >= originalFlagWidth {
+				flagX = originalFlagWidth - 1
 			}
+			if flagX < 0 {
+				flagX = 0
+			}
+			flagColor := flag.At(flagX, flagY)
+			if applyGammaCorrection {
+				flagColor = applyRandomGammaCorrection(flagColor)
+			}
+			img.Set(x, s.y, flagColor)
 		}
 	}
 }
@@ -1216,7 +1279,7 @@ func drawLine(img *image.RGBA, x1, y1, x2, y2 int, col color.RGBA) {
 }
 
 // DrawMatrixRain draws a Matrix-style falling code effect within a country's geometry
-func DrawMatrixRain(img *image.RGBA, geom orb.MultiPolygon, fm *FontManager, width, height int, seed int64) {
+func DrawMatrixRain(img *image.RGBA, name string, geom orb.MultiPolygon, fm *FontManager, width, height int, seed int64) {
 	if fm == nil {
 		return
 	}
@@ -1230,16 +1293,8 @@ func DrawMatrixRain(img *image.RGBA, geom orb.MultiPolygon, fm *FontManager, wid
 		return
 	}
 
-	// Create a mask to only draw inside the country
-	mask := image.NewAlpha(image.Rect(0, 0, width, height))
-	for _, polygon := range geom {
-		if len(polygon) > 0 {
-			fillPolygonAlpha(mask, polygon[0], 255, width, height)
-		}
-		for i := 1; i < len(polygon); i++ {
-			fillPolygonAlpha(mask, polygon[i], 0, width, height)
-		}
-	}
+	// Build the clipping mask from cached spans (avoids re-running the scanline algorithm).
+	mask := spansToAlpha(getCountrySpans(name, geom, width, height), width, height)
 
 	// Calculate country bounds to limit the area we process
 	bound := geom.Bound()
