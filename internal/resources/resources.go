@@ -603,16 +603,16 @@ func (ne *NaturalEarthData) GetCountryBounds(countryName string) (minLat, maxLat
 }
 
 // RenderNaturalEarthMap creates a map image with country boundaries from Natural Earth data
-func RenderNaturalEarthMap(ne *NaturalEarthData, width, height int, black bool, hitCountries map[string]int, targetCountry string, flagManager *FlagManager, fontManager *FontManager, boringCountries map[string]bool, recentHitCountries map[string]bool, liberatedCountries map[string]bool) (image.Image, error) {
+func RenderNaturalEarthMap(ne *NaturalEarthData, width, height int, black bool, hitCountries map[string]int, targetCountry string, flagManager *FlagManager, fontManager *FontManager, matrixPrisonCountries map[string]bool, recentHitCountries map[string]bool, liberatedCountries map[string]bool) (image.Image, error) {
 	// Debug: show available flags
 	if flagManager != nil {
 		availableFlags := flagManager.ListFlags()
 		slog.Debug("Available flags", "flags", availableFlags)
 	}
 
-	// Debug: show boring countries
-	if boringCountries != nil {
-		slog.Debug("Boring countries", "countries", boringCountries)
+	// Debug: show Matrix Prison countries
+	if matrixPrisonCountries != nil {
+		slog.Debug("Matrix Prison countries", "countries", matrixPrisonCountries)
 	}
 
 	// Create the image
@@ -629,10 +629,10 @@ func RenderNaturalEarthMap(ne *NaturalEarthData, width, height int, black bool, 
 			hitCount = count
 		}
 
-		// Check if this country is boring (>=10 hits) and should use sand/rocks gradient
-		isBoring := boringCountries != nil && boringCountries[country.Name]
+		// Check if this country is in Matrix Prison (>=10 hits)
+		isMatrixPrison := matrixPrisonCountries != nil && matrixPrisonCountries[country.Name]
 
-		// New logic: After first hit, show flag. When boring, show sand/rocks gradient.
+		// After first hit, show flag. In Matrix Prison, show Matrix rain.
 		if hitCount >= 1 && hitCount < 10 && flagManager != nil && country.getAlpha2Code() != "" {
 			// Show flag for countries with 1-9 hits
 			alpha2 := country.getAlpha2Code()
@@ -648,8 +648,8 @@ func RenderNaturalEarthMap(ne *NaturalEarthData, width, height int, black bool, 
 				fillColor := getCountryHitColor(hitCount)
 				drawCountryGeometry(img, country.Name, country.Geometry, fillColor, width, height)
 			}
-		} else if isBoring && hitCount >= 10 {
-			// Show Matrix rain for boring countries (10+ hits)
+		} else if isMatrixPrison && hitCount >= 10 {
+			// Show Matrix rain for Matrix Prison countries (10+ hits)
 			if fontManager != nil {
 				isLiberated := liberatedCountries != nil && liberatedCountries[country.Name]
 
@@ -674,7 +674,7 @@ func RenderNaturalEarthMap(ne *NaturalEarthData, width, height int, black bool, 
 					// Semi-transparent rain (alpha ≈ 160/255 ≈ 63%) so the flag shines through
 					DrawMatrixRain(img, country.Name, country.Geometry, fontManager, width, height, seed, 160)
 				} else {
-					// Normal boring country: black background + fully opaque rain
+					// Matrix Prison country: black background + fully opaque rain
 					drawCountryGeometry(img, country.Name, country.Geometry, color.RGBA{0, 0, 0, 255}, width, height)
 
 					countrySeed := int64(0)
@@ -895,7 +895,7 @@ func getCountryHitColor(hitCount int) color.RGBA {
 	return color.RGBA{red, green, blue, alpha}
 }
 
-// getSandRocksGradientColor returns a gradient color representing sand and rocks for boring countries
+// getSandRocksGradientColor returns a gradient color representing sand and rocks (fallback for Matrix Prison countries)
 func getSandRocksGradientColor(hitCount int, x, y, width, height int) color.RGBA {
 	// Define sand and rock colors
 	lightSand := color.RGBA{210, 180, 140, 200} // Light sandy beige

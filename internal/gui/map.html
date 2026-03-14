@@ -666,7 +666,7 @@
                     <div class="stat-label">Visited</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value" id="stats-boring">-</div>
+                    <div class="stat-value" id="stats-prison">-</div>
                     <div class="stat-label">Matrix Prison</div>
                 </div>
                 <div class="stat-card" style="grid-column: span 2;">
@@ -749,8 +749,8 @@
             return Math.floor(diff / 3600) + 'h ago';
         }
 
-        // Cache of latest boring_count for the fact popup gate
-        var _boringCount = 0;
+        // Cache of latest prison_count for the fact popup gate
+        var _prisonCount = 0;
         var _toastTimer = null;
         // Whether the user manually dismissed the challenge banner for the current target
         var _challengeDismissedFor = null;
@@ -768,12 +768,12 @@
         }
 
         // Fetch a random fact and show it as a toast.
-        // Only fires when boring_count >= 10. Re-schedules itself with a
+        // Only fires when prison_count >= 10. Re-schedules itself with a
         // random delay between 2 and 5 minutes.
         function scheduleFactPopup() {
             var delay = (120 + Math.random() * 180) * 1000; // 2–5 min in ms
             setTimeout(async function () {
-                if (_boringCount >= 10) {
+                if (_prisonCount >= 10) {
                     try {
                         var resp = await fetch('/api/random-fact');
                         var fact = await resp.json();
@@ -790,12 +790,12 @@
                 const data = await response.json();
 
                 document.getElementById('stats-visited').textContent = data.visited_count;
-                document.getElementById('stats-boring').textContent = data.boring_count;
+                document.getElementById('stats-prison').textContent = data.prison_count;
                 document.getElementById('stats-liberated').textContent = data.liberated_count || 0;
                 document.getElementById('stats-target').textContent = data.target_country || 'None';
 
-                // Keep boring_count in sync for the fact popup gate
-                _boringCount = data.boring_count || 0;
+                // Keep prison_count in sync for the fact popup gate
+                _prisonCount = data.prison_count || 0;
 
                 // Update recent hits
                 const hitsList = document.getElementById('recent-hits-list');
