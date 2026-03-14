@@ -59,6 +59,7 @@ import (
 	"iptw/internal/achievements"
 	"iptw/internal/background"
 	"iptw/internal/config"
+	"iptw/internal/factdb"
 	"iptw/internal/geoip"
 	"iptw/internal/logging"
 	"iptw/internal/network"
@@ -251,6 +252,7 @@ type App struct {
 	gameState              *GameState
 	naturalEarth           *resources.NaturalEarthData
 	achievements           *achievements.AchievementManager
+	factDB                 *factdb.DB
 	fontManager            *resources.FontManager
 	flagManager            *resources.FlagManager
 	originalWallpaper      string // Path to the backed up original wallpaper
@@ -265,6 +267,12 @@ type App struct {
 	lastAutoHeight         int          // Memoized screen detection height
 	recentHits             []RecentHit  // Store the last few hits for the UI
 	recentHitsMu           sync.RWMutex // protects recentHits
+	targetChallengeFact    factdb.Fact  // Cached fact for the current target country
+	targetChallengeFactMu  sync.Mutex   // protects targetChallengeFact
+	mapDirty               bool         // true when the map must be re-rendered and re-encoded
+	mapDirtyMu             sync.Mutex   // protects mapDirty
+	mapEncBuf              bytes.Buffer // reused encode buffer to avoid per-tick allocation
+	lastConnIPs            string       // fingerprint of last seen connections; dirty when changed
 }
 
 // NewApp creates a new application instance
@@ -317,6 +325,11 @@ func NewApp(cfg *config.Config, geoipDB *geoip.Database, monitor *network.Monito
 		slog.Info("🔍 Found existing wallpaper backup", "path", firstBackup)
 	}
 
+	fdb, err := factdb.New()
+	if err != nil {
+		slog.Warn("Failed to load fact database, Did-you-know will be unavailable", "error", err)
+	}
+
 	return &App{
 		config:            cfg,
 		geoip:             geoipDB,
@@ -326,11 +339,13 @@ func NewApp(cfg *config.Config, geoipDB *geoip.Database, monitor *network.Monito
 		gameState:         gameState,
 		naturalEarth:      naturalEarth,
 		achievements:      achievements.NewAchievementManager(),
+		factDB:            fdb,
 		fontManager:       fontManager,
 		flagManager:       flagManager,
 		originalWallpaper: firstBackup,
 		wallpaperBackedUp: firstBackup != "",
 		sessionToken:      generatedToken,
+		mapDirty:          true, // ensure first frame is always encoded
 	}, nil
 }
 
@@ -665,6 +680,85 @@ func (a *App) startLocalServer() {
 		}
 	})
 
+	// Return a "Did you know?" fact for a country (and optionally a city).
+	// Query params: ?country=Germany&city=Berlin (city is optional)
+	// No authentication required — the data is static and not user-specific.
+	mux.HandleFunc("/api/country-fact", func(w http.ResponseWriter, r *http.Request) {
+		country := r.URL.Query().Get("country")
+		city := r.URL.Query().Get("city")
+		var fact factdb.Fact
+		if a.factDB != nil {
+			fact = a.factDB.GetFact(country, city)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(fact); err != nil {
+			slog.Error("Failed to encode country-fact response", "error", err)
+		}
+	})
+
+	// Return a random "Did you know?" fact drawn from the user's visited countries.
+	// The UI calls this on a random timer (only after 10+ boring countries).
+	mux.HandleFunc("/api/random-fact", func(w http.ResponseWriter, r *http.Request) {
+		var fact factdb.Fact
+		if a.factDB != nil {
+			a.gameState.mutex.RLock()
+			visited := make([]string, 0, len(a.gameState.countries))
+			for country := range a.gameState.countries {
+				visited = append(visited, country)
+			}
+			a.gameState.mutex.RUnlock()
+
+			if len(visited) > 0 {
+				choice := visited[mathrand.Intn(len(visited))] //nolint:gosec
+				fact = a.factDB.GetCountryFact(choice)
+			}
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(fact); err != nil {
+			slog.Error("Failed to encode random-fact response", "error", err)
+		}
+	})
+
+	// Return the active research challenge hint.
+	// Responds with { active: false } when the hint is not yet due, or
+	// { active: true, target: "...", fact: {...} } after 1 minute without a
+	// hit on the target country.
+	mux.HandleFunc("/api/challenge-hint", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		a.gameState.mutex.RLock()
+		target := a.gameState.targetCountry
+		setAt := a.gameState.targetSetAt
+		hitSinceSet := false
+		if target != "" {
+			if state, exists := a.gameState.countries[target]; exists {
+				hitSinceSet = state.LastHit.After(setAt)
+			}
+		}
+		a.gameState.mutex.RUnlock()
+
+		type hintResponse struct {
+			Active bool        `json:"active"`
+			Target string      `json:"target"`
+			Fact   factdb.Fact `json:"fact,omitempty"`
+		}
+
+		if target == "" || hitSinceSet || time.Since(setAt) < time.Minute {
+			if err := json.NewEncoder(w).Encode(hintResponse{Active: false}); err != nil {
+				slog.Error("Failed to encode challenge-hint response", "error", err)
+			}
+			return
+		}
+
+		a.targetChallengeFactMu.Lock()
+		fact := a.targetChallengeFact
+		a.targetChallengeFactMu.Unlock()
+
+		if err := json.NewEncoder(w).Encode(hintResponse{Active: !fact.IsZero(), Target: target, Fact: fact}); err != nil {
+			slog.Error("Failed to encode challenge-hint response", "error", err)
+		}
+	})
+
 	// Redirect root to map.html
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/map.html", http.StatusSeeOther)
@@ -767,6 +861,22 @@ func (a *App) generateAndDisplayMap() error {
 
 	// Process connections and update country hit counts
 	connections := a.monitor.GetConnections()
+
+	// Mark dirty when the active connection set changes so that connection
+	// dots on the map are always reflected in the encoded PNG.
+	{
+		ips := make([]string, len(connections))
+		for i, c := range connections {
+			ips[i] = c.RemoteIP
+		}
+		sort.Strings(ips)
+		connKey := strings.Join(ips, ",")
+		if connKey != a.lastConnIPs {
+			a.lastConnIPs = connKey
+			a.markMapDirty()
+		}
+	}
+
 	recentCountries := make(map[string]bool)
 
 	for _, conn := range connections {
@@ -809,6 +919,7 @@ func (a *App) generateAndDisplayMap() error {
 			// Use the new method that checks for target status
 			becameBoring, wasTarget := a.gameState.AddCountryHitWithTargetCheck(countryName)
 			recentCountries[countryName] = true
+			a.markMapDirty()
 
 			// Handle fastest traveler achievement if country became boring and was target
 			if becameBoring && wasTarget {
@@ -843,6 +954,18 @@ func (a *App) generateAndDisplayMap() error {
 				for _, achievementID := range newUnlocks {
 					slog.Info("🏆 Achievement unlocked!", "achievement_id", achievementID)
 				}
+
+				// Log a "Did you know?" fact for this newly discovered country/city
+				if a.factDB != nil {
+					if fact := a.factDB.GetFact(countryName, location.City); !fact.IsZero() {
+						slog.Info("🌍 Did you know?",
+							"country", countryName,
+							"city", location.City,
+							"level", fact.Level,
+							"fact", fact.Text,
+						)
+					}
+				}
 			}
 		}
 	}
@@ -857,7 +980,8 @@ func (a *App) generateAndDisplayMap() error {
 	for country, state := range a.gameState.countries {
 		hitCountries[country] = state.HitCount
 	}
-	targetCountry, _ := a.gameState.GetTargetCountry()
+	// Access target fields directly (same lock) to avoid nested RLock.
+	targetCountry := a.gameState.targetCountry
 	a.gameState.mutex.RUnlock()
 
 	// Get boring countries for flag backgrounds
@@ -895,12 +1019,29 @@ func (a *App) generateAndDisplayMap() error {
 	// Draw game status rectangle
 	a.drawGameStatusRectangle(rgbaImg, width, height, recentCountries)
 
+	// Only re-encode and re-save when something actually changed.
+	a.mapDirtyMu.Lock()
+	dirty := a.mapDirty
+	a.mapDirty = false
+	a.mapDirtyMu.Unlock()
+
+	if !dirty {
+		return nil
+	}
+
 	// Encode once to buffer, then write to disk and cache for the HTTP server
-	buf := new(bytes.Buffer)
-	if err := png.Encode(buf, rgbaImg); err != nil {
+	a.mapEncBuf.Reset()
+	encoder := &png.Encoder{CompressionLevel: png.BestSpeed}
+	if err := encoder.Encode(&a.mapEncBuf, rgbaImg); err != nil {
 		return fmt.Errorf("failed to encode map image: %w", err)
 	}
-	pngBytes := buf.Bytes()
+	// Copy the encoded bytes out of mapEncBuf so that the HTTP cache and disk write
+	// hold an independent slice. Without this copy, a.mapEncBuf.Reset() on the next
+	// dirty frame would overwrite the backing array that a.lastMapPNG still points into,
+	// serving a mix of new/old PNG data to the browser.
+	raw := a.mapEncBuf.Bytes()
+	pngBytes := make([]byte, len(raw))
+	copy(pngBytes, raw)
 
 	// Save the image to output path
 	outputPath := filepath.Join(a.outputDir, "iptw.png")
@@ -1202,6 +1343,16 @@ func (a *App) SelectRandomTargetCountry() {
 
 	a.gameState.SetTargetCountry(newTarget)
 	logging.LogTarget(newTarget, len(unhitCountries))
+	a.markMapDirty()
+
+	// Pre-fetch and cache a challenge fact for the new target so the banner
+	// has content ready without taking locks inside the render loop.
+	if a.factDB != nil {
+		fact := a.factDB.GetCountryFact(newTarget)
+		a.targetChallengeFactMu.Lock()
+		a.targetChallengeFact = fact
+		a.targetChallengeFactMu.Unlock()
+	}
 }
 
 // logHit logs detailed information about a network hit
@@ -1284,6 +1435,14 @@ func (a *App) getBoringCountries() map[string]bool {
 		}
 	}
 	return boringCountries
+}
+
+// markMapDirty signals that the map image must be re-rendered and re-encoded
+// on the next display tick.
+func (a *App) markMapDirty() {
+	a.mapDirtyMu.Lock()
+	a.mapDirty = true
+	a.mapDirtyMu.Unlock()
 }
 
 // Stop stops the application gracefully

@@ -268,6 +268,25 @@ sudo ./scripts/linux-install-deps.sh ./iptw
 ```
 The script detects your distro (Fedora, RHEL, Debian/Ubuntu, Arch, openSUSE) and installs the correct packages automatically. Pass the path to the `iptw` binary as the first argument so it can verify all libraries resolved correctly after installation.
 
+**Tray icon not visible on GNOME (Wayland)**
+
+Stock GNOME does not ship a StatusNotifierItem host (system tray), so the iptw tray icon will not appear by default. Install the AppIndicator extension to restore it:
+
+- **Fedora:**
+  ```bash
+  sudo dnf install gnome-shell-extension-appindicator
+  ```
+- **Ubuntu / Debian:**
+  ```bash
+  sudo apt install gnome-shell-extension-appindicator
+  ```
+- **From the GNOME Extension website:**  
+  Visit [extensions.gnome.org/extension/615/appindicator-support](https://extensions.gnome.org/extension/615/appindicator-support/) and click the toggle to install.
+
+After installation, enable the extension and restart GNOME Shell (`Alt+F2` → `r` on X11, or log out and back in on Wayland), then re-launch iptw. The globe tray icon will appear in the top bar.
+
+> **Note:** The HTTP map UI (`http://127.0.0.1:<port>/map.html`) works regardless of whether the tray icon is visible — check the terminal output for the exact URL when running with `--foreground`.
+
 **Permission Denied**
 - Make the binary executable: `chmod +x iptw`
 

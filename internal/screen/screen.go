@@ -3,6 +3,8 @@ package screen
 
 import (
 	"fmt"
+	"os"
+
 	"iptw/internal/logging"
 
 	"github.com/kbinani/screenshot"
@@ -17,6 +19,13 @@ type ScreenInfo struct {
 
 // GetPrimaryScreenSize returns the size of the primary screen
 func GetPrimaryScreenSize() (*ScreenInfo, error) {
+	// On pure Wayland sessions the underlying XGB/X11 library has no
+	// .Xauthority to connect to, which causes it to print connection errors
+	// to stderr on every call. Detect this up-front and skip the X11 path.
+	if os.Getenv("XDG_SESSION_TYPE") == "wayland" {
+		return nil, fmt.Errorf("X11 screen detection not available in Wayland sessions")
+	}
+
 	// Get the number of displays
 	displayCount := screenshot.NumActiveDisplays()
 	if displayCount == 0 {

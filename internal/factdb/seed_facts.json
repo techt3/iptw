@@ -1,0 +1,967 @@
+{
+  "countries": {
+    "Afghanistan": [
+      "Afghanistan has the world's largest crop of opium poppies, but also produces some of the finest pomegranates and saffron on earth — Kandahar pomegranates are exported as far as India and the Gulf.",
+      "The Wakhan Corridor, a narrow strip of Afghan territory, was deliberately shaped in 1893 by the British Empire as a buffer zone between Russian and British India — it was never meant to be inhabited."
+    ],
+    "Albania": [
+      "Albania built more concrete bunkers per capita than any other country in history — Enver Hoxha ordered roughly 700,000 of them between 1967 and 1986, one for every four citizens.",
+      "Albanian has two completely mutually unintelligible dialects — Gheg and Tosk — used in the north and south respectively, divided roughly by the Shkumbin river."
+    ],
+    "Algeria": [
+      "The Sahara Desert covers more than 80% of Algeria's land area, making Algeria the largest country in Africa by area but one of the most sparsely populated per square kilometre.",
+      "Algeria's Tassili n'Ajjer plateau contains one of the world's greatest concentrations of prehistoric rock art — more than 15,000 engravings and paintings depicting animals that no longer exist in the Sahara."
+    ],
+    "Andorra": [
+      "Andorra has no airport, no seaport, and no railway — yet it attracts more tourists per capita each year than almost any other country on Earth, primarily for skiing and tax-free shopping.",
+      "Andorra has two official heads of state simultaneously, always: the President of France and the Bishop of Urgell in Spain — a medieval co-principality arrangement still in legal force today."
+    ],
+    "Angola": [
+      "The Cabinda exclave — a piece of Angola completely separated from the rest of the country by the Democratic Republic of Congo — produces more than half of Angola's oil output despite being less than 0.5% of its land area.",
+      "Angola's Tchiowa spider orchid is so rare that its precise location is kept secret by botanists to prevent poaching."
+    ],
+    "Antigua and Barbuda": [
+      "Antigua has exactly 365 beaches — one for each day of the year — a fact its tourism board uses as a slogan, though geologists count differently depending on the tide.",
+      "Barbuda was almost entirely evacuated after Hurricane Irma in 2017, making it one of the very few instances in modern history of a populated island being completely abandoned."
+    ],
+    "Argentina": [
+      "Argentina has the most psychoanalysts per capita of any country in the world — Buenos Aires alone has more practising psychoanalysts than all of France.",
+      "Patagonia was named after a mythical race of giants. When Magellan's crew arrived in 1520 and met tall Tehuelche people, they called them 'Patagones' — big feet — and the name stuck."
+    ],
+    "Armenia": [
+      "Armenia was the first country in the world to adopt Christianity as its state religion, in 301 AD — predating the Roman Empire's conversion by more than a decade.",
+      "The Armenian genocide of 1915–1916 scattered Armenians so thoroughly that there are now more ethnic Armenians living outside Armenia than inside it."
+    ],
+    "Australia": [
+      "Australia is the only continent that is also a single country, but it is wider than the moon — 4,000 km across, versus the moon's diameter of 3,474 km.",
+      "The Australian alpine ash tree has a survival strategy so extreme it is almost unique in the plant kingdom: after a bushfire kills the entire above-ground tree, it regrows entirely from seed within weeks — a process called 'obligate seeder' strategy.",
+      "Kangaroos cannot walk backwards — a fact that is why the kangaroo appears on Australia's coat of arms, symbolising a nation that only moves forward."
+    ],
+    "Austria": [
+      "Austria's Red Bull was founded by an Austrian entrepreneur after he discovered a Thai energy drink called Krating Daeng in 1982 — the formula was adapted and relaunched in Europe.",
+      "The longest place name in Austria is Donaudampfschiffahrtsgesellschaftskapitän's village, but Austrians simply call it Grein — the longer title was a bureaucratic construction."
+    ],
+    "Azerbaijan": [
+      "Azerbaijan has more mud volcanoes than any other country — roughly 400 of the world's estimated 700 mud volcanoes are found there, some of which periodically erupt with flames.",
+      "The flame towers of Baku were inspired by Azerbaijan's ancient Zoroastrian fire temples; the country was historically known as the 'Land of Fire' because of naturally occurring petroleum fires on the Absheron Peninsula."
+    ],
+    "Bahamas": [
+      "The Bahamas sits atop the world's largest underwater cave system — the blue holes of Andros Island descend hundreds of metres and were explored in depth only in the 21st century.",
+      "Dean's Blue Hole in the Bahamas is the world's deepest known marine blue hole at 202 metres — free divers use it for world-record attempts."
+    ],
+    "Bahrain": [
+      "Bahrain was once so covered in natural freshwater springs that it was called the 'Land of a Million Date Palms' — most springs dried up in the 20th century due to over-extraction.",
+      "The Tree of Life in Bahrain — a 400-year-old mesquite tree — grows alone in a barren desert with no water source within kilometres, and no one has explained how it survives."
+    ],
+    "Bangladesh": [
+      "Bangladesh is home to the world's largest river delta — the Ganges-Brahmaputra-Meghna delta — and more than half the country sits less than 5 metres above sea level.",
+      "The Sundarbans mangrove forest, shared between Bangladesh and India, is the only tiger habitat in the world where tigers have adapted to swim long distances in saltwater."
+    ],
+    "Barbados": [
+      "Barbados is the birthplace of rum — the first written record of rum production anywhere in the world appears in a Barbadian document from 1651.",
+      "Barbados never experienced a volcanic eruption, earthquake, or hurricane landfall for over three centuries — until 2021, when Tropical Storm Elsa made direct landfall."
+    ],
+    "Belarus": [
+      "Belarus is the only country in Europe that still uses capital punishment by shooting, and executions are kept so secret that families of the condemned are only informed after the fact.",
+      "The Belovezhskaya Pushcha forest in Belarus is the last primeval lowland forest in Europe and home to the surviving wild European bison population."
+    ],
+    "Belgium": [
+      "Belgium exports more chocolate than any other country — roughly 220,000 tonnes per year — despite having no cacao plantations of its own.",
+      "Belgium once tried to solve its stray cat problem in the city of Ypres by throwing cats from the tower of the Cloth Hall — an annual tradition that was re-enacted with toy cats until 2018."
+    ],
+    "Belize": [
+      "The Great Blue Hole off Belize is a perfectly circular submarine sinkhole 300 metres across and 125 metres deep, formed during the last ice age when sea levels were much lower.",
+      "Belize is the only Central American country with English as its official language — a legacy of British logwood and mahogany traders who arrived before Spanish colonisation could take hold."
+    ],
+    "Benin": [
+      "Benin is considered the birthplace of Vodun (Voodoo) — the religion spread to the Americas through the West African slave trade and is still practiced by roughly 17% of Benin's population officially.",
+      "The Royal Palaces of Abomey were so elaborate that the kings of Dahomey mixed the blood of enemies into the mortar of the palace walls to give the buildings spiritual power."
+    ],
+    "Bhutan": [
+      "Bhutan measures national success by Gross National Happiness rather than GDP — a formal index with 33 indicators across psychological wellbeing, culture, ecology, and governance.",
+      "Bhutan was the last country in the world to introduce television (1999) and the internet (1999) — both deliberately delayed by the government to protect traditional culture.",
+      "Mount Gangkhar Puensum in Bhutan is the highest unclimbed mountain in the world at 7,570 metres — Bhutan banned mountaineering above 6,000 metres in 2003 for spiritual reasons."
+    ],
+    "Bolivia": [
+      "Bolivia has two capital cities — Sucre (constitutional) and La Paz (administrative) — a compromise struck during a 19th-century civil war that was never officially resolved.",
+      "The Salar de Uyuni in Bolivia is so flat and vast that NASA uses satellite images of its mirror-like wet-season surface to calibrate the height-measuring instruments on its Earth-observation satellites.",
+      "Bolivia has the world's highest navigable lake (Titicaca) and the world's highest commercial airport — El Alto, serving La Paz at 4,061 metres — in the same country."
+    ],
+    "Bosnia and Herzegovina": [
+      "The city of Mostar's Stari Most bridge was built in 1566, destroyed by Croatian forces in 1993, and rebuilt in 2004 using the same type of stone quarried from the same hillside — recreating the original Ottoman technique so precisely that the new bridge is structurally identical.",
+      "Bosnia and Herzegovina has a Herzegovina region that is effectively landlocked within Bosnia yet has 24.5 kilometres of Adriatic coastline — barely enough for one small town."
+    ],
+    "Botswana": [
+      "Botswana went from being one of the poorest countries in the world at independence (1966) to an upper-middle-income country within a generation, almost entirely on the back of diamond mining.",
+      "The Okavango River never reaches the sea — it flows inland and disappears into the Kalahari Desert, creating the world's largest inland delta, the Okavango Delta."
+    ],
+    "Brazil": [
+      "Brazil is so large that it borders every South American country except Chile and Ecuador — ten countries in total.",
+      "Amazon river dolphins, also called botos, are the only freshwater pink dolphins in the world and are native to Brazil; local legends say they are shapeshifters who seduce people and drag them into the river.",
+      "The city of São Paulo has the largest helicopter fleet in the world after New York — wealthy Paulistanos commute by helicopter to avoid the traffic, with over 500 commercial helicopters operating regularly."
+    ],
+    "Brunei": [
+      "Brunei's Sultan Hassanal Bolkiah owns a personal fleet of over 500 cars including dozens of Ferraris and a Boeing 747 fitted as a private palace — reportedly one of the largest private car collections in the world.",
+      "Brunei banned public alcohol sales in 1990 and non-Muslims must import alcohol to their own homes — yet alcohol confiscated at the border is auctioned to licensed non-Muslim buyers."
+    ],
+    "Bulgaria": [
+      "Bulgarians shake their head for 'yes' and nod for 'no' — the exact opposite of most other cultures — causing endless confusion with visiting foreigners.",
+      "The Thracians who inhabited Bulgaria before the Slavs were so obsessed with gold that the tiny Thracian treasure finds per square kilometre in Bulgaria exceed those in any other European country."
+    ],
+    "Burkina Faso": [
+      "Burkina Faso translates as 'Land of the Honest People' — renamed in 1984 from Upper Volta by revolutionary leader Thomas Sankara, blending words from the country's two main languages.",
+      "Thomas Sankara, who renamed the country, banned personal cars for ministers, forced them to ride bicycles, and sold the government's fleet of Mercedes — before being assassinated in 1987."
+    ],
+    "Burundi": [
+      "Burundi is one of the five poorest countries in the world by GDP per capita, yet it is densely populated — more people per square kilometre than many European states.",
+      "The source of the Nile was disputed for centuries; many geographers now believe the ultimate source is in Burundi, at the headwaters of the Ruvyironza river."
+    ],
+    "Cabo Verde": [
+      "Cape Verde has no indigenous population — it was an uninhabited set of volcanic islands when Portuguese sailors arrived in 1456 and settled it entirely with colonists and enslaved Africans.",
+      "Cape Verde's music genre Morna — melancholic, soulful ballads about longing and the sea — was declared an Intangible Cultural Heritage by UNESCO in 2019."
+    ],
+    "Cambodia": [
+      "Angkor Wat is the world's largest religious monument by land area — at its peak in the 12th century, the city of Angkor was one of the most populous urban centres on Earth.",
+      "The Mekong River in Cambodia reverses its flow seasonally — when monsoon rains swell the river, it pushes the Tonle Sap Lake backwards and the lake quadruples in size."
+    ],
+    "Cameroon": [
+      "Lake Nyos in Cameroon exploded in 1986 in a limnic eruption — a geological phenomenon so rare that only three have ever been recorded — releasing a cloud of CO₂ that silently killed 1,700 people and 3,500 livestock overnight.",
+      "Cameroon is sometimes called 'Africa in miniature' because it contains every major climate zone found on the continent, from Sahel to rainforest to savanna to alpine."
+    ],
+    "Canada": [
+      "Canada has more lakes than the rest of the world combined — roughly 60% of all fresh water lakes on Earth are in Canada.",
+      "Canada and Denmark had a 'whisky war' over Hans Island for decades — soldiers from each country would visit the disputed Arctic island, remove the other's flag, and leave a bottle of Danish schnapps or Canadian whisky.",
+      "Manitoba, Saskatchewan, and Alberta have straight southern borders — lines of latitude drawn by treaty with the USA — making them the only provinces in Canada with no natural southern boundary."
+    ],
+    "Central African Republic": [
+      "The Central African Republic has some of the darkest night skies measurable anywhere on Earth — the near-total absence of artificial lighting makes it a world-class astronomical observation site.",
+      "Emperor Bokassa proclaimed himself Emperor of the Central African Empire in 1977 in a coronation ceremony so lavish it cost the equivalent of the entire country's annual budget."
+    ],
+    "Chad": [
+      "Lake Chad has shrunk by roughly 90% since the 1960s due to climate change and irrigation — once one of Africa's great lakes, a resource for 40 million people, it is now at risk of disappearing entirely.",
+      "Chad contains the geological remains of a vast ancient sea called the Chad Sea that covered the entire Saharan region millions of years ago — fossilised whale and sea creature bones have been found hundreds of kilometres inland."
+    ],
+    "Chile": [
+      "Chile is the world's longest country from north to south — 4,300 km — but averages only 177 km wide, giving it an extreme aspect ratio unlike any other nation.",
+      "The Atacama Desert in Chile is so dry that some weather stations have never recorded measurable rainfall. When it does rain there after decades, a brief flash of flowers called 'desierto florido' covers the desert within days.",
+      "Easter Island, a Chilean territory, is the most remote inhabited island in the world — the nearest populated land is 2,000 km away."
+    ],
+    "China": [
+      "China's Yangtze river dolphin (baiji) was declared 'functionally extinct' in 2006 — the first large aquatic mammal driven to extinction by humans in modern history.",
+      "China has only one time zone despite spanning the geographic width of five — all clocks in the country are set to Beijing time, meaning in Xinjiang the sun rises at 10am in winter.",
+      "The Three Gorges Dam displaced more people than any engineering project in history — 1.3 million people were relocated when the reservoir filled."
+    ],
+    "Colombia": [
+      "Colombia is one of only two countries in South America with coastlines on both the Pacific and Caribbean (the other is Panama, which is debated) — giving it two entirely different sets of marine ecosystems.",
+      "Colombia produces roughly 90% of the world's emeralds and has a word — 'esmeraldero' — for the freelance emerald trader, a profession unique to the country.",
+      "Medellín, once the murder capital of the world in the early 1990s, reinvented itself so thoroughly through urban planning, cable cars, and civic investment that it won the Urban Land Institute's Most Innovative City award in 2013."
+    ],
+    "Comoros": [
+      "The coelacanth — a fish believed to be extinct for 65 million years — was rediscovered alive in 1938, and a second population was found near the Comoros Islands in 1952, where it still lives today.",
+      "The Comoros have experienced more than 20 coups or coup attempts since independence in 1975 — one of the highest rates of governmental overthrow in the world."
+    ],
+    "Democratic Republic of the Congo": [
+      "The Congo River is the world's deepest river — in places exceeding 220 metres, so deep that unique blind cave fish have evolved in its underwater trenches.",
+      "The DRC contains half of Africa's tropical rainforest and is considered the world's second lung after the Amazon — absorbing more carbon than any other country."
+    ],
+    "Republic of the Congo": [
+      "Republic of Congo and Democratic Republic of Congo are the only two countries in the world with capitals directly facing each other across a river — Brazzaville and Kinshasa, separated only by the Congo River.",
+      "The Congo Basin swamps contain peatlands discovered in 2017 that store more carbon than all the forests of the DRC — making them one of the most climate-critical ecosystems ever identified."
+    ],
+    "Costa Rica": [
+      "Costa Rica has no standing army — it abolished its military in 1948, the first country in the world to constitutionally ban a standing army.",
+      "Despite covering only 0.03% of the Earth's surface, Costa Rica contains nearly 6% of the world's biodiversity.",
+      "Costa Rica produces 99% of its electricity from renewable sources — geothermal, wind, solar, and hydro — and has run on 100% renewables for extended stretches."
+    ],
+    "Croatia": [
+      "The necktie was invented in Croatia — Croatian soldiers wore distinctive cravats during the Thirty Years' War, and French soldiers adopted the style, calling it 'croate' — which became 'cravat' and eventually 'tie'.",
+      "The game of Picigin, played in the shallow water of Split's Bačvice beach — a form of competitive ball-and-splash juggling — exists nowhere else on Earth and was granted UNESCO Intangible Cultural Heritage status."
+    ],
+    "Cuba": [
+      "Cuba's classic American cars from the 1950s are not just nostalgic relics — they are kept running by Cuban mechanics who have developed entirely improvised engineering solutions, including diesel engine swaps and hand-machined parts, because the US trade embargo made spare parts unavailable for 60 years.",
+      "Cuba has a higher literacy rate than the United States and produces more medical doctors per capita than almost any other country in the world."
+    ],
+    "Cyprus": [
+      "Nicosia (Lefkosia) is the last divided capital city in the world — it has been split between Greek and Turkish Cypriot sides since 1974, with a UN buffer zone running through the middle of the city.",
+      "Cyprus's copper gave the metal its name — the Latin word for copper was 'Cyprium aes' (metal of Cyprus), later shortened to 'cuprum', which became 'copper'."
+    ],
+    "Czech Republic": [
+      "The Czech Republic (Czechia) has the highest beer consumption per capita of any country in the world — about 142 litres per person per year.",
+      "Czechia produces the world's finest bohemian crystal glass — a craft dating to the 13th century — and the word 'Bohemian' (from Bohemia, a Czech region) entered English as a synonym for artistic unconventionality."
+    ],
+    "Denmark": [
+      "Denmark owns Greenland, the world's largest island — which is 50 times the size of Denmark itself — giving Denmark a claim to the Arctic and massive exclusive economic zones.",
+      "LEGO was invented in Denmark in 1932 and named from the Danish words 'leg godt' meaning 'play well' — the plastic interlocking brick was patented in 1958.",
+      "Denmark and Canada fought the 'Whisky War' over Hans Island for decades — each side would plant their flag and leave a bottle of their national spirit, then the other would remove it and do the same."
+    ],
+    "Djibouti": [
+      "Lake Assal in Djibouti is the lowest point in Africa at 155 metres below sea level and one of the saltiest bodies of water on Earth, saltier than the Dead Sea.",
+      "The Gulf of Tadjoura in Djibouti is one of the few places in the world where whale sharks congregate predictably — they arrive each year from November to January to feed on fish spawn."
+    ],
+    "Dominica": [
+      "Dominica is nicknamed the 'Nature Island of the Caribbean' and has nine active volcanoes, including Boiling Lake — the world's second-largest thermally active lake, which occasionally empties catastrophically when the underground volcanic heat source fluctuates.",
+      "The indigenous Kalinago people of Dominica are the only pre-Columbian indigenous community to have survived the Caribbean's colonial history as a distinct community with their own territory."
+    ],
+    "Dominican Republic": [
+      "The Dominican Republic shares the island of Hispaniola with Haiti — making it one of only two Caribbean islands shared by two countries (the other is Saint Martin).",
+      "Larimar, a rare blue volcanic gemstone found only in a single mountainside in the southwest Dominican Republic, was not known to the outside world until 1974."
+    ],
+    "Ecuador": [
+      "The summit of Mount Chimborazo in Ecuador is the farthest point from the Earth's centre on the entire planet — farther than Everest — because Earth's equatorial bulge puts it 6,384 km from the core versus Everest's 6,382 km.",
+      "Ecuador was the first country in the world to grant constitutional rights to nature itself — in the 2008 constitution, the natural world has the legal right to exist, be maintained, and regenerate."
+    ],
+    "Egypt": [
+      "Egypt's Nile civilization lasted so long that the reign of Cleopatra VII is closer in time to the Moon landing than to the construction of the Great Pyramid of Giza.",
+      "The Great Pyramid was the world's tallest man-made structure for nearly 4,000 years — from its construction around 2560 BC until the Lincoln Cathedral spire was completed in 1311 AD."
+    ],
+    "El Salvador": [
+      "El Salvador became the first country in the world to adopt Bitcoin as legal tender in 2021 — a decision so controversial that the IMF repeatedly warned against it.",
+      "El Salvador is one of only a handful of countries that has no territory on an island — the entire country is on the Central American mainland — yet it has volcanic lakes at altitude that behave like natural swimming pools."
+    ],
+    "Equatorial Guinea": [
+      "Equatorial Guinea is the only country in Africa with Spanish as its official language — a legacy of Spanish colonialism that persisted even as neighbouring areas became French and British territories.",
+      "Bioko Island, part of Equatorial Guinea, sits off the coast of Cameroon and is entirely separated from mainland Equatorial Guinea by open sea — yet it contains the capital city, Malabo."
+    ],
+    "Eritrea": [
+      "Eritrea has one of the most extraordinary collections of modernist Italian colonial architecture in the world — art deco buildings in Asmara are so well-preserved the city was listed as a UNESCO World Heritage site.",
+      "Eritrea has no freedom of the press, no multi-party elections, and the constitution has never been implemented since independence in 1993 — yet the government has maintained one of the lowest debt-to-GDP ratios in Africa."
+    ],
+    "Estonia": [
+      "Estonia declared independence from the Soviet Union in 1991 and immediately became one of the most digitised nations in history — today citizens vote, pay taxes, start companies, and access medical records entirely online via a digital identity system called e-Residency.",
+      "Skype was created by two Estonian programmers — Ahti Heinla and Priit Kasesalu — and built using Estonian engineering talent when the country was barely a decade old."
+    ],
+    "Eswatini": [
+      "Eswatini (formerly Swaziland) is one of the last absolute monarchies in Africa — King Mswati III rules by decree and political parties are banned.",
+      "Eswatini has one of the highest HIV prevalence rates in the world (around 27% among adults), which has driven the king to allow polygamy by royal decree to repopulate the kingdom."
+    ],
+    "Ethiopia": [
+      "Ethiopia has its own calendar — the Ethiopian calendar has 13 months, is seven years behind the Gregorian calendar, and celebrates New Year on 11 September — making it permanently 'seven years behind the rest of the world'.",
+      "Coffee was discovered in Ethiopia — according to legend by a goat herder named Kaldi who noticed his goats behaving energetically after eating berries from a certain tree.",
+      "Ethiopia was the only African country not colonised by a European power during the Scramble for Africa — it defeated Italy at the Battle of Adwa in 1896."
+    ],
+    "Fiji": [
+      "Fiji is home to roughly 330 islands, but only 110 are inhabited — many of the uninhabited ones are accessible only by seaplane or yacht and have never been permanently settled.",
+      "Fijian firewalking — walking bare-footed across white-hot stones — is practiced by the Sawau tribe of Beqa Island and is explicitly tied to a spirit covenant; it cannot be learned by outsiders, only inherited."
+    ],
+    "Finland": [
+      "Finland has more saunas than cars — roughly 3.3 million saunas for a population of 5.5 million people, approximately one per household.",
+      "Finland has more lakes per square kilometre than any other country — over 188,000 lakes covering 10% of the land surface.",
+      "Finland has the heaviest metal music scene per capita in the world — more metal bands per 100,000 people than any other country, a fact occasionally cited in government tourism campaigns."
+    ],
+    "France": [
+      "France is the most visited country in the world yet paradoxically ranks among the unhappiest countries in Europe in self-reported wellbeing surveys — the 'French paradox' of tourism versus domestic satisfaction.",
+      "France still owns territories on every continent except Antarctica and Australia — French Guiana in South America, Réunion in the Indian Ocean, New Caledonia in the Pacific — making France technically a global colonial power in terms of land.",
+      "The Hall of Mirrors at Versailles has 357 mirrors and was specifically designed to outshine the recently built Galerie du Palais in Paris — Louis XIV wanted visitors to understand immediately who held the real power."
+    ],
+    "Gabon": [
+      "Gabon has 88% forest cover and hosts 80% of Central Africa's forest elephant population — more forest elephants than anywhere outside the DRC.",
+      "The Gabonese coast contains the world's only natural nuclear fission reactor — the Oklo mine, where groundwater moderated a natural uranium chain reaction approximately 1.7 billion years ago."
+    ],
+    "Gambia": [
+      "The Gambia is the smallest country on mainland Africa — a narrow strip of land carved entirely along both banks of the Gambia River, surrounded on three sides by Senegal.",
+      "The Gambia River's unusual straight-edged borders were drawn by the British to match the range of cannons fired from Colonial gunboats on the river — the territory they could defend defined the territory they claimed."
+    ],
+    "Georgia": [
+      "Georgia is considered the birthplace of wine — archaeological evidence of grape cultivation and winemaking dates to 6000 BC in the South Caucasus, 2,000 years before Egypt.",
+      "Georgia has its own unique script — the Georgian alphabet — which has no relation to any other alphabet in the world and was reportedly invented in the 5th century AD specifically for the Georgian language."
+    ],
+    "Germany": [
+      "Germany has a tradition called 'Kehrwoche' in parts of Baden-Württemberg and Bavaria, where neighbours take turns cleaning shared stairwells and pavements — a rota enforced with such Germanic precision that it has generated centuries of disputes.",
+      "The Berlin Wall fell partly by accident — an East German spokesman misread his briefing notes during a live press conference and announced the border was open 'immediately' when it was meant to be open from the following day.",
+      "Germany recycles 66% of its waste — the highest recycling rate of any large industrial nation — driven by a 1990s law creating a parallel 'green dot' collection system funded by packaging manufacturers."
+    ],
+    "Ghana": [
+      "Ghana's Fantsuam community developed an internet network in the 1990s by bouncing signals off abandoned oil pipelines — a completely improvised broadband infrastructure predating fibre in the country by years.",
+      "The Akosombo Dam on the Volta River created Lake Volta — the largest man-made lake by surface area in the world at 8,502 km², larger than Lebanon."
+    ],
+    "Greece": [
+      "Greece has more archaeological museums than any other country in the world — over 100 state-run museums of antiquities alone.",
+      "The Greek language has been spoken continuously for more than 3,500 years — making it one of the world's oldest living languages with an unbroken written record.",
+      "Greece sells more marble per capita than any other country — Pentelic and Parian marble were used for the Parthenon and are still quarried from the same mountains today."
+    ],
+    "Grenada": [
+      "Grenada is known as the 'Island of Spice' and is the world's second-largest producer of nutmeg — a spice that was once worth more than gold by weight in 17th-century Europe.",
+      "Grenada is the only country in the Western Hemisphere to have been invaded by the United States in the Cold War era — Operation Urgent Fury in 1983 involved more American military medals awarded than soldiers who participated."
+    ],
+    "Guatemala": [
+      "The Maya city of Tikal was so large and complex that archaeologists discovered in 2018 using LiDAR scanning that its true extent — including hidden causeways, agricultural terraces, and interconnected cities — was ten times larger than previously thought.",
+      "Guatemala is the most biodiverse country per cubic kilometre of any nation outside a tropical belt — its 37 volcanoes, including three that are continuously active, create such diverse microclimates that ecosystems change every few kilometres."
+    ],
+    "Guinea": [
+      "Guinea contains the world's largest unexploited reserves of iron ore at Mount Nimba, along with bauxite deposits that represent roughly 40% of the world's known supply — yet it remains one of the poorest countries on Earth.",
+      "The Fouta Djallon highlands of Guinea are the source of three major West African rivers — the Niger, the Senegal, and the Gambia — making Guinea the 'water tower of West Africa'."
+    ],
+    "Guinea-Bissau": [
+      "Guinea-Bissau consists of a mainland and 88 islands — the Bijagós Archipelago — some of which are inhabited only seasonally by farmers who plant crops and leave, returning months later for the harvest.",
+      "The hippopotamus population in Guinea-Bissau's coastal rivers is one of the last places in West Africa where hippos still live in salt water, swimming out to sea between islands."
+    ],
+    "Guyana": [
+      "Guyana is the only South American country with English as its official language, yet is culturally and politically aligned with the Caribbean rather than with its South American neighbours.",
+      "Angel Falls in Venezuela draws most tourists, but Kaieteur Falls in Guyana is nearly five times more powerful — the highest single-drop waterfall in the world at 226 metres — yet receives only a fraction of the visitors."
+    ],
+    "Haiti": [
+      "Haiti was the first Black republic in the world and the first country to emerge from a successful slave revolt — the Haitian Revolution of 1791–1804 shocked the entire slaveholding world and influenced independence movements across Latin America.",
+      "Haiti and the Dominican Republic were unified as one country from 1822 to 1844 — the only case of a Caribbean nation temporarily absorbing its neighbour in the 19th century."
+    ],
+    "Honduras": [
+      "Honduras was the original 'Banana Republic' — a term coined by O. Henry in 1904 to describe the country after American fruit companies (United Fruit Company) effectively controlled its government, economy, and railroads.",
+      "The Mosquito Coast of Honduras and Nicaragua was an independent British protectorate until 1860 — for nearly 200 years the Miskito Kingdom maintained semi-autonomous status under British protection."
+    ],
+    "Hungary": [
+      "Hungary invented the Rubik's Cube, the ballpoint pen (by László Bíró), the hologram (theoretical framework by Dénes Gábor), and vitamin C (extracted and isolated by Albert Szent-Györgyi) — an extraordinary cluster of inventions for a country of 10 million.",
+      "Hungarian is one of the most grammatically complex languages in Europe — it has 18 grammatical cases (compared to Latin's 6) and bears no resemblance to any surrounding European language, being related only to Finnish and Estonian."
+    ],
+    "Iceland": [
+      "Iceland has no mosquitoes — the climate, soil chemistry, and lack of suitable standing water prevent mosquitoes from establishing a population.",
+      "Iceland heats 90% of its homes with geothermal energy directly from the ground — hot water pumped from volcanic aquifers directly to household radiators.",
+      "Iceland is the only country with a Naming Committee that must approve all new baby names — the committee maintains an approved list and parents must apply for exemptions for non-Icelandic names."
+    ],
+    "India": [
+      "India has the world's largest postal network with over 150,000 post offices — including the Dal Lake Floating Post Office in Srinagar, which issues special stamps only available there.",
+      "India's Konkan Railway, built through the Western Ghats mountains, required 2,000 bridges and 91 tunnels in just 760 km of track — the most complex railway engineering feat in post-colonial Asia.",
+      "The Indian Railways system employs roughly 1.4 million workers, making it the seventh-largest employer on Earth and larger than the entire population of several countries."
+    ],
+    "Indonesia": [
+      "Indonesia is the world's largest archipelago — 17,508 islands, of which roughly 6,000 are inhabited — stretching more than 5,000 km from east to west.",
+      "The Krakatoa volcano eruption of 1883 was the loudest sound ever recorded in human history — heard 4,800 km away in Australia and Rodrigues Island near Mauritius.",
+      "Indonesia is the only country in the world that has cities in two different hemispheres — the island of Borneo straddles the equator."
+    ],
+    "Iran": [
+      "Iran invented the wind-catching tower (bâdgir) — a passive cooling system built on rooftops to channel breezes into buildings — over 2,000 years ago, making it the world's oldest air conditioning technology.",
+      "The Bazaar of Isfahan was so large in the 17th century that it was described by European travellers as the most architecturally elaborate marketplace they had ever seen — it is still the longest traditional bazaar in the world at 1.5 km under continuous vaulted roof.",
+      "Iran invented the postal system — the first known relay messenger network was established by the Achaemenid Persian Empire around 550 BC, predating Rome's postal system by centuries."
+    ],
+    "Iraq": [
+      "Iraq's Mesopotamian marshes — the ancient home of the Marsh Arabs for 5,000 years — were largely drained by Saddam Hussein's regime in the 1990s to destroy a refuge for Shia rebels; after 2003, the marshes partially re-flooded and UNESCO inscribed them as a World Heritage Site.",
+      "Babylon, one of the ancient world's greatest cities, stood near modern Hillah in Iraq; its ruins still contain the base of the legendary Tower of Babel — a ziggurat whose foundations are still partially visible."
+    ],
+    "Ireland": [
+      "Ireland was so isolated during the last ice age that it has fewer native land mammal species than either Britain or continental Europe — there are no native reptiles, no native deer (red deer were reintroduced), and no badgers in many areas.",
+      "The Irish language has no single words for 'yes' or 'no' — to agree or disagree you must echo the verb used in the question.",
+      "Ireland's Great Famine of 1845–1852 reduced the island's population so severely that Ireland is the only country in Europe — possibly the world — with a smaller population today than in the 1840s."
+    ],
+    "Israel": [
+      "Israel is the only country to have revived a dead language as a national tongue — Modern Hebrew was a literary and liturgical language for nearly 2,000 years but had no native speakers before the late 19th century.",
+      "The Dead Sea is shrinking by roughly one metre per year as the Jordan River is diverted for agriculture — at the current rate, it is projected to be half its current volume within decades."
+    ],
+    "Italy": [
+      "Italy has more UNESCO World Heritage Sites than any other country — 58 as of 2023, covering everything from Pompeii to the historic centres of cities that have never stopped being inhabited.",
+      "Italy's Mafia was originally a network of property managers, not criminals — it evolved in 19th-century Sicily as a shadow government filling the vacuum left by ineffective state institutions.",
+      "The Italian city of Pisa's famous leaning tower was never straight — it began sinking during construction in 1173 and has been leaning for its entire 800-year existence."
+    ],
+    "Jamaica": [
+      "Jamaica is responsible for two of the most globally influential music genres of the 20th century — ska (1950s) and reggae (1960s) — both invented on an island of fewer than 3 million people.",
+      "Jamaica was a global sugar superpower in the 18th century — at its peak, the island produced more sugar than all of British North America combined, at a human cost measured in hundreds of thousands of enslaved lives."
+    ],
+    "Japan": [
+      "Japan's oldest continuously operating company is Kongo Gumi, a temple construction firm founded in 578 AD — 14 centuries of operation makes it the oldest company in world history.",
+      "Japan has more vending machines per capita than any other country — roughly one machine for every 23 people, totalling over 5 million machines, including machines selling hot ramen, umbrellas, and fresh eggs.",
+      "Japan's forest cover has actually increased over the past 50 years while the country industrialised — a direct result of strict forest protection laws and deliberate reforestation programmes."
+    ],
+    "Jordan": [
+      "The Dead Sea shoreline in Jordan is the lowest dry land on Earth — 430 metres below sea level — so low that the atmospheric pressure at the shore is measurably higher, providing slightly more UV protection.",
+      "Petra, the rose-red city of Jordan, was completely unknown to the Western world until Johann Ludwig Burckhardt disguised himself as an Arab pilgrim to enter — the Nabataean inhabitants had kept it secret for centuries."
+    ],
+    "Kazakhstan": [
+      "Kazakhstan is the world's largest landlocked country and the ninth-largest country overall — roughly the size of Western Europe, yet with only 19 million people.",
+      "The Aral Sea — once the world's fourth-largest lake — was almost entirely in Kazakhstan and Uzbekistan; Soviet irrigation projects reduced it to 10% of its original size by the 2000s, leaving rusted ships stranded on dry land kilometres from the nearest water.",
+      "The Baikonur Cosmodrome in Kazakhstan is the world's first and largest operational space launch facility — Sputnik, Vostok, and the Soyuz missions all launched from this Kazakhstani steppe."
+    ],
+    "Kenya": [
+      "Kenya's Great Rift Valley is so geologically active that the continent of Africa is slowly tearing apart at its seams — in millions of years, the Horn of Africa will become an island.",
+      "Kenya produces the highest quality tea in the world — the Kenyan highlands' altitude, rich volcanic soil, and even rainfall produce tea leaves that fetch premium prices at global auctions.",
+      "The Turkana Basin in Kenya has produced more hominid fossils than anywhere else on Earth — it is considered the cradle of human evolution."
+    ],
+    "Kiribati": [
+      "Kiribati is the only country in the world that lies in all four hemispheres simultaneously — North, South, East, and West — because its territory straddles both the equator and the International Date Line.",
+      "Kiribati will likely be the first country in the world to be completely submerged by rising sea levels — its highest point is only 3 metres above sea level, and some atolls are already uninhabitable due to saltwater intrusion."
+    ],
+    "Kosovo": [
+      "Kosovo declared independence in 2008, making it one of the world's newest countries — recognised by over 100 UN member states but not by Serbia, Russia, China, or five EU members.",
+      "Kosovo has the youngest population in Europe and one of the highest ratios of diaspora — roughly half of all Kosovars live outside Kosovo, primarily in Germany, Switzerland, and North America."
+    ],
+    "Kuwait": [
+      "Kuwait went from desert poverty to one of the world's wealthiest countries in less than 40 years after the first oil well was drilled in 1938 — a transformation so rapid it was completed within a single generation.",
+      "During the Gulf War, 700 Kuwaiti oil wells were set alight by retreating Iraqi forces — the resulting smoke plume was visible from space and changed the regional climate for months."
+    ],
+    "Kyrgyzstan": [
+      "Kyrgyzstan is one of only a handful of countries where the national epic — the Manas — is so long it would take three months to recite in full; professional reciters (manaschi) are still trained today.",
+      "Lake Issyk-Kul in Kyrgyzstan is the world's second-largest alpine lake and never freezes despite being at 1,600 metres altitude and having below-freezing winters — geothermal activity keeps it ice-free."
+    ],
+    "Laos": [
+      "Laos is the most heavily bombed country per capita in history — during the Vietnam War era, the US dropped more bombs on Laos than on Germany and Japan combined in World War II, despite Laos never being at war with the US.",
+      "The Plain of Jars in Laos contains thousands of ancient stone urns — some weighing 15 tonnes — whose purpose and builders remain unknown after decades of archaeological study."
+    ],
+    "Latvia": [
+      "Latvia has one of the highest rates of female tertiary education in the world — more than 65% of university degree holders are women.",
+      "Riga's Art Nouveau architecture represents the largest and most cohesive collection of Jugendstil buildings in any single city in the world — roughly a third of the city centre is Art Nouveau."
+    ],
+    "Lebanon": [
+      "Lebanon has the highest ratio of universities to population in the Arab world — the American University of Beirut, founded in 1866, predates many US state universities.",
+      "Before the civil war, Beirut was known as the 'Paris of the Middle East' and hosted banking operations drawing capital from across the Arab world; the city was economically more prosperous per capita than France in 1974."
+    ],
+    "Lesotho": [
+      "Lesotho is one of only three countries in the world completely surrounded by another country — an enclave entirely within South Africa.",
+      "Lesotho has the highest lowest point of any country in the world — even its lowest valley floor is 1,400 metres above sea level, making it the highest-elevated country on Earth."
+    ],
+    "Liberia": [
+      "Liberia was founded in 1822 by freed American slaves — making it Africa's oldest republic and one of only two African countries never colonised by a European power (the other is Ethiopia).",
+      "Liberia registers more ships than almost any other country in the world — it has a 'flag of convenience' shipping registry that is the second largest globally, used by companies wanting loose maritime regulations."
+    ],
+    "Libya": [
+      "Libya has the largest proven oil reserves in Africa and has been producing oil for 60 years — yet the Libyan Desert that covers most of the country also contains one of the world's strangest geological oddities: Libyan desert glass, a pale yellow silica glass formed by an ancient asteroid impact or atmospheric explosion.",
+      "The Ubari lakes in Libya's Sahara Desert are ancient oasis pools — their existence in a hyper-arid landscape is explained by underground fossil water accumulated during the last wet period 10,000 years ago."
+    ],
+    "Liechtenstein": [
+      "Liechtenstein's only military deployment — during the Austro-Prussian War in 1866 — ended with more soldiers returning home than were sent out; an Italian ally joined the Liechtenstein troops and came home with them.",
+      "Liechtenstein has one of the world's highest GDPs per capita, largely from its status as a financial centre and manufacturer of false teeth — Ivoclar Vivadent in Vaduz produces a significant share of the world's dental prosthetics."
+    ],
+    "Lithuania": [
+      "Lithuania was the last country in Europe to officially convert to Christianity — in 1387, making it the last pagan state in medieval Europe.",
+      "Lithuania's Hill of Crosses near Šiauliai has been a site of spontaneous pilgrimage since the 19th century — it was bulldozed three times by Soviet authorities and each time tens of thousands of new crosses appeared within weeks."
+    ],
+    "Luxembourg": [
+      "Luxembourg is the only Grand Duchy in the world — a constitutional monarchy led by a Grand Duke, a title that has nominal roots in medieval imperial hierarchies.",
+      "Luxembourg has the highest GDP per capita in the world among non-city-states and non-oil-states — primarily because of its banking and financial services sector which has assets worth 225 times its national GDP."
+    ],
+    "Madagascar": [
+      "Madagascar split from the Indian subcontinent roughly 88 million years ago and drifted to its current position in isolation — as a result, 90% of its wildlife exists nowhere else on Earth.",
+      "Madagascar was settled by people from Indonesia and Borneo — not from nearby Africa — roughly 1,500 years ago, a sea voyage of 7,000 km across open ocean that remains one of history's most extraordinary migrations.",
+      "The aye-aye — a nocturnal primate of Madagascar — uses the same feeding technique as a woodpecker but with its elongated middle finger, which it uses to tap bark and extract grubs. Many Malagasy consider it an omen of death."
+    ],
+    "Malawi": [
+      "Lake Malawi contains more species of fish than any other lake in the world — over 1,000 species of cichlid fish, most found nowhere else.",
+      "In 2012, Malawi became one of the first countries to ban farting in public under a new Air Fouling Act — the law was widely ridiculed but technically remained on the books."
+    ],
+    "Malaysia": [
+      "Malaysia is one of the world's top 12 'megadiverse' countries — possessing a disproportionate share of global biodiversity in both its rainforest and marine territories.",
+      "The Petronas Twin Towers were the tallest buildings in the world from 1998 to 2004 — they were deliberately designed to be one metre taller than the Sears Tower (now Willis Tower) in Chicago."
+    ],
+    "Maldives": [
+      "The Maldives has an average ground level of just 1.5 metres above sea level — it is the lowest country on Earth and all 1,200 islands could be uninhabitable due to sea level rise within this century.",
+      "The Maldives is the most spread-out country in the world by ocean area — its 1,200 islands are scattered across 900,000 km² of the Indian Ocean, an area almost as large as Egypt."
+    ],
+    "Mali": [
+      "Timbuktu was one of the most important centres of Islamic scholarship in the medieval world — the city's libraries and mosques contained around 700,000 manuscripts, and its University of Sankore attracted students from across Africa and the Arab world.",
+      "The Mali Empire at its peak in the 14th century was likely the wealthiest empire in the world — Mansa Musa's pilgrimage to Mecca in 1324 reportedly involved 60,000 men and so much gold that it caused inflation across the Middle East and North Africa for a decade."
+    ],
+    "Malta": [
+      "Malta's megalithic temples predate both Stonehenge and the Egyptian pyramids — the Ġgantija temples on Gozo, built around 3600 BC, are among the oldest free-standing structures in the world.",
+      "Malta was awarded the George Cross by King George VI in 1942 — the only time an entire country, rather than an individual, has received the decoration — for its civilian endurance under relentless Axis bombing during World War II."
+    ],
+    "Marshall Islands": [
+      "The Marshall Islands was the site of the US nuclear testing programme called Operation Crossroads (1946) and Operation Castle (1954) — Bikini Atoll was effectively vaporised and remains uninhabitable today, yet is a UNESCO World Heritage Site.",
+      "Marshallese navigators traditionally used 'stick charts' made of coconut frond ribs and shells — maps of ocean swell patterns around islands that were memorised and read by touch while at sea."
+    ],
+    "Mauritania": [
+      "Mauritania abolished slavery legally only in 1981 — the last country in the world to do so — and did not criminalise the practice until 2007.",
+      "The Eye of the Sahara (Richat Structure) in Mauritania — a 50 km wide bullseye geological formation — was once used by early space shuttle astronauts as a navigation landmark because it is so distinctive from orbit."
+    ],
+    "Mauritius": [
+      "Mauritius was the only known home of the Dodo — which went extinct within 80 years of humans arriving on the island, representing one of the most rapid human-caused extinctions ever documented.",
+      "Mauritius is one of Africa's wealthiest and most stable democracies by income per capita, a fact invisible against the African average because of its small population."
+    ],
+    "Mexico": [
+      "Mexico City was built on the ruins of Tenochtitlan, the Aztec capital — but Tenochtitlan was built on a lake. Mexico City is slowly sinking as the old lake bed compresses — some parts have sunk 10 metres in the past 100 years.",
+      "Mexico produces 60% of the world's avocados, primarily in the state of Michoacán — a fact that has made avocado farming one of the most profitable and, controversially, organised crime-contested agricultural industries in Latin America.",
+      "Día de los Muertos (Day of the Dead) is NOT a Mexican Halloween — it predates Spanish conquest and is rooted in Aztec mourning festivals that lasted an entire month, condensed to two days by the Catholic Church."
+    ],
+    "Micronesia": [
+      "The Pacific island of Yap in Micronesia used enormous circular stones called Rai as currency — some stone 'coins' were up to 4 metres wide and weighed 4 tonnes. The value was agreed socially, even if the stone was at the bottom of the ocean.",
+      "Micronesia contains the wreck of the Japanese Imperial Navy's wartime base at Truk Lagoon — a fleet of 60 ships and 275 aircraft sunk in a single US air raid in 1944, now one of the world's most famous wreck diving destinations."
+    ],
+    "Moldova": [
+      "Moldova has the highest wine consumption per capita in the world — wine production has been central to Moldovan culture for over 5,000 years, predating the state itself.",
+      "Mileștii Mici winery in Moldova holds the Guinness World Record for the world's largest wine cellar — 55 km of underground tunnels housing over 2 million bottles."
+    ],
+    "Monaco": [
+      "Monaco is the most densely populated country in the world at roughly 19,000 people per km² — more than five times denser than Singapore.",
+      "Monaco has not had an income tax since 1869 — a deliberate policy to attract the wealthy — and today roughly 30% of its residents are millionaires.",
+      "Monaco's Formula 1 Grand Prix circuit is so narrow that modern F1 cars cannot overtake on most of the track — it exists as a race exclusively because of its historical prestige."
+    ],
+    "Mongolia": [
+      "Mongolia has the lowest population density of any sovereign country — roughly 2 people per km², lower than Greenland if Greenland were independent.",
+      "Mongolia's horse population outnumbers its human population — there are roughly 4 million horses for 3.3 million people — and nomadic herders still navigate vast steppes partly by reading equine behaviour.",
+      "The Mongolian Empire at its peak was the largest contiguous land empire in history, covering 24 million km² and connecting trade routes from China to Eastern Europe."
+    ],
+    "Montenegro": [
+      "Montenegro's Bay of Kotor is the southernmost fjord in Europe — its glacially carved water channels reach 60 km inland, creating a dramatic inland sea surrounded by limestone mountains.",
+      "Montenegro's name means 'Black Mountain' in Italian and Serbian — named for the dark appearance of Mount Lovćen, whose black limestone summit is visible far out to sea."
+    ],
+    "Morocco": [
+      "Fes el-Bali in Morocco is the world's largest car-free urban area — the medieval medina, a UNESCO World Heritage Site, has streets so narrow and ancient that motorised vehicles have never been able to enter.",
+      "Morocco controls 75% of the world's known phosphate reserves — a mineral essential for all synthetic fertilisers, making Morocco a critical but little-discussed player in global food security.",
+      "The Atlas Mountains in Morocco are home to wild Barbary macaques — the only wild primates (other than humans) in Africa outside of sub-Saharan Africa."
+    ],
+    "Mozambique": [
+      "Mozambique's flag is the only national flag in the world that features an AK-47 — a symbol of the armed liberation struggle that won independence from Portugal in 1975.",
+      "The Quirimbas Archipelago off Mozambique's northern coast contains some of the least disturbed coral reef systems in the Indian Ocean — partly because the area was mined during the civil war and fishing boats avoided it for decades."
+    ],
+    "Myanmar": [
+      "Myanmar drives on the right side of the road despite having cars with the steering wheel on the right — the switch was made overnight in 1970 on the orders of a superstitious general who was advised by astrologers.",
+      "The ancient city of Bagan in Myanmar — once the capital of the first Burmese Kingdom — contains more Buddhist temples and pagodas in a single geographic area than any other place on Earth: over 2,000 temples in roughly 40 km²."
+    ],
+    "Namibia": [
+      "Namibia's Namib Desert is the world's oldest desert — it has been arid for 55 to 80 million years — and contains the world's largest sand dunes, some over 300 metres high.",
+      "Namibia was the first country in the world to incorporate protection of the environment into its constitution (1990).",
+      "The Welwitschia plant of Namibia grows exactly two leaves its entire life — the leaves split, fray, and pile up giving the appearance of many, but it is always just two. Some individual plants are over 1,500 years old."
+    ],
+    "Nauru": [
+      "Nauru had the highest per-capita GDP in the world in the 1970s, fuelled entirely by phosphate mining — and bankrupted itself within a generation after the phosphate ran out.",
+      "Nauru is the only country in the world with no official capital city — government functions are distributed across the island.",
+      "Nauru is the world's smallest island nation and the third-smallest country overall — covering just 21 km²."
+    ],
+    "Nepal": [
+      "Nepal has eight of the world's ten tallest mountains, including Everest — and Kathmandu valley was a lake until roughly 30,000 years ago, drained by an earthquake that broke through the surrounding rim.",
+      "Nepal is the only country in the world with a non-rectangular flag — its double-pennant shape derives from two royal pennants merged in the 19th century.",
+      "Nepal has never been colonised by a European power despite being surrounded by British India on most sides."
+    ],
+    "Netherlands": [
+      "The Netherlands has constructed roughly 17% of its current land area by pumping out sea and lake water — the Dutch word 'polder' for reclaimed land is used globally in civil engineering.",
+      "The Netherlands is the world's second-largest exporter of food and agricultural products by value — behind only the United States, despite being a country the size of West Virginia.",
+      "Every year the Netherlands sends 20,000 tulip bulbs to Canada in gratitude for Canada sheltering the Dutch royal family during World War II."
+    ],
+    "New Zealand": [
+      "New Zealand was the first country in the world to grant women the right to vote in national elections — in 1893, 27 years before the United States.",
+      "New Zealand has more introduced mammal species than native mammal species — European colonisers released hundreds of rabbits, possums, stoats, and rats that have devastated the native bird population, which evolved with no land predators.",
+      "Hobbiton was built on farmland in Matamata and after the films was rebuilt permanently because the local farmer and his family received so many visitors trespassing that the production company converted it into a tourist attraction."
+    ],
+    "Nicaragua": [
+      "Nicaragua has two oceans within its borders — the Pacific to the west and the Caribbean Sea to the east — a geographic position that made Nicaragua the runner-up site for the Panama Canal until US lobbying changed the decision.",
+      "The Masaya Volcano in Nicaragua is one of the only volcanoes in the world where it is legal to drive a car to the crater rim and look directly into the lava lake below."
+    ],
+    "Niger": [
+      "The Tenere tree in Niger was once described as the most isolated tree on Earth — a single acacia in the middle of the Sahara, the only tree within 400 km. It was knocked down by a drunk truck driver in 1973 and its rusted metal replacement stands at the same spot.",
+      "Niger is the largest country in West Africa and among the top uranium producers globally — yet consistently ranks last or near last in the UN Human Development Index."
+    ],
+    "Nigeria": [
+      "Nigeria is Africa's most populous country and has 500 to 600 languages spoken within its borders — more than almost any other country on Earth.",
+      "Nollywood — Nigeria's film industry — is the second-largest film producer in the world by number of films per year, ahead of Hollywood and behind only Bollywood.",
+      "Lagos is the fastest-growing megacity in the world and may become the world's most populous city by 2100 according to UN population projections."
+    ],
+    "North Korea": [
+      "North Korea's capital Pyongyang contains one of the world's emptiest subway systems by passenger density — wide, ornate stations with marble and chandeliers, serving a city where car ownership is negligible.",
+      "North Korea has an official state ideology called Juche (self-reliance) that has been used to justify near-complete isolation from the global economy for 70 years.",
+      "The DMZ (Demilitarized Zone) between North and South Korea has become, accidentally, one of the most pristine wildlife habitats in East Asia — undisturbed by humans for 70 years."
+    ],
+    "North Macedonia": [
+      "North Macedonia contains Lake Ohrid — potentially the oldest lake in the world, at 3 to 5 million years old — with over 200 endemic species found nowhere else on Earth.",
+      "Mother Teresa was born in Skopje, then part of the Ottoman Empire, in 1910 — she is considered a national heroine of North Macedonia."
+    ],
+    "Norway": [
+      "Norway's fjords are so deep that they are deeper at the ocean than the shallow sea floor of the continental shelf outside them — Sognefjord is 1,308 metres deep, far deeper than the 700-metre North Sea.",
+      "Norway has the world's longest road tunnel — the Lærdal Tunnel at 24.5 km — with special lighting designed to give drivers the impression of a sunrise to fight fatigue.",
+      "Norway sends Edinburgh, Scotland, a large Christmas tree every year since 1947 in gratitude for Britain sheltering the Norwegian government-in-exile during World War II."
+    ],
+    "Oman": [
+      "Oman was a colonial power in East Africa well into the 19th century — controlling Zanzibar and parts of Kenya and Tanzania from its capital Muscat, while remaining independent itself from European colonialism.",
+      "The frankincense trees of southern Oman (Dhofar region) are the original source of frankincense traded for millennia across the ancient world — the trees still grow wild and are still tapped today."
+    ],
+    "Pakistan": [
+      "Pakistan has more glaciers outside the polar regions than any other country in the world — roughly 7,000 glaciers in the Karakoram, Himalaya, and Hindu Kush ranges.",
+      "The Karakoram Highway connecting Pakistan to China is the highest paved international road in the world at 4,693 metres — built by Pakistani and Chinese workers over 20 years at the cost of one worker's life per kilometre."
+    ],
+    "Palau": [
+      "Palau's Jellyfish Lake is a seawater lake filled with millions of golden jellyfish that have evolved entirely without stinging ability — surrounded by predator-free water for so long that their venom glands atrophied.",
+      "Palau was the first country in the world to establish a shark sanctuary — banning all commercial shark fishing in its entire exclusive economic zone in 2009."
+    ],
+    "Panama": [
+      "The Panama Canal runs roughly east-west, but the Pacific entrance is east of the Atlantic entrance — the isthmus bends so dramatically that ships enter the canal facing north and exit facing south.",
+      "Panama hats are not from Panama — they are made entirely in Ecuador, specifically in the towns of Montecristi and Cuenca; they became associated with Panama because workers building the canal wore them."
+    ],
+    "Papua New Guinea": [
+      "Papua New Guinea has more languages than any other country — roughly 840 living languages out of the world's estimated 7,000 to 7,100, representing more than 10% of all human languages in less than 0.1% of the world's land.",
+      "Less than 1% of Papua New Guinea's roads are paved — vast swaths of the country's interior are accessible only by small aircraft or on foot, and over 80% of the population lives in rural areas."
+    ],
+    "Paraguay": [
+      "Paraguay is one of the only countries in the world where a non-indigenous language is spoken by more people than the official national language — Guaraní (an indigenous language) is spoken by 90% of Paraguayans, more than Spanish.",
+      "The War of the Triple Alliance (1864–1870) was the deadliest war in Latin American history and killed roughly 60% of Paraguay's entire population — a demographic catastrophe so severe that Paraguay's population ratio of women to men remained skewed for generations."
+    ],
+    "Peru": [
+      "Machu Picchu was built at an altitude of 2,430 metres on a mountain ridge and remained unknown to the outside world until 1911 — the local Quechua farmers knew of its existence but the Spanish colonisers never found it.",
+      "The Amazon River originates in Peru — specifically from a glacier called Nevado Mismi at 5,597 metres altitude — and Peru contains the headwaters of 10% of the world's fresh water.",
+      "Peru is home to cuy (guinea pig) as a primary protein source — roasted whole guinea pig has been a staple food since Inca times and is still the most commonly eaten meat in highland Andean communities."
+    ],
+    "Philippines": [
+      "The Philippines has the world's most linguistically diverse population in the Pacific — with over 180 languages and the world's highest density of unique endemic languages per square kilometre.",
+      "Palawan Island in the Philippines was named the world's best island by multiple publications — it contains the Puerto Princesa Subterranean River, a UNESCO World Heritage site where a navigable river runs entirely underground for 8.2 km.",
+      "The jeepney — the iconic brightly decorated public bus of the Philippines — was built by Filipinos from leftover US military jeeps after World War II and became a national art form."
+    ],
+    "Poland": [
+      "Poland has been partitioned, invaded, occupied, and redrawn on the map more than almost any other country in European history — disappearing entirely from the map for 123 years between 1795 and 1918.",
+      "Poland's Wieliczka Salt Mine has been in continuous operation since the 13th century and contains underground chapels, sculptures, and chandelier-equipped rooms carved entirely from salt — all by miners over the centuries.",
+      "Poland produced the most Polish Nobel Prizes in literature per capita of any nation — Henryk Sienkiewicz, Władysław Reymont, Wisława Szymborska, and Olga Tokarczuk all won the Nobel Prize in Literature."
+    ],
+    "Portugal": [
+      "Portuguese is the official language of nine countries across four continents — making it the sixth most spoken language in the world by total speakers and the most spoken language in the Southern Hemisphere.",
+      "Portugal's Age of Discovery in the 15th and 16th centuries was so dominant that Portuguese explorers mapped 60% of the world's coastlines — many regions of Africa, Asia, and the Americas were named by Portuguese sailors and retain those names today.",
+      "Portugal holds the world record for the largest wave ever surfed — Garrett McNamara surfed a 30-metre wave at Nazaré in 2011, later beaten at the same location in 2020."
+    ],
+    "Qatar": [
+      "Qatar went from one of the poorest countries in the Gulf to the world's highest GDP per capita in less than 50 years, powered almost entirely by a single natural gas field — the South Pars/North Dome field, which straddles the Qatar-Iran border.",
+      "Qatar's summer temperature regularly exceeds 50°C — yet Doha hosts a ski slope (Ski Dubai across the border), several luxury ice rinks, and air-conditioned outdoor spaces including a stadium cooling system that chills outdoor air."
+    ],
+    "Romania": [
+      "Romania's Danube Delta is the second-largest river delta in Europe and the best-preserved — home to 300 species of birds and the only place in Europe where pelicans breed in large colonies.",
+      "Dracula's Bran Castle in Romania was likely never visited by Vlad the Impaler (on whom the legend is partly based) — the castle's association with Dracula was invented by early 20th-century tourism promoters."
+    ],
+    "Russia": [
+      "Russia is so wide that it spans 11 time zones — sunrise in Kaliningrad (western Russia) and sunset in Kamchatka (eastern Russia) can occur simultaneously.",
+      "Lake Baikal in Russia contains roughly 20% of the world's unfrozen freshwater — more than all of the North American Great Lakes combined.",
+      "The Trans-Siberian Railway is the longest continuous railway in the world at 9,288 km — the journey from Moscow to Vladivostok takes almost exactly one week."
+    ],
+    "Rwanda": [
+      "Rwanda has recovered from the 1994 genocide — one of the fastest mass killings in recorded history, killing roughly 500,000 to 800,000 people in 100 days — to become one of the most economically dynamic countries in Africa.",
+      "Rwanda is the first country in the world where women hold a majority of parliamentary seats — as of recent elections, over 60% of Rwanda's parliament is female.",
+      "Rwanda has conducted community-based genocide courts called Gacaca for over a decade — processing nearly 2 million cases using traditional village justice mechanisms that no formal court system could have handled."
+    ],
+    "Saint Kitts and Nevis": [
+      "Saint Kitts and Nevis is the smallest country in the Western Hemisphere — covering only 261 km².",
+      "The sugar industry that built Saint Kitts was so dominant for 400 years that sugar cultivation was the main economic activity until the government closed the last sugar mill in 2005."
+    ],
+    "Saint Lucia": [
+      "Saint Lucia is the only country named after a woman — Santa Lucia, a 3rd-century Sicilian martyr — and the only country in the world to have produced two Nobel Laureates per capita (Derek Walcott and Arthur Lewis) from a population under 200,000.",
+      "The sulphur springs of Saint Lucia are the only 'drive-in volcano' in the world — visitors can drive to the edge of the crater and look into boiling mud pools."
+    ],
+    "Samoa": [
+      "Samoa changed sides of the International Date Line in 2011 — moving from one of the last places on Earth to see the new day to one of the first — to align with Australian and New Zealand trading hours.",
+      "Traditional Samoan tattooing (pe'a) takes days of work covering the body from waist to knees with patterns unique to each family lineage — a practice so painful that quitting halfway is considered a permanent mark of dishonour."
+    ],
+    "San Marino": [
+      "San Marino claims to be the world's oldest republic, founded in 301 AD by a stonemason named Marinus who fled religious persecution — making it the world's smallest republic and possibly the oldest surviving sovereign state.",
+      "San Marino has more cars per capita than any other country — over 1.2 cars per person — despite being only 61 km² in area."
+    ],
+    "Saudi Arabia": [
+      "Saudi Arabia has no permanent rivers — all water comes from coastal desalination, urban groundwater, or ancient 'fossil' aquifers that are being depleted and cannot be replenished.",
+      "Al-Ula in Saudi Arabia contains the largest preserved Nabataean city ever discovered — larger than Petra — yet it was unknown to most archaeologists until drone surveys in the 2010s revealed it under the desert sand.",
+      "Saudi Arabia was home to one of the world's earliest known legal codes — the ancient Dilmun civilization, contemporary with Mesopotamia, managed trade with written contracts 4,000 years ago."
+    ],
+    "Senegal": [
+      "The pink waters of Lake Retba (Lac Rose) in Senegal are caused by a salt-tolerant microorganism — Dunaliella salinae — which produces pink-red pigment; salt collectors work in the lake and coat themselves with shea butter to protect their skin.",
+      "Senegal is one of the most politically stable countries in sub-Saharan Africa — it has never experienced a military coup and has peacefully transferred power between rival political parties multiple times since independence."
+    ],
+    "Serbia": [
+      "Tesla was born and grew up in Serbia (then part of the Austrian Empire) — Nikola Tesla's childhood home in Smiljan, his school in Gospić, and the Tesla Museum in Belgrade honour him as a Serbian national hero.",
+      "The Đavolja Varoš (Devil's Town) in Serbia is a landscape of 202 natural earth pyramids up to 15 metres tall, eroded by rare highly acidic spring water — a geological formation unique in Europe."
+    ],
+    "Sierra Leone": [
+      "Sierra Leone's Bunce Island was one of the most important slave trading posts in West Africa — the enslaved people who passed through it shaped the Gullah Geechee culture of the American South, which preserved West African language, food, and traditions.",
+      "Sierra Leone was named after a thunderstorm — Portuguese explorer Pedro de Sintra heard a dramatic thunderclap over the mountains and called the place Serra Leoa ('Lioness Mountains')."
+    ],
+    "Singapore": [
+      "Singapore is one of only three city-states in the world (with Monaco and Vatican City) and has no natural resources, no freshwater, and almost no agricultural land — yet achieved one of the highest living standards in the world within 50 years.",
+      "Singapore's Changi Airport consistently wins 'world's best airport' awards and has an indoor waterfall 40 metres tall, a butterfly garden, and a rooftop pool — all inside the terminal building.",
+      "Lee Kuan Yew once told Singaporeans that air conditioning was the greatest invention in history for tropical economic development — it allowed office workers to be productive without the sapping heat."
+    ],
+    "Slovakia": [
+      "Slovakia has the highest number of castles and castle ruins per capita in the world — over 180 documented castle ruins in a country of 5.5 million people.",
+      "The Slovak dialect continuum is so gradual across the country that villages 200 km apart can barely understand each other — yet 'standard Slovak' was only codified as a written language in the 19th century."
+    ],
+    "Slovenia": [
+      "Slovenia is the only country in the world that has 'love' in its name — Slov-enia shares its root with the Slavic word 'slava' (glory/fame) not love, but Ljubljana — its capital — literally means 'the loved one'.",
+      "Slovenia has one of the highest rates of forest cover in Europe — nearly 60% of the country is forested — making it routinely listed among Europe's greenest countries per capita."
+    ],
+    "Solomon Islands": [
+      "The largest WW2 naval battle fought in a confined waterway happened in the Solomon Islands' Ironbottom Sound in 1942-43 — an area so dense with sunken ships that divers today call it the world's greatest wreck diving site.",
+      "The Solomon Islands is home to the Kwaio people who have resisted outside contact so consistently that many communities still practice the same cultural and religious traditions that existed before colonial contact."
+    ],
+    "Somalia": [
+      "In the absence of a functioning banking system for 20 years, Somalia spontaneously developed one of the world's most efficient mobile money transfer systems — hawala networks processed billions of dollars annually, predating M-Pesa in Kenya.",
+      "The Horn of Africa's Puntland region — a semi-autonomous area of Somalia — has been the base for some of the most sophisticated piracy operations in modern history, with pirates using GPS, speedboats, and satellite phones."
+    ],
+    "South Africa": [
+      "South Africa is the only country to voluntarily dismantle a nuclear weapons programme — it built six nuclear bombs during apartheid and destroyed all of them before the 1994 democratic transition.",
+      "South Africa has more plant species per unit area than anywhere else on Earth in its Cape Floristic Region — a biome called 'fynbos' containing more species in the Cape Peninsula than in the whole of the British Isles.",
+      "The Witwatersrand gold reef in South Africa produced roughly 40% of all the gold ever mined in human history."
+    ],
+    "South Korea": [
+      "South Korea has the fastest average internet speeds in the world and the highest smartphone penetration rate — cultural phenomena like 'PC bangs' (24-hour internet gaming cafes) were mainstream entertainment in the late 1990s before broadband was common in most countries.",
+      "South Korea transformed from one of the poorest countries in the world in 1960 (GDP per capita similar to Ghana) to a high-income OECD member within 40 years — a transformation economists call the 'Miracle on the Han River'.",
+      "South Koreans are considered one year old at birth in the traditional Korean age system — a person born on the last day of the year is considered two years old on the first day of the next year."
+    ],
+    "South Sudan": [
+      "South Sudan is the world's newest internationally recognised country, having declared independence from Sudan in 2011 — but has since experienced one of the world's most severe humanitarian crises.",
+      "South Sudan contains the largest migration of large mammals in the world — the annual wildebeest migration of the White Nile floodplains involves over 1 million animals and is almost entirely unknown outside specialist circles, compared to the more famous Serengeti migration."
+    ],
+    "Spain": [
+      "Spain has the second-largest number of UNESCO World Heritage Sites for natural and cultural sites in Europe after Italy — it also contains Teide, the world's third-largest volcanic structure, on a Canary Island.",
+      "Spain naps. The siesta tradition is so deeply embedded that some employers still allow a two-hour afternoon break — though in large cities, the siesta has largely disappeared as a practical custom.",
+      "Spain produces 44% of the world's olive oil — a fact that makes global olive oil prices almost entirely determined by Spanish harvest conditions."
+    ],
+    "Sri Lanka": [
+      "Sri Lanka was the world's first country to elect a female head of government — Sirimavo Bandaranaike became Prime Minister in 1960, 20 years before Margaret Thatcher.",
+      "Wild elephants in Sri Lanka live in closer proximity to humans than almost anywhere else in Asia — human-elephant conflict is a major public policy challenge because the island's elephant population (~6,000) is dense relative to land area.",
+      "Ceylon cinnamon — grown in Sri Lanka — is biologically and chemically different from the cassia cinnamon sold in most Western supermarkets; true Ceylon cinnamon from Sri Lanka is softer, sweeter, and contains far less coumarin (a liver-affecting compound)."
+    ],
+    "Sudan": [
+      "Sudan has more ancient pyramids than Egypt — the Nubian pyramids of the Kushite kingdoms number over 200, compared to Egypt's approximately 130, yet they receive a tiny fraction of Egypt's tourism.",
+      "The Blue and White Nile rivers join at Khartoum in Sudan — and for several kilometres downstream, the two rivers run visibly side by side without mixing because of their different water densities."
+    ],
+    "Suriname": [
+      "Suriname is the only Dutch-speaking country in South America — a legacy of Dutch colonial rule that ended in 1975.",
+      "Over 90% of Suriname's land area is covered by Amazon rainforest, yet 90% of its population lives along the narrow coastal strip — making the interior one of the least accessible inhabited territories in the Americas."
+    ],
+    "Sweden": [
+      "Sweden abolished capital punishment in 1972 and has one of the lowest incarceration rates in the developed world — some prisons have been converted to hotels because the prison population fell so far.",
+      "Sweden's 'allemansrätten' (right to roam) means any person has the legal right to walk, camp, and forage on any land in the country, even private property, as long as they do not damage crops or disturb the landowner.",
+      "IKEA was founded in Sweden in 1943 by a 17-year-old named Ingvar Kamprad — the name is an acronym of his initials, his farm name, and his local village."
+    ],
+    "Switzerland": [
+      "Switzerland has four national languages — German, French, Italian, and Romansh — and Romansh, spoken by only 0.5% of the population, is still an official language, reflecting the political philosophy that no linguistic minority should feel second-class.",
+      "Switzerland has not been at war with another country since 1815 — its neutrality is constitutionally protected — and it did not join the United Nations until 2002, the last European state to do so.",
+      "The Swiss Federal Council — Switzerland's collective executive body — has seven equal members who rotate the presidency annually, meaning Switzerland technically has no permanent 'leader'."
+    ],
+    "Syria": [
+      "Damascus is one of the oldest continuously inhabited cities in the world — with evidence of settlement dating to 9000 BC, making it older than the Egyptian pyramids.",
+      "Syria is the origin of the alphabetic writing system — the Ugaritic alphabet, discovered in the ruins of Ugarit on the Syrian coast, is the oldest known alphabet, predating Greek and Latin scripts by 1,000 years."
+    ],
+    "Taiwan": [
+      "Taiwan was the first place in Asia to legalise same-sex marriage — in 2019 — a fact that contrasted sharply with most of its neighbouring countries.",
+      "Taiwan produces roughly 90% of the world's most advanced semiconductor chips (at the 2–5nm node) through TSMC — making it simultaneously one of the world's most geopolitically critical and least internationally recognised territories.",
+      "The National Palace Museum in Taipei holds the largest collection of Chinese imperial artefacts in the world — moved to Taiwan by the Nationalist government in 1948 before the Communists won the civil war."
+    ],
+    "Tajikistan": [
+      "Tajikistan is the most mountainous country in Central Asia — 93% of its territory is mountains — and contains some of the longest glaciers in the world outside polar regions.",
+      "The Pamir Highway running through Tajikistan is one of the highest highways on Earth, crossing 4,655-metre passes, and was originally built by Soviet engineers connecting military outposts."
+    ],
+    "Tanzania": [
+      "Tanzania contains both the highest point in Africa (Mount Kilimanjaro at 5,895 m) and the deepest lake (Lake Tanganyika at 1,470 m) — two world extremes within the same country.",
+      "Tanzania's Serengeti migration is the largest movement of land mammals on Earth — 1.5 million wildebeest, 200,000 zebra, and 500,000 gazelles moving in a circular route between Tanzania and Kenya.",
+      "The coelacanth — thought extinct for 65 million years until 1938 — has a population in the Tanzanian deep sea; Tanzanian fishermen had been catching them occasionally for generations without reporting it to scientists."
+    ],
+    "Thailand": [
+      "Thailand is the world's largest exporter of rice and rubber — yet Bangkok sits just 1.5 metres above sea level and faces flooding so regularly that the city has invested billions in underground tunnels to drain monsoon water.",
+      "Bangkok's full ceremonial name in Thai is the longest city name in the world — 169 characters — beginning 'Krungthepmahanakhon Amonrattanakosin Mahintharayutthaya...'; locals simply call it 'Krung Thep'.",
+      "Thailand has never been colonised by a European power — it played France and Britain off against each other so skillfully in the 19th century that it remained independent as both empires pressed in from all sides."
+    ],
+    "Timor-Leste": [
+      "Timor-Leste is one of the world's newest countries (2002) and was the first new sovereign state of the 21st century — it spent 24 years occupied by Indonesia after Portugal's withdrawal in 1975.",
+      "The Coral Triangle — the most biodiverse marine area on Earth — touches Timor-Leste's coast, putting extraordinary reef ecosystems within the territory of one of the world's poorest nations."
+    ],
+    "Togo": [
+      "Togo has one of the world's most important traditional fetish markets in Lomé — the Akodessewa Fetish Market, where healers trade in dried animal parts used in Voodoo and traditional medicine, including gorilla skulls, hyena heads, and human bones.",
+      "Togo's coastline is only 56 km long — one of the shortest of any coastal nation in the world — yet the country extends 540 km northward, giving it one of the most unusual length-to-width ratios of any country."
+    ],
+    "Tonga": [
+      "Tonga is the only Pacific nation never fully colonised by a European power — it became a British 'protected state' in 1900 but retained its own government, becoming fully independent in 1970 with its monarchy intact.",
+      "The eruption of Hunga Tonga-Hunga Ha'apai volcano in January 2022 was the largest volcanic eruption recorded anywhere in the world in over 30 years and was heard as far away as Alaska, 9,000 km distant."
+    ],
+    "Trinidad and Tobago": [
+      "Trinidad is one of the only places in the world where you can find a pitch lake — a natural asphalt lake at La Brea that has been oozing bitumen to the surface for thousands of years. Sir Walter Raleigh used it to caulk his ships in 1595.",
+      "Steel pan — the only new acoustic instrument invented in the 20th century — was created in Trinidad in the 1930s by tuning and hammering oil drum lids."
+    ],
+    "Tunisia": [
+      "Tunisia was the birthplace of the Arab Spring — the self-immolation of Mohamed Bouazizi in 2010 sparked protests that spread across the entire Arab world — and Tunisia remains the only country from that era that completed a democratic transition.",
+      "The ancient city of Carthage, near modern Tunis, was once Rome's chief rival — powerful enough to threaten the entire Roman Empire, it was destroyed and the Romans reportedly salted the earth to prevent it being rebuilt."
+    ],
+    "Turkey": [
+      "Turkey contains the world's largest underground city — Derinkuyu in Cappadocia, which descends 18 storeys into the earth and was carved by hand to shelter over 20,000 people from invaders, complete with stables, wineries, and churches.",
+      "Istanbul is the only city in the world built on two continents — the Bosphorus Strait splits the city between Europe and Asia, making a standard commute a transcontinental journey.",
+      "Turkey produces the world's largest share of hazelnuts — roughly 70% of global supply — grown along the Black Sea coast."
+    ],
+    "Turkmenistan": [
+      "The Darvaza gas crater in Turkmenistan — the 'Door to Hell' — has been burning continuously since Soviet drillers set it alight in 1971 to burn off gas, expecting it to last weeks. It is still burning.",
+      "Turkmenistan was listed among the world's least free countries for years — its former president Turkmenbashi renamed months of the year after himself and members of his family, built a golden revolving statue of himself in the capital, and wrote a national self-help book that was mandatory reading."
+    ],
+    "Tuvalu": [
+      "Tuvalu earns significant income by licensing its internet country code top-level domain — .tv — to television companies worldwide, giving this tiny Pacific island nation an unexpected revenue stream from the global media industry.",
+      "Tuvalu is one of the first countries expected to become uninhabitable due to climate change — its highest point is 5 metres above sea level, and storm surges already flood the capital."
+    ],
+    "Uganda": [
+      "Uganda contains the source of the White Nile — the river exits Lake Victoria at Jinja, Uganda, beginning an 6,700-km journey to the Mediterranean Sea.",
+      "Uganda has the world's youngest national population — the median age is approximately 15 years, meaning over half the country's population has been born since 2008.",
+      "Mountain gorillas — one of the world's most endangered primates — live on the volcanoes bordering Uganda, Rwanda, and DRC; Uganda's Bwindi Impenetrable Forest holds about half the world's entire mountain gorilla population."
+    ],
+    "Ukraine": [
+      "Ukraine was called the 'breadbasket of Europe' because its chernozem (black earth) soil — some of the most fertile in the world — once fed much of the Soviet empire and still produces 10% of the world's wheat.",
+      "The Chernobyl exclusion zone in northern Ukraine has unexpectedly become a wildlife sanctuary — with wolves, lynx, and wild horses roaming freely because humans have been absent since 1986.",
+      "Ukraine has the largest territory of any country entirely in Europe — larger than France, Germany, or any Western European country."
+    ],
+    "United Arab Emirates": [
+      "The UAE's Burj Khalifa is so tall that you can watch the sunset from ground level, take a lift to the top, and watch the sunset again — the observation deck is high enough to be above the horizon from the ground.",
+      "Dubai's Palm Jumeirah artificial island was visible from space within three years of its construction beginning — an entirely man-made peninsula constructed from 94 million cubic metres of sand and rock dredged from the seabed.",
+      "The UAE opened the region's first nuclear power plant at Barakah in 2021 — the first Arab country to use civilian nuclear power."
+    ],
+    "United Kingdom": [
+      "The United Kingdom has no written constitution — the legal framework of British government is a patchwork of common law, statutes, and constitutional conventions accumulated over 800 years.",
+      "Windsor Castle is the oldest and largest occupied castle in the world — it has been the home of British monarchs for 900 years and was significantly enlarged by nearly every sovereign who occupied it.",
+      "The Shipping Forecast — a BBC Radio 4 broadcast of weather conditions for 31 sea areas around the British Isles — has been broadcast almost without interruption since 1867 and has a cult following among people with no connection to the sea."
+    ],
+    "United States": [
+      "The US has the most tornadoes of any country in the world — roughly 1,000 per year, concentrated in 'Tornado Alley' across the Great Plains — more than the entire rest of the world combined.",
+      "Yellowstone National Park sits atop one of the world's largest known supervolcanoes — an eruption of the scale it last produced 640,000 years ago would affect the entire North American climate.",
+      "The US has more public libraries than McDonald's restaurants — a comparison made by library advocates, but factually accurate: roughly 17,000 library branches versus 14,000 McDonald's locations."
+    ],
+    "Uruguay": [
+      "Uruguay became the first country in the world to fully legalise and regulate recreational cannabis at the national level — in 2013, with a state-controlled production, sale, and distribution system.",
+      "Uruguay has no extreme poverty by regional standards and was the first country in Latin America to legalise same-sex adoption, establish compulsory free education, and create a secular state — all in the 19th century.",
+      "José Mujica, Uruguay's President from 2010 to 2015, donated 90% of his presidential salary to charity, lived on his farm, drove a 1987 Volkswagen Beetle, and refused to move into the presidential palace."
+    ],
+    "Uzbekistan": [
+      "Uzbekistan is one of only two doubly landlocked countries in the world — surrounded by landlocked countries on all sides, meaning any route to the sea crosses at least two international borders.",
+      "Samarkand and Bukhara in Uzbekistan were the greatest cities of the Silk Road — at their medieval peak, they were among the most cosmopolitan, wealthy, and intellectually advanced cities in the world."
+    ],
+    "Vanuatu": [
+      "Land diving on the island of Pentecost in Vanuatu is the origin of bungee jumping — men leap from 20-30 metre wooden towers with vines tied to their ankles, touching the ground with their shoulders to bless the yam harvest. The tradition predates modern bungee jumping by centuries.",
+      "Vanuatu has more languages per capita than any other country — 113 distinct languages for a population under 300,000."
+    ],
+    "Vatican City": [
+      "Vatican City is the world's smallest country by both area (0.44 km²) and population (~800 permanent residents) — yet it has its own newspaper, radio station, television channel, postal service, and bank.",
+      "The Vatican Secret Archives — renamed 'Vatican Apostolic Archives' in 2019 — contain 85 km of linear shelving and documents dating back 12 centuries, including the trial records of Galileo and Henry VIII's request for an annulment."
+    ],
+    "Venezuela": [
+      "Venezuela was the first country in the world to elect a woman president — but by indirect election in 1974. The first woman to be directly elected president anywhere in the Americas was Cristina Fernández de Kirchner of Argentina in 2007.",
+      "Venezuela's Angel Falls is the world's highest uninterrupted waterfall at 979 metres — nearly 20 times the height of Niagara Falls — yet it was unknown to the outside world until a US aviator named Jimmy Angel crash-landed his plane nearby in 1937."
+    ],
+    "Vietnam": [
+      "Vietnam has 54 officially recognised ethnic groups — the majority Kinh people represent roughly 86% of the population, but the remaining 14% speak over 100 different languages.",
+      "Ha Long Bay in Vietnam contains roughly 1,600 limestone islands and islets with caves, arches, and grottoes — the result of 500 million years of geological transformation, including a prehistoric inland sea.",
+      "Vietnam is the world's largest exporter of cashew nuts and the second-largest exporter of coffee — both facts invisible against the country's image as a rice-growing nation."
+    ],
+    "Yemen": [
+      "Socotra Island, part of Yemen, is so isolated that a third of its plant species exist nowhere else on Earth — including the Dragon's Blood Tree, which looks like an upside-down umbrella and weeps red sap.",
+      "Yemen was the origin of coffee as a traded commodity — Sufi monks in 15th-century Yemen used qahwa (coffee) to stay awake for night prayers, and the port of Mocha gave its name to a style of coffee that spread across the world."
+    ],
+    "Zambia": [
+      "Victoria Falls on the Zambia-Zimbabwe border is so loud and produces so much mist that it can be seen and heard from 40 km away — the local Tokaleya Tonga name for it is 'Mosi-oa-Tunya', meaning 'the smoke that thunders'.",
+      "Zambia has some of the world's largest emerald deposits — the Kagem mine in Zambia's Copperbelt produces roughly 25% of the world's emeralds."
+    ],
+    "Zimbabwe": [
+      "Zimbabwe's hyperinflation crisis in 2008 reached 89.7 sextillion percent per month — the highest hyperinflation ever recorded — eventually requiring the issue of a 100-trillion-dollar note that could not buy a loaf of bread.",
+      "Great Zimbabwe — the stone city that gave the country its name — was built without mortar between 1100 and 1450 AD; its walls still stand because they were built with interlocking dry-stone precision that has outlasted mortared constructions."
+    ]
+  },
+  "cities": {
+    "Tokyo": [
+      "Tokyo's Shinjuku Station processes about 3.6 million passengers per day — more than the entire population of New Zealand passing through a single station.",
+      "Tokyo has more Michelin-starred restaurants than Paris, New York, and London combined — the city has held the title of world's most starred city for over a decade."
+    ],
+    "Mumbai": [
+      "Mumbai's Dharavi — often called Asia's largest slum — has an internal economy estimated at over $1 billion per year, with cottage industries producing leather goods and textiles exported internationally.",
+      "The Mumbai dabbawalas — tiffin box delivery workers — deliver roughly 200,000 home-cooked lunches daily using a colour-coded sorting system so efficient that Harvard Business School studied it as a logistics case.",
+      "Mumbai's Chhatrapati Shivaji Maharaj Terminus railway station handles more passengers per day than any other railway station in the world, with some estimates exceeding 3 million daily.",
+      "The Mumbai Film City in Goregaon is one of the world's largest film production facilities, covering 520 acres."
+    ],
+    "Istanbul": [
+      "Istanbul is the only city in the world that straddles two continents — Asia and Europe — divided by the Bosphorus Strait.",
+      "The Grand Bazaar in Istanbul has been in continuous operation since 1461 and contains over 4,000 shops, making it one of the world's oldest and largest covered markets."
+    ],
+    "Venice": [
+      "Venice was built on 118 small islands connected by 400 bridges and powered by no cars — navigation is entirely by foot and boat.",
+      "Venice is slowly sinking at around 2mm per year due to subsidence — the brick and wood pilings driven into the mud of the lagoon are compressing under the city's weight."
+    ],
+    "Cairo": [
+      "Cairo's City of the Dead — al-Arafa — is a medieval necropolis in which an estimated 500,000 people live among the tombs and mausoleums, creating one of the world's most unusual urban communities.",
+      "Cairo has been continuously inhabited for over 6,200 years and is home to the only one of the Seven Wonders of the Ancient World still standing."
+    ],
+    "New York": [
+      "New York City's subway has more stations than any other subway system in the world — 472 stations across 245 miles of routes.",
+      "The High Line — an elevated railway that became a public park — transformed one of Manhattan's least desirable industrial areas into one of its most visited, sparking a global trend in urban rail-to-park conversion."
+    ],
+    "Los Angeles": [
+      "Los Angeles was once the avocado-growing capital of North America — the entire San Fernando Valley was avocado groves in the 1920s before suburban development replaced them.",
+      "The LA River looks like a concrete drainage ditch because it was paved in the 1930s and 1940s — it once flooded catastrophically and urban planners chose to contain it rather than coexist with it."
+    ],
+    "London": [
+      "London's Great Fire of 1666 destroyed 13,000 houses and 87 churches — yet fewer than 10 people are recorded as dying, possibly because the fire spread slowly enough for people to escape.",
+      "The Thames Barrier — a flood defence system across the Thames — was designed in the 1970s to need closing roughly once a year. By 2022, it had been closed over 200 times, reflecting the frequency of extreme tidal surges."
+    ],
+    "Paris": [
+      "Paris has an underground city beneath it — the Paris catacombs contain the bones of over 6 million people, and the unregulated tunnels (cataphiles) below them stretch hundreds of kilometres.",
+      "The Eiffel Tower grows by up to 15 cm in summer because iron expands in heat — and shrinks back in winter."
+    ],
+    "Berlin": [
+      "Berlin has more bridges than Venice — roughly 1,700 bridges spanning the city's many lakes, rivers, and canals.",
+      "Berlin was divided by the Wall for 28 years — longer than it has now been reunified — and the seam of its former border is still visible in the street cobblestones where a double row of stones marks the boundary."
+    ],
+    "Sydney": [
+      "The Sydney Harbour Bridge was built with such precision that it expands and contracts with temperature — engineers deliberately designed it to 'breathe', rising 18 cm in extreme heat.",
+      "Sydney's Royal Botanic Garden was the site of the first European farm in Australia — convicts grew food here in 1788 while the colony struggled to survive."
+    ],
+    "Rio de Janeiro": [
+      "Rio de Janeiro was the capital of Portugal — the entire Portuguese royal court fled there when Napoleon invaded in 1808, making it the only European capital ever located in the Americas.",
+      "Christ the Redeemer statue on Corcovado mountain was struck by lightning so frequently that maintenance workers installed a lightning rod — a fact that strikes most visitors as deeply ironic."
+    ],
+    "Singapore": [
+      "Singapore recycles its treated wastewater into drinking water — NEWater, as it is called — and citizens drink recycled sewage that is cleaner than most natural water sources.",
+      "Singapore has more species of trees in its national parks than are native to all of North America."
+    ],
+    "Dubai": [
+      "Dubai has more cranes per capita than almost any city in the world — at peak construction in the 2000s, it was estimated to host 25% of the world's tower cranes.",
+      "The Burj Khalifa's observation deck staff begin their shifts by watching the sunrise from the ground, then ride the lift to work — effectively watching a second sunrise from above the clouds."
+    ],
+    "Seoul": [
+      "Seoul's Cheonggyecheon Stream was buried under a motorway for decades, then restored in 2005 in an urban restoration project that reduced the area's temperature by 3.6°C and became a global model for urban ecology.",
+      "Seoul has the fastest average internet speeds of any major city in the world — a legacy of government investment in broadband infrastructure in the 1990s that was remarkably prescient."
+    ],
+    "Beijing": [
+      "Beijing's Forbidden City has 9,999 rooms — deliberately one short of the mythological 10,000 rooms of heaven, which were thought to be the exclusive domain of divine beings.",
+      "The Beijing–Shanghai high-speed railway covers 1,318 km in under 5 hours — the same distance as London to Casablanca — at speeds of up to 350 km/h."
+    ],
+    "Mexico City": [
+      "Mexico City is sinking at a rate of up to 50 cm per year in some districts — built on the soft lakebed of former Lake Texcoco, it is one of the fastest-sinking major cities in history.",
+      "The Templo Mayor — the main Aztec temple of Tenochtitlan — was discovered in 1978 by electricity workers digging in central Mexico City, buried 3 metres below the street level of a modern metropolis."
+    ],
+    "Buenos Aires": [
+      "Buenos Aires has the highest density of bookshops per capita of any city in the world — the Librería El Ateneo Grand Splendid, a theatre converted into a bookshop, is considered one of the most beautiful in the world.",
+      "The tango was invented in the working-class dockside neighbourhoods of Buenos Aires and Montevideo in the late 19th century, combining African rhythms, European dance styles, and immigrant melancholy."
+    ],
+    "Amsterdam": [
+      "Amsterdam has more bicycles than people — 881,000 bikes in a city of 870,000 inhabitants — and roughly 15,000 bicycles are fished out of its canals each year.",
+      "Amsterdam's Golden Age canal houses lean forward slightly — deliberately, to make it easier to hoist furniture through upper windows since the stairs inside are too narrow for most large items."
+    ],
+    "Kyoto": [
+      "Kyoto was removed from the list of potential atomic bomb targets during World War II by US Secretary of War Henry Stimson, who had honeymooned there and personally understood its cultural importance.",
+      "Kyoto has 1,600 Buddhist temples and 400 Shinto shrines — more historic religious sites per square kilometre than almost any other city in the world."
+    ],
+    "Prague": [
+      "Prague's Charles Bridge was built in 1357 in the sequence 1-3-5-7-9-7-5-3-1 (the odd numbers descending and ascending) — a magic number sequence chosen on the advice of Charles IV's court astrologers.",
+      "Prague holds one of the world's best-preserved medieval old towns in part because it was rarely bombed during World War II — Hitler reportedly ordered it preserved for his planned post-war capital."
+    ],
+    "Vienna": [
+      "Vienna's Prater park contains the world's oldest operating Ferris wheel still in continuous use — the Riesenrad, built in 1897 — and is one of the few amusement parks in the world that has remained essentially unchanged for over a century.",
+      "Vienna's Hundertwasserhaus apartment building has no straight lines — artist Friedensreich Hundertwasser considered straight floors unnatural and demanded every floor be uneven, to the fury of the tenant association."
+    ],
+    "Havana": [
+      "Havana's old city district contains one of the most intact collections of Baroque and neoclassical architecture in the Western Hemisphere — preserved partly by poverty, which prevented the demolition and construction that transformed other Latin American capitals.",
+      "Havana's Malecón sea wall has served as the city's informal social gathering place for over a century — residents bring musical instruments, food, and conversation as a form of public life effectively replacing private entertainment."
+    ],
+    "Lagos": [
+      "Lagos is one of the fastest-growing cities in the world — projected to become the world's most populous city by 2100 according to UN forecasts, overtaking Tokyo and Delhi.",
+      "Much of Lagos is built on reclaimed land and sand-filled lagoon — the Eko Atlantic City development is an entire new city being constructed on 10 km² of land reclaimed from the Atlantic Ocean."
+    ],
+    "Nairobi": [
+      "Nairobi National Park — a wildlife reserve with lions, rhinos, and giraffes — sits on the outskirts of the city and is visible from the Nairobi CBD, making it the only national park in the world adjacent to a capital city.",
+      "Nairobi's Kibera district is one of Africa's largest informal settlements, yet it has generated a significant grassroots film and music industry, including internationally distributed films made on smartphones."
+    ],
+    "Kathmandu": [
+      "Kathmandu valley contains seven UNESCO World Heritage Sites within 10 km of the city centre — one of the highest densities of world heritage properties anywhere on Earth.",
+      "The Kumari — a living goddess — lives in the Kumari Ghar palace in central Kathmandu, selected as a child from the Newar Buddhist community and revered until puberty, when she is retired and a new goddess is chosen."
+    ],
+    "Reykjavik": [
+      "Reykjavik is both the world's northernmost capital city and one of the cleanest — almost all of its energy comes from geothermal and hydropower, and the city has been almost entirely carbon-neutral since 2014.",
+      "Reykjavik has no McDonald's — the last one closed in 2009 during the financial crisis and was never replaced, making Iceland one of the only developed countries with no McDonald's presence."
+    ],
+    "Marrakech": [
+      "Marrakech's Djemaa el-Fna square transforms completely twice daily — in the morning it is a food market and parking area; by evening it becomes a city-scale performance space of storytellers, musicians, and acrobats.",
+      "Marrakech's medina is so dense and labyrinthine that even residents of decades sometimes get lost — the winding alleys were deliberately made irregular to confuse invaders and create a natural defensive maze."
+    ],
+    "Petra": [
+      "Petra in Jordan was carved entirely into rose-red sandstone cliffs — the entire city is architecturally sculpted from the rock face rather than built, making it one of the world's most extraordinary feats of city-scale stone carving.",
+      "At its peak, Petra was the capital of the Nabataean Kingdom and home to 30,000 people who collected water through a sophisticated system of ceramic pipes, cisterns, and dams that supplied the city despite being in a desert gorge."
+    ],
+    "Varanasi": [
+      "Varanasi is considered the oldest continuously inhabited city in the world — with evidence of settlement dating to roughly 1200 BC — and is so sacred in Hinduism that dying there is believed to guarantee moksha (spiritual liberation).",
+      "The burning ghats of Varanasi have been in continuous operation for 3,000 years — cremating the dead 24 hours a day, every day, without interruption."
+    ],
+    "Chernobyl": [
+      "The Chernobyl exclusion zone has become one of Europe's largest and most successful nature reserves — wolves, lynx, Przewalski's horses, and hundreds of bird species thrive in the absence of humans.",
+      "Chernobyl's reactor 4 sarcophagus New Safe Confinement — installed in 2016 — is the largest moveable land structure ever built, large enough to contain Paris's Notre-Dame Cathedral."
+    ],
+    "Pompeii": [
+      "Pompeii was buried so rapidly and completely by Vesuvius's pyroclastic surge in 79 AD that casts of human bodies, wooden furniture, and even bread loaves still in ovens have been preserved for nearly 2,000 years.",
+      "Pompeii had an advanced urban infrastructure before most of Europe — paved streets with raised pavements, a water distribution system, public baths, and fast-food counters called thermopolia."
+    ]
+  },
+  "regions": {}
+}
