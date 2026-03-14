@@ -755,7 +755,7 @@ func (a *App) startLocalServer() {
 			Fact   factdb.Fact `json:"fact,omitempty"`
 		}
 
-		if target == "" || hitSinceSet || time.Since(setAt) < time.Minute {
+		if target == "" || hitSinceSet {
 			if err := json.NewEncoder(w).Encode(hintResponse{Active: false}); err != nil {
 				slog.Error("Failed to encode challenge-hint response", "error", err)
 			}
