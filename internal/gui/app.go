@@ -73,9 +73,10 @@ var mapHTMLContent []byte
 
 // CountryGameState represents the game state for a country
 type CountryGameState struct {
-	HitCount int
-	Boring   bool
-	LastHit  time.Time
+	HitCount  int
+	Boring    bool
+	LastHit   time.Time
+	Liberated bool // true when the country became boring while it was the active target
 }
 
 // RecentHit represents a recent network connection for the UI
@@ -137,6 +138,8 @@ func (gs *GameState) AddCountryHitWithTargetCheck(country string) (becameBoring 
 			wasTarget = gs.targetCountry == country
 
 			if wasTarget {
+				// Country liberated: it was the active target when conquered
+				countryState.Liberated = true
 				// Clear the target since it's now boring
 				gs.targetCountry = ""
 				gs.targetSetAt = time.Time{}
@@ -166,6 +169,8 @@ func (gs *GameState) MarkCountryAsBoring(country string) (wasTarget bool, target
 		targetCountry = gs.targetCountry
 
 		if wasTarget {
+			// Country liberated: it was the active target when conquered
+			countryState.Liberated = true
 			// Clear the target since it's now boring
 			gs.targetCountry = ""
 			gs.targetSetAt = time.Time{}
@@ -183,9 +188,10 @@ func (gs *GameState) GetCountryState(country string) *CountryGameState {
 	if state, exists := gs.countries[country]; exists {
 		// Return a copy to avoid race conditions
 		return &CountryGameState{
-			HitCount: state.HitCount,
-			Boring:   state.Boring,
-			LastHit:  state.LastHit,
+			HitCount:  state.HitCount,
+			Boring:    state.Boring,
+			LastHit:   state.LastHit,
+			Liberated: state.Liberated,
 		}
 	}
 	return nil
@@ -208,9 +214,10 @@ func (gs *GameState) GetCountries() map[string]*CountryGameState {
 	countries := make(map[string]*CountryGameState)
 	for name, state := range gs.countries {
 		countries[name] = &CountryGameState{
-			HitCount: state.HitCount,
-			Boring:   state.Boring,
-			LastHit:  state.LastHit,
+			HitCount:  state.HitCount,
+			Boring:    state.Boring,
+			LastHit:   state.LastHit,
+			Liberated: state.Liberated,
 		}
 	}
 	return countries
@@ -631,12 +638,16 @@ func (a *App) startLocalServer() {
 		}
 		var topCountries []summaryItem
 
+		liberatedCount := 0
 		for country, state := range a.gameState.countries {
-			if state.Boring {
+			if state.Boring && !state.Liberated {
 				boringCount++
 				if recentCountries[country] {
 					inMatrixPrison = true
 				}
+			}
+			if state.Liberated {
+				liberatedCount++
 			}
 			topCountries = append(topCountries, summaryItem{Country: country, Hits: state.HitCount})
 		}
@@ -667,6 +678,7 @@ func (a *App) startLocalServer() {
 		data := map[string]interface{}{
 			"visited_count":     visitedCount,
 			"boring_count":      boringCount,
+			"liberated_count":   liberatedCount,
 			"achievement_count": achievementCount,
 			"target_country":    targetCountry,
 			"in_matrix_prison":  inMatrixPrison,
@@ -758,6 +770,24 @@ func (a *App) startLocalServer() {
 			slog.Error("Failed to encode challenge-hint response", "error", err)
 		}
 	})
+
+	// Re-roll the target country on demand
+	mux.HandleFunc("/api/reroll-target", a.requireSessionToken(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		a.SelectRandomTargetCountry()
+		newTarget, _ := a.gameState.GetTargetCountry()
+		slog.Info("🎲 Target country re-rolled by user", "new_target", newTarget)
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": true,
+			"target":  newTarget,
+		}); err != nil {
+			slog.Error("Failed to encode reroll-target response", "error", err)
+		}
+	}))
 
 	// Redirect root to map.html
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -987,8 +1017,11 @@ func (a *App) generateAndDisplayMap() error {
 	// Get boring countries for flag backgrounds
 	boringCountries := a.getBoringCountries()
 
+	// Get liberated countries (boring + were the active target when conquered)
+	liberatedCountries := a.getLiberatedCountries()
+
 	// Render map with Natural Earth data
-	outputImg, err = resources.RenderNaturalEarthMap(a.naturalEarth, width, height, a.config.Black, hitCountries, targetCountry, a.flagManager, a.fontManager, boringCountries, recentCountries)
+	outputImg, err = resources.RenderNaturalEarthMap(a.naturalEarth, width, height, a.config.Black, hitCountries, targetCountry, a.flagManager, a.fontManager, boringCountries, recentCountries, liberatedCountries)
 	if err != nil {
 		logging.LogError("render Natural Earth map", err)
 		return err
@@ -1435,6 +1468,21 @@ func (a *App) getBoringCountries() map[string]bool {
 		}
 	}
 	return boringCountries
+}
+
+// getLiberatedCountries returns a map of countries that were liberated
+// (became boring while they were the active target country).
+func (a *App) getLiberatedCountries() map[string]bool {
+	a.gameState.mutex.RLock()
+	defer a.gameState.mutex.RUnlock()
+
+	liberated := make(map[string]bool)
+	for countryName, state := range a.gameState.countries {
+		if state.Liberated {
+			liberated[countryName] = true
+		}
+	}
+	return liberated
 }
 
 // markMapDirty signals that the map image must be re-rendered and re-encoded

@@ -603,7 +603,7 @@ func (ne *NaturalEarthData) GetCountryBounds(countryName string) (minLat, maxLat
 }
 
 // RenderNaturalEarthMap creates a map image with country boundaries from Natural Earth data
-func RenderNaturalEarthMap(ne *NaturalEarthData, width, height int, black bool, hitCountries map[string]int, targetCountry string, flagManager *FlagManager, fontManager *FontManager, boringCountries map[string]bool, recentHitCountries map[string]bool) (image.Image, error) {
+func RenderNaturalEarthMap(ne *NaturalEarthData, width, height int, black bool, hitCountries map[string]int, targetCountry string, flagManager *FlagManager, fontManager *FontManager, boringCountries map[string]bool, recentHitCountries map[string]bool, liberatedCountries map[string]bool) (image.Image, error) {
 	// Debug: show available flags
 	if flagManager != nil {
 		availableFlags := flagManager.ListFlags()
@@ -651,16 +651,39 @@ func RenderNaturalEarthMap(ne *NaturalEarthData, width, height int, black bool, 
 		} else if isBoring && hitCount >= 10 {
 			// Show Matrix rain for boring countries (10+ hits)
 			if fontManager != nil {
-				// Fill country with black first to provide the background for Matrix rain
-				drawCountryGeometry(img, country.Name, country.Geometry, color.RGBA{0, 0, 0, 255}, width, height)
+				isLiberated := liberatedCountries != nil && liberatedCountries[country.Name]
 
-				// Use current time plus a stable seed per country for pseudo-random movement
-				countrySeed := int64(0)
-				for _, char := range country.Name {
-					countrySeed += int64(char)
+				if isLiberated && flagManager != nil && country.getAlpha2Code() != "" {
+					// Liberated country: conquered while it was an active target.
+					// Show the national flag as background so the country glows with
+					// its true identity, then overlay semi-transparent Matrix rain to
+					// show the Matrix has been weakened but not fully erased.
+					alpha2 := country.getAlpha2Code()
+					flag := flagManager.GetFlag(alpha2)
+					if flag != nil {
+						drawCountryWithFlagBackground(img, country.Name, country.Geometry, flag, width, height, false)
+					} else {
+						// No flag available — fall back to black so the rain is still visible
+						drawCountryGeometry(img, country.Name, country.Geometry, color.RGBA{0, 0, 0, 255}, width, height)
+					}
+					countrySeed := int64(0)
+					for _, char := range country.Name {
+						countrySeed += int64(char)
+					}
+					seed := time.Now().UnixNano()/50000000 + countrySeed
+					// Semi-transparent rain (alpha ≈ 160/255 ≈ 63%) so the flag shines through
+					DrawMatrixRain(img, country.Name, country.Geometry, fontManager, width, height, seed, 160)
+				} else {
+					// Normal boring country: black background + fully opaque rain
+					drawCountryGeometry(img, country.Name, country.Geometry, color.RGBA{0, 0, 0, 255}, width, height)
+
+					countrySeed := int64(0)
+					for _, char := range country.Name {
+						countrySeed += int64(char)
+					}
+					seed := time.Now().UnixNano()/50000000 + countrySeed
+					DrawMatrixRain(img, country.Name, country.Geometry, fontManager, width, height, seed, 255)
 				}
-				seed := time.Now().UnixNano()/50000000 + countrySeed
-				DrawMatrixRain(img, country.Name, country.Geometry, fontManager, width, height, seed)
 			} else {
 				// Fallback to sand/rocks gradient if font manager not available
 				drawCountryWithSandRocksGradient(img, country.Name, country.Geometry, hitCount, width, height)
@@ -1208,7 +1231,7 @@ func drawLine(img *image.RGBA, x1, y1, x2, y2 int, col color.RGBA) {
 }
 
 // DrawMatrixRain draws a Matrix-style falling code effect within a country's geometry
-func DrawMatrixRain(img *image.RGBA, name string, geom orb.MultiPolygon, fm *FontManager, width, height int, seed int64) {
+func DrawMatrixRain(img *image.RGBA, name string, geom orb.MultiPolygon, fm *FontManager, width, height int, seed int64, rainAlpha uint8) {
 	if fm == nil {
 		return
 	}
@@ -1312,11 +1335,11 @@ func DrawMatrixRain(img *image.RGBA, name string, geom orb.MultiPolygon, fm *Fon
 			var charColor color.RGBA
 			if i == 0 {
 				// Head is white or very light green
-				charColor = color.RGBA{200, 255, 200, 255}
+				charColor = color.RGBA{200, 255, 200, rainAlpha}
 			} else {
 				// Tail is varying shades of green
 				green := uint8(50 + brightness*205)
-				charColor = color.RGBA{0, green, 0, 255}
+				charColor = color.RGBA{0, green, 0, rainAlpha}
 			}
 
 			// Pick a random character

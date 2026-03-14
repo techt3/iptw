@@ -669,10 +669,17 @@
                     <div class="stat-value" id="stats-boring">-</div>
                     <div class="stat-label">Matrix Prison</div>
                 </div>
+                <div class="stat-card" style="grid-column: span 2;">
+                    <div class="stat-value" id="stats-liberated" style="color: #00cc44;">-</div>
+                    <div class="stat-label">&#x1F5F3; Matrix Liberated</div>
+                </div>
             </div>
             <div id="matrix-prison-container"></div>
             <div class="target-box" id="target-container">
-                <div class="target-label">Let's visit</div>
+                <div style="display:flex; align-items:center; justify-content:space-between;">
+                    <div class="target-label">Let's visit</div>
+                    <button id="reroll-btn" title="Draw a new target country" style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.35); color:#fff; border-radius:8px; padding:3px 9px; font-size:0.75rem; cursor:pointer; font-family:inherit; transition:background 0.15s;">🎲 Draw new</button>
+                </div>
                 <div class="target-value" id="stats-target">Searching...</div>
             </div>
         </div>
@@ -784,6 +791,7 @@
 
                 document.getElementById('stats-visited').textContent = data.visited_count;
                 document.getElementById('stats-boring').textContent = data.boring_count;
+                document.getElementById('stats-liberated').textContent = data.liberated_count || 0;
                 document.getElementById('stats-target').textContent = data.target_country || 'None';
 
                 // Keep boring_count in sync for the fact popup gate
@@ -880,6 +888,22 @@
 
         // Start the random "Did you know?" popup scheduler
         scheduleFactPopup();
+
+        // Reroll target button
+        document.getElementById('reroll-btn').addEventListener('click', async function () {
+            this.disabled = true;
+            this.textContent = '...';
+            try {
+                await fetch('/api/reroll-target', {
+                    method: 'POST',
+                    headers: { 'X-Session-Token': sessionToken }
+                });
+                await updateStats();
+            } catch (e) { /* silent */ } finally {
+                this.disabled = false;
+                this.textContent = '🎲 Draw new';
+            }
+        });
 
         // About panel toggle
         document.getElementById('about-toggle').addEventListener('click', function () {
