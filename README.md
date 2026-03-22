@@ -195,6 +195,22 @@ stats_y 100   # Position stats 100 pixels from top edge
 - `target_interval`: Minutes between target country changes (default: 5)
 - `log_level`: Logging verbosity: debug, info, warn, error (default: info)
 
+### Privacy Settings
+- `skip_isp`: Exclude your ISP's IP address ranges from connection tracking (default: false)
+
+  When enabled, IPTW auto-detects your ISP at startup using two external lookups:
+  1. A **DNS TXT query** to `origin.asn.cymru.com` to resolve your public IP to an ASN — your IP is never sent over HTTP, it appears only as a reversed DNS hostname component handled by your local resolver.
+  2. An **HTTP request** to the [RIPE Stat](https://stat.ripe.net/) API to fetch all IP prefixes registered to that ASN — only the ASN number is transmitted, not your IP address.
+
+  Set `skip_isp false` in your config file (or omit the key) to disable entirely and make no external requests:
+  ```
+  skip_isp false
+  ```
+  Set to `true` to activate ISP filtering:
+  ```
+  skip_isp true
+  ```
+
 ## Wallpaper Backup & Restore
 
 IPTW automatically backs up your original desktop wallpaper before making any changes and can restore it when the application exits or on demand.
@@ -327,10 +343,11 @@ After installation, enable the extension and restart GNOME Shell (`Alt+F2` → `
 - **Performance Optimized**: Efficient native system calls on each platform
 
 ### Privacy & Security
-- **Local Processing Only**: No data sent to external servers
+- **Local Processing Only**: All connection tracking and map rendering happen on your device
 - **No Account Required**: Completely anonymous usage
 - **No Tracking**: Your browsing patterns stay on your device
 - **Open Source**: Full transparency in data handling
+- **ISP Detection Requests**: When `skip_isp` is enabled, IPTW performs two lightweight online lookups at startup to identify your ISP's IP ranges: a DNS TXT query to `origin.asn.cymru.com` (your public IP appears only as a DNS hostname component, routed through your local resolver) and an HTTP request to the RIPE Stat API containing only your ISP's ASN number — your IP address is never sent over HTTP. You can disable the `skip_isp` feature entirely if you prefer no external requests at all (see [Configuration](#configuration)).
 
 
 ## Licenses & Attribution
