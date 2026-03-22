@@ -7,8 +7,6 @@ You open your laptop. News apps. Social feeds. Streaming. Fifty tabs — and som
 
 IP Travel Wallpaper is your way out. Every network connection your computer makes has a location — a country, a server, a story. IPTW maps those connections in real time, painting a living world map that grows more colorful every time you venture beyond the algorithmic mainstream. Escape the news bubble. Find the authentic voices the algorithm buried. The whole world is online — most people never see it.
 
-![Example map](./files/wallpaper.png)
-
 ## What's New: System Tray & Interactive Map
 IPTW has been modernized into a lightweight system tray application:
 - **System Tray Icon**: Access all features quickly from your OS menu bar.
