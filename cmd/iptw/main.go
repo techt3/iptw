@@ -10,6 +10,7 @@ import (
 	"iptw/internal/config"
 	"iptw/internal/geoip"
 	"iptw/internal/gui"
+	"iptw/internal/ispdetect"
 	"iptw/internal/logging"
 	"iptw/internal/network"
 	"iptw/internal/singleton"
@@ -126,6 +127,18 @@ func run() error {
 
 	// Initialize network monitor
 	netMon := network.NewMonitor()
+
+	// If skip_isp is enabled, detect the user's ISP CIDR ranges at startup.
+	// This runs synchronously so the filter is active before the first tick;
+	// failures are non-fatal — a warning is logged and the feature is skipped.
+	if cfg.SkipISP {
+		cidrs, err := ispdetect.DetectISPCIDRsAuto()
+		if err != nil {
+			slog.Warn("skip_isp: ISP detection failed, feature disabled", "error", err)
+		} else {
+			netMon.SetISPCIDRs(cidrs)
+		}
+	}
 
 	// Create GUI application
 	app, err := gui.NewApp(cfg, geoipDB, netMon)

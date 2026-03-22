@@ -24,6 +24,7 @@ type Connection struct {
 // Monitor monitors network connections
 type Monitor struct {
 	connections []Connection
+	ispCIDRs    []*net.IPNet // IP ranges belonging to the user's ISP (optional)
 }
 
 // NewMonitor creates a new network monitor
@@ -31,6 +32,13 @@ func NewMonitor() *Monitor {
 	return &Monitor{
 		connections: make([]Connection, 0),
 	}
+}
+
+// SetISPCIDRs stores the CIDR ranges belonging to the user's ISP.
+// When at least one range is registered, connections whose remote address
+// falls inside any of those ranges are excluded from analysis.
+func (m *Monitor) SetISPCIDRs(cidrs []*net.IPNet) {
+	m.ispCIDRs = cidrs
 }
 
 // GetConnections returns current network connections
@@ -245,6 +253,18 @@ func (m *Monitor) shouldIncludeConnection(remoteIP string) bool {
 	// Skip private network ranges
 	if isPrivateIP(remoteIP) {
 		return false
+	}
+
+	// Skip ISP addresses when CIDR ranges have been configured
+	if len(m.ispCIDRs) > 0 {
+		ip := net.ParseIP(remoteIP)
+		if ip != nil {
+			for _, cidr := range m.ispCIDRs {
+				if cidr.Contains(ip) {
+					return false
+				}
+			}
+		}
 	}
 
 	return true

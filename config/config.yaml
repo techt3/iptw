@@ -9,3 +9,7 @@ log_coordinates true
 verbose_logging false
 stats_x -1
 stats_y -1
+# skip_isp: when true, connections to your Internet Service Provider's own IP
+# ranges are excluded from the travel map.  The ISP is detected automatically
+# at startup by looking up your public IP via RDAP.  Default: false.
+skip_isp false

@@ -21,6 +21,7 @@ type Config struct {
 	StatsY           int    `config:"stats_y"`          // Y position of stats rectangle (-1 for auto)
 	UpdateWallpaper  bool   `config:"update_wallpaper"` // Opt-in to update OS wallpaper
 	StartOnLogin     bool   `config:"start_on_login"`   // Auto-start app on login
+	SkipISP          bool   `config:"skip_isp"`         // Skip connections belonging to your ISP
 }
 
 // DefaultConfig returns the default configuration
@@ -36,6 +37,7 @@ func DefaultConfig() *Config {
 		StatsY:           -1,     // -1 means auto-position (default behavior)
 		UpdateWallpaper:  false,  // Disabled by default
 		StartOnLogin:     false,  // Disabled by default
+		SkipISP:          true,   // Enabled by default
 	}
 }
 
@@ -124,6 +126,8 @@ func LoadConfig() (*Config, error) {
 			cfg.UpdateWallpaper = value == "true"
 		case "start_on_login":
 			cfg.StartOnLogin = value == "true"
+		case "skip_isp":
+			cfg.SkipISP = value == "true"
 		}
 	}
 
@@ -149,7 +153,8 @@ stats_x %d
 stats_y %d
 update_wallpaper %t
 start_on_login %t
-`, c.MapWidth, c.AutoDetectScreen, c.Black, c.UpdateInterval, c.TargetInterval, c.LogLevel, c.StatsX, c.StatsY, c.UpdateWallpaper, c.StartOnLogin)
+skip_isp %t
+`, c.MapWidth, c.AutoDetectScreen, c.Black, c.UpdateInterval, c.TargetInterval, c.LogLevel, c.StatsX, c.StatsY, c.UpdateWallpaper, c.StartOnLogin, c.SkipISP)
 
 	return err
 }
